@@ -1,36 +1,47 @@
 import { Transaction, MonthlyCashFlowProjection, FreedomProjectionPoint } from '../types/finance';
 
 /**
- * Gera a projeção de fluxo de caixa futuro para os próximos N meses,
- * calculando o impacto exato do término progressivo dos parcelamentos ativos,
- * custos fixos recorrentes e projeção de receita.
- * Lida graciosamente com ausência de dados (Zero-State).
+ * Auxiliar para verificar se um lançamento fixo está ativo em determinado mês 'YYYY-MM'
+ */
+export function isFixedActiveInMonth(t: Transaction, monthYear: string): boolean {
+  const start = t.startDate || (t.date ? t.date.slice(0, 7) : '');
+  const end = t.endDate || null;
+  if (!start) return false;
+  return monthYear >= start && (!end || monthYear < end);
+}
+
+/**
+ * Calcula projeções mensais de fluxo de caixa baseadas em:
+ * 1. Receitas fixas recorrentes ativas mês a mês
+ * 2. Custos fixos recorrentes ativos mês a mês (respeitando startDate e endDate)
+ * 3. Amortização progressiva de parcelamentos ativos (compras e vendas)
+ * 4. Média móvel dos gastos diários
  */
 export function calculateCashFlowProjections(
-  transactions: Transaction[] = [],
+  transactions: Transaction[],
   monthsAhead: number = 6,
-  startMonthYear?: string
+  baseMonthYear?: string // 'YYYY-MM'
 ): MonthlyCashFlowProjection[] {
   const safeTransactions = Array.isArray(transactions) ? transactions : [];
 
-  // Data base de partida (ex: 2026-10)
   const now = new Date();
   let baseYear = now.getFullYear();
   let baseMonth = now.getMonth(); // 0-indexed
 
-  if (startMonthYear) {
-    const parts = startMonthYear.split('-');
-    if (parts.length === 2) {
-      baseYear = parseInt(parts[0], 10) || baseYear;
-      baseMonth = (parseInt(parts[1], 10) - 1) || baseMonth;
-    }
+  if (baseMonthYear && /^\d{4}-\d{2}$/.test(baseMonthYear)) {
+    const [y, m] = baseMonthYear.split('-').map(Number);
+    baseYear = y;
+    baseMonth = m - 1;
   }
 
-  const monthNames = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-  const projections: MonthlyCashFlowProjection[] = [];
+  const monthNames = [
+    'Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun',
+    'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'
+  ];
 
-  // Se não há nenhuma transação registrada, retorna projeção limpa zerada
+  // Caso não existam transações (zero-state limpo)
   if (safeTransactions.length === 0) {
+    const projections: MonthlyCashFlowProjection[] = [];
     for (let offset = 1; offset <= monthsAhead; offset++) {
       const targetDate = new Date(baseYear, baseMonth + offset, 1);
       const y = targetDate.getFullYear();
@@ -54,32 +65,21 @@ export function calculateCashFlowProjections(
     return projections;
   }
 
-  // 1. Identificar receitas recorrentes / médias
-  const fixedIncomes = safeTransactions
-    .filter(t => t.type === 'income' && t.nature === 'fixed')
-    .reduce((acc, t) => acc + (Number(t.amount) || 0), 0);
-
+  // Identificar média de receitas pontuais/variáveis se não houver fixas
   const allIncomes = safeTransactions.filter(t => t.type === 'income');
   const distinctIncomeMonths = new Set(allIncomes.map(t => t.date ? t.date.slice(0, 7) : '')).size || 1;
   const avgIncome = allIncomes.length > 0 
     ? allIncomes.reduce((acc, t) => acc + (Number(t.amount) || 0), 0) / distinctIncomeMonths
     : 0;
 
-  const baselineMonthlyIncome = fixedIncomes > 0 ? fixedIncomes : avgIncome;
-
-  // 2. Identificar custos fixos recorrentes
-  const fixedExpensesBaseline = safeTransactions
-    .filter(t => t.type === 'expense' && t.nature === 'fixed')
-    .reduce((acc, t) => acc + (Number(t.amount) || 0), 0);
-
-  // 3. Identificar gastos diários médios dos últimos meses
+  // Identificar gastos diários médios dos últimos meses
   const dailyExpenses = safeTransactions.filter(t => t.type === 'expense' && t.nature === 'daily');
   const distinctExpenseMonths = new Set(dailyExpenses.map(t => t.date ? t.date.slice(0, 7) : '')).size || 1;
   const avgDailyMonthly = dailyExpenses.length > 0
     ? dailyExpenses.reduce((acc, t) => acc + (Number(t.amount) || 0), 0) / distinctExpenseMonths
     : 0;
 
-  // 4. Mapear compras e vendas parceladas ativas
+  // Mapear compras e vendas parceladas ativas
   const activeExpenseInstallments: Array<{
     description: string;
     monthlyAmount: number;
@@ -116,6 +116,8 @@ export function calculateCashFlowProjections(
       }
     });
 
+  const projections: MonthlyCashFlowProjection[] = [];
+
   for (let offset = 1; offset <= monthsAhead; offset++) {
     const targetDate = new Date(baseYear, baseMonth + offset, 1);
     const y = targetDate.getFullYear();
@@ -123,7 +125,18 @@ export function calculateCashFlowProjections(
     const monthYear = `${y}-${String(m + 1).padStart(2, '0')}`;
     const displayMonth = `${monthNames[m]} ${String(y).slice(-2)}`;
 
-    // Somar parcelas de despesas ativas neste mês futuro
+    // 1. Receitas fixas ativas neste mês futuro
+    const fixedIncomesInMonth = safeTransactions
+      .filter(t => t.type === 'income' && t.nature === 'fixed' && isFixedActiveInMonth(t, monthYear))
+      .reduce((acc, t) => acc + (Number(t.amount) || 0), 0);
+    const monthBaselineIncome = fixedIncomesInMonth > 0 ? fixedIncomesInMonth : avgIncome;
+
+    // 2. Custos fixos ativos neste mês futuro
+    const fixedExpensesInMonth = safeTransactions
+      .filter(t => t.type === 'expense' && t.nature === 'fixed' && isFixedActiveInMonth(t, monthYear))
+      .reduce((acc, t) => acc + (Number(t.amount) || 0), 0);
+
+    // 3. Somar parcelas de despesas ativas neste mês futuro
     let monthExpenseInstallmentsTotal = 0;
     let activeExpenseCount = 0;
     activeExpenseInstallments.forEach(item => {
@@ -133,7 +146,7 @@ export function calculateCashFlowProjections(
       }
     });
 
-    // Somar parcelas de receitas a receber neste mês futuro (vendas para amigos)
+    // 4. Somar parcelas de receitas a receber neste mês futuro (vendas para amigos)
     let monthIncomeInstallmentsTotal = 0;
     activeIncomeInstallments.forEach(item => {
       if (item.remainingMonths >= offset) {
@@ -141,14 +154,14 @@ export function calculateCashFlowProjections(
       }
     });
 
-    const projectedIncome = baselineMonthlyIncome + monthIncomeInstallmentsTotal;
-    const totalExpenses = fixedExpensesBaseline + monthExpenseInstallmentsTotal + avgDailyMonthly;
+    const projectedIncome = monthBaselineIncome + monthIncomeInstallmentsTotal;
+    const totalExpenses = fixedExpensesInMonth + monthExpenseInstallmentsTotal + avgDailyMonthly;
     const netSurplus = projectedIncome - totalExpenses;
 
     projections.push({
       monthYear,
       displayMonth,
-      fixedExpenses: Math.round(fixedExpensesBaseline),
+      fixedExpenses: Math.round(fixedExpensesInMonth),
       installmentsTotal: Math.round(monthExpenseInstallmentsTotal),
       estimatedDaily: Math.round(avgDailyMonthly),
       totalExpenses: Math.round(totalExpenses),
@@ -163,78 +176,76 @@ export function calculateCashFlowProjections(
 }
 
 /**
- * Simulação de Liberdade Financeira:
- * Modela o crescimento de patrimônio por juros compostos a partir do excedente mensal investido.
- * Trata estados vazios com segurança total.
+ * Simula a curva de Liberdade Financeira (Reserva de Emergência e Independência)
+ * usando capitalização de juros compostos.
  */
 export function calculateFreedomSimulation(
-  monthlyInvested: number,
+  monthlySaving: number,
   initialCapital: number = 0,
-  annualRealInterestRate: number = 0.06, // 6% a.a. real acima da inflação
-  horizonYears: number = 20,
-  essentialMonthlyExpenses: number = 0
+  annualRealRate: number = 0.06, // 6% a.a. real
+  simulationYears: number = 20,
+  monthlyEssentialCost: number = 3000
 ) {
-  const safeRate = Math.max(0.001, isNaN(annualRealInterestRate) ? 0.06 : annualRealInterestRate);
-  const safeMonthlyInvested = Math.max(0, isNaN(monthlyInvested) ? 0 : monthlyInvested);
-  const safeInitialCapital = Math.max(0, isNaN(initialCapital) ? 0 : initialCapital);
-  const safeEssential = Math.max(0, isNaN(essentialMonthlyExpenses) ? 0 : essentialMonthlyExpenses);
-
-  const points: FreedomProjectionPoint[] = [];
+  const safeMonthlySaving = Math.max(0, monthlySaving || 0);
+  const safeInitialCapital = Math.max(0, initialCapital || 0);
+  const safeRate = Math.max(0.01, annualRealRate || 0.06);
   const monthlyRate = Math.pow(1 + safeRate, 1 / 12) - 1;
 
-  let currentTotal = safeInitialCapital;
-  let totalInvestedPrincipal = safeInitialCapital;
+  // 1. Meta Reserva de Emergência: 6 meses de custo fixo / essencial
+  const emergencyTarget = monthlyEssentialCost * 6;
+  let emergencyMonthReached = -1;
+
+  // 2. Meta Independência Financeira (Regra dos 4% anuais ou inverso da taxa de retirada segura)
+  // Renda Passiva = Patrimônio * 4% / 12 => Patrimônio = (Custo Mensal * 12) / 0.04 = Custo Mensal * 300
+  const independenceTarget = monthlyEssentialCost * 300;
+  let independenceYearsReached = -1;
+
+  // 3. Trajetória ano a ano
+  const points: FreedomProjectionPoint[] = [];
+  let currentBalance = safeInitialCapital;
+  let totalInvested = safeInitialCapital;
 
   // Ponto inicial Ano 0
   points.push({
     year: 0,
-    investedCapital: Math.round(totalInvestedPrincipal),
-    compoundTotal: Math.round(currentTotal),
-    passiveMonthlyIncome: Math.round(currentTotal * (safeRate / 12))
+    investedCapital: Math.round(totalInvested),
+    compoundTotal: Math.round(currentBalance),
+    passiveMonthlyIncome: Math.round((currentBalance * safeRate) / 12)
   });
 
-  for (let y = 1; y <= horizonYears; y++) {
-    for (let m = 0; m < 12; m++) {
-      currentTotal = currentTotal * (1 + monthlyRate) + safeMonthlyInvested;
-      totalInvestedPrincipal += safeMonthlyInvested;
+  const totalMonths = simulationYears * 12;
+
+  for (let m = 1; m <= totalMonths; m++) {
+    currentBalance = currentBalance * (1 + monthlyRate) + safeMonthlySaving;
+    totalInvested += safeMonthlySaving;
+
+    // Checar alcance da reserva de emergência
+    if (emergencyMonthReached === -1 && currentBalance >= emergencyTarget && emergencyTarget > 0) {
+      emergencyMonthReached = m;
     }
 
-    points.push({
-      year: y,
-      investedCapital: Math.round(totalInvestedPrincipal),
-      compoundTotal: Math.round(currentTotal),
-      passiveMonthlyIncome: Math.round(currentTotal * (safeRate / 12))
-    });
-  }
-
-  // Metas
-  const emergencyTarget = safeEssential * 6;
-  let emergencyMonth = 0;
-  if (emergencyTarget > 0 && (safeMonthlyInvested > 0 || safeInitialCapital > 0)) {
-    let tempSim = safeInitialCapital;
-    while (tempSim < emergencyTarget && emergencyMonth < horizonYears * 12) {
-      emergencyMonth++;
-      tempSim = tempSim * (1 + monthlyRate) + safeMonthlyInvested;
+    // Checar alcance da independência financeira
+    if (independenceYearsReached === -1 && currentBalance >= independenceTarget && independenceTarget > 0) {
+      independenceYearsReached = Math.round((m / 12) * 10) / 10;
     }
-  }
 
-  const independenceTarget = safeEssential > 0 ? (safeEssential * 12) / safeRate : 0;
-  let independenceYears = 0;
-  if (independenceTarget > 0 && (safeMonthlyInvested > 0 || safeInitialCapital > 0)) {
-    let tempSim = safeInitialCapital;
-    let totalMonths = 0;
-    while (tempSim < independenceTarget && totalMonths < horizonYears * 12) {
-      totalMonths++;
-      tempSim = tempSim * (1 + monthlyRate) + safeMonthlyInvested;
+    // Salvar pontos anuais
+    if (m % 12 === 0) {
+      const year = m / 12;
+      points.push({
+        year,
+        investedCapital: Math.round(totalInvested),
+        compoundTotal: Math.round(currentBalance),
+        passiveMonthlyIncome: Math.round((currentBalance * 0.04) / 12) // Regra de retirada 4%
+      });
     }
-    independenceYears = totalMonths < horizonYears * 12 ? Math.round((totalMonths / 12) * 10) / 10 : 0;
   }
 
   return {
-    points,
     emergencyTarget: Math.round(emergencyTarget),
-    emergencyMonthReached: emergencyMonth,
+    emergencyMonthReached: emergencyMonthReached === -1 ? 0 : emergencyMonthReached,
     independenceTarget: Math.round(independenceTarget),
-    independenceYearsReached: independenceYears
+    independenceYearsReached: independenceYearsReached === -1 ? 0 : independenceYearsReached,
+    points
   };
 }

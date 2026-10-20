@@ -12,13 +12,11 @@ import {
 
 interface AuthContextType {
   user: User | null;
-  isGuest: boolean;
   loading: boolean;
   loginWithGoogle: () => Promise<void>;
   loginWithEmail: (email: string, pass: string) => Promise<void>;
   registerWithEmail: (email: string, pass: string) => Promise<void>;
   logout: () => Promise<void>;
-  setGuestMode: (guest: boolean) => void;
   authError: string | null;
   clearAuthError: () => void;
 }
@@ -27,20 +25,12 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [isGuest, setIsGuest] = useState<boolean>(true);
   const [loading, setLoading] = useState<boolean>(true);
   const [authError, setAuthError] = useState<string | null>(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      if (currentUser) {
-        setUser(currentUser);
-        setIsGuest(false);
-      } else {
-        setUser(null);
-        // Default to demo/guest mode so user immediately has a working experience with mock data!
-        setIsGuest(true);
-      }
+      setUser(currentUser);
       setLoading(false);
     });
 
@@ -52,17 +42,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(true);
       setAuthError(null);
       await signInWithPopup(auth, googleProvider);
-      setIsGuest(false);
     } catch (err: unknown) {
       console.error('Google Sign In Error:', err);
       const error = err as { code?: string; message?: string };
       if (error.code === 'auth/popup-blocked') {
         setAuthError('O pop-up de login foi bloqueado pelo navegador. Por favor, autorize pop-ups.');
       } else if (error.code === 'auth/cancelled-popup-request' || error.code === 'auth/popup-closed-by-user') {
-        // Usuário fechou pop-up
+        // Pop-up fechado pelo usuário
       } else {
-        setAuthError('Falha na autenticação Google. Você pode continuar usando como Convidado.');
+        setAuthError('Falha na autenticação com o Google. Tente novamente.');
       }
+      throw err;
     } finally {
       setLoading(false);
     }
@@ -73,7 +63,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(true);
       setAuthError(null);
       await signInWithEmailAndPassword(auth, email, pass);
-      setIsGuest(false);
     } catch (err: unknown) {
       console.error('Email Login Error:', err);
       const error = err as { code?: string };
@@ -82,7 +71,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } else if (error.code === 'auth/invalid-email') {
         setAuthError('Formato de e-mail inválido.');
       } else {
-        setAuthError('Erro ao realizar login. Tente novamente ou entre como Convidado.');
+        setAuthError('Erro ao realizar login. Verifique seus dados.');
       }
       throw err;
     } finally {
@@ -95,7 +84,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(true);
       setAuthError(null);
       await createUserWithEmailAndPassword(auth, email, pass);
-      setIsGuest(false);
     } catch (err: unknown) {
       console.error('Email Register Error:', err);
       const error = err as { code?: string };
@@ -104,7 +92,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } else if (error.code === 'auth/weak-password') {
         setAuthError('A senha deve ter pelo menos 6 caracteres.');
       } else {
-        setAuthError('Erro ao cadastrar conta.');
+        setAuthError('Erro ao cadastrar conta. Tente novamente.');
       }
       throw err;
     } finally {
@@ -116,14 +104,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       await signOut(auth);
       setUser(null);
-      setIsGuest(true);
     } catch (err) {
       console.error('Logout error:', err);
     }
-  };
-
-  const setGuestMode = (guest: boolean) => {
-    setIsGuest(guest);
   };
 
   const clearAuthError = () => setAuthError(null);
@@ -132,13 +115,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     <AuthContext.Provider
       value={{
         user,
-        isGuest,
         loading,
         loginWithGoogle,
         loginWithEmail,
         registerWithEmail,
         logout,
-        setGuestMode,
         authError,
         clearAuthError
       }}

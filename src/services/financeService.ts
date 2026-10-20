@@ -12,11 +12,12 @@ import {
   deleteField
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { Transaction, CategoryBudget, CustomCategoryItem } from '../types/finance';
+import { Transaction, CategoryBudget, CustomCategoryItem, CreditCard } from '../types/finance';
 
 const GUEST_TX_KEY = 'finances_pro_clean_guest_txs';
 const GUEST_BUDGETS_KEY = 'finances_pro_clean_guest_budgets';
 const GUEST_CUSTOM_CATS_KEY = 'finances_pro_clean_guest_cats';
+const GUEST_CARDS_KEY = 'finances_pro_clean_guest_cards';
 
 export class FinanceService {
   /**
@@ -40,7 +41,6 @@ export class FinanceService {
 
   /**
    * Assina a coleção de transações do usuário no Firestore em tempo real.
-   * Se for usuário local/convidado, carrega do localStorage isolado de convidado.
    * NUNCA injeta dados mockados, dados de exemplo ou seeds fictícios.
    */
   static subscribeTransactions(
@@ -83,7 +83,6 @@ export class FinanceService {
         },
         (error) => {
           console.warn('Firestore subscription status:', error);
-          // Modo seguro: Nunca substituir por dados mockados em caso de erro
           callback([]);
         }
       );
@@ -119,28 +118,29 @@ export class FinanceService {
     }
 
     try {
-      const budgetsRef = collection(db, 'users', userId, 'budgets');
+      const bRef = collection(db, 'users', userId, 'budgets');
       const unsubscribe = onSnapshot(
-        budgetsRef,
+        bRef,
         (snapshot) => {
           if (snapshot.empty) {
             callback([]);
             return;
           }
           const list: CategoryBudget[] = [];
-          snapshot.forEach((docSnap) => {
-            list.push({ id: docSnap.id, ...(docSnap.data() as Omit<CategoryBudget, 'id'>) });
+          snapshot.forEach((docSnapshot) => {
+            list.push({ id: docSnapshot.id, ...(docSnapshot.data() as Omit<CategoryBudget, 'id'>) });
           });
           callback(list);
         },
-        (err) => {
-          console.warn('Firestore budgets subscription status:', err);
+        (error) => {
+          console.warn('Firestore budgets subscription status:', error);
           callback([]);
         }
       );
+
       return unsubscribe;
     } catch (e) {
-      console.warn('Error setting up budget listener:', e);
+      console.warn('Error setting up firestore budgets listener:', e);
       callback([]);
       return () => {};
     }
@@ -194,6 +194,111 @@ export class FinanceService {
       callback([]);
       return () => {};
     }
+  }
+
+  /**
+   * Assina cartões de crédito do usuário
+   */
+  static subscribeCreditCards(
+    userId: string,
+    isGuest: boolean,
+    callback: (cards: CreditCard[]) => void
+  ): () => void {
+    if (isGuest || !userId) {
+      const stored = localStorage.getItem(GUEST_CARDS_KEY);
+      if (stored) {
+        try {
+          callback(JSON.parse(stored));
+        } catch {
+          callback([]);
+        }
+      } else {
+        callback([]);
+      }
+      return () => {};
+    }
+
+    try {
+      const cardsRef = collection(db, 'users', userId, 'creditCards');
+      const q = query(cardsRef, orderBy('createdAt', 'desc'));
+      const unsubscribe = onSnapshot(
+        q,
+        (snapshot) => {
+          if (snapshot.empty) {
+            callback([]);
+            return;
+          }
+          const list: CreditCard[] = [];
+          snapshot.forEach((docSnap) => {
+            list.push({ id: docSnap.id, ...(docSnap.data() as Omit<CreditCard, 'id'>) });
+          });
+          callback(list);
+        },
+        (err) => {
+          console.warn('Firestore credit cards subscription status:', err);
+          callback([]);
+        }
+      );
+      return unsubscribe;
+    } catch (e) {
+      console.warn('Error setting up credit cards listener:', e);
+      callback([]);
+      return () => {};
+    }
+  }
+
+  /**
+   * Salva ou atualiza um cartão de crédito
+   */
+  static async saveCreditCard(
+    userId: string,
+    card: Omit<CreditCard, 'id' | 'userId'> & { id?: string },
+    isGuest: boolean
+  ): Promise<string> {
+    const cardId = card.id || `card_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+    const fullCard: CreditCard = {
+      ...card,
+      id: cardId,
+      userId: isGuest ? 'guest' : userId,
+      createdAt: card.createdAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+
+    if (isGuest || !userId) {
+      const current = JSON.parse(localStorage.getItem(GUEST_CARDS_KEY) || '[]');
+      const filtered = current.filter((c: CreditCard) => c.id !== cardId);
+      const updated = [fullCard, ...filtered];
+      localStorage.setItem(GUEST_CARDS_KEY, JSON.stringify(updated));
+      return cardId;
+    }
+
+    const sanitized: Record<string, any> = {};
+    for (const [k, v] of Object.entries(fullCard)) {
+      if (v !== undefined) sanitized[k] = v;
+    }
+
+    const docRef = doc(db, 'users', userId, 'creditCards', cardId);
+    await setDoc(docRef, sanitized, { merge: true });
+    return cardId;
+  }
+
+  /**
+   * Deleta um cartão de crédito
+   */
+  static async deleteCreditCard(
+    userId: string,
+    cardId: string,
+    isGuest: boolean
+  ): Promise<void> {
+    if (isGuest || !userId) {
+      const current: CreditCard[] = JSON.parse(localStorage.getItem(GUEST_CARDS_KEY) || '[]');
+      const filtered = current.filter(c => c.id !== cardId);
+      localStorage.setItem(GUEST_CARDS_KEY, JSON.stringify(filtered));
+      return;
+    }
+
+    const docRef = doc(db, 'users', userId, 'creditCards', cardId);
+    await deleteDoc(docRef);
   }
 
   /**
@@ -303,23 +408,67 @@ export class FinanceService {
   }
 
   /**
+   * Descontinua uma transação recorrente fixa a partir de um mês específico
+   */
+  static async discontinueRecurringTransaction(
+    userId: string,
+    txId: string,
+    fromMonth: string,
+    isGuest: boolean
+  ): Promise<void> {
+    if (isGuest || !userId) {
+      const current: Transaction[] = JSON.parse(localStorage.getItem(GUEST_TX_KEY) || '[]');
+      const updated = current.map(t => (t.id === txId ? { ...t, endDate: fromMonth } : t));
+      localStorage.setItem(GUEST_TX_KEY, JSON.stringify(updated));
+      return;
+    }
+
+    const docRef = doc(db, 'users', userId, 'transactions', txId);
+    await updateDoc(docRef, { endDate: fromMonth, updatedAt: new Date().toISOString() });
+  }
+
+  /**
    * Alterna status Pago / Pendente para contas fixas ou recorrentes
    */
   static async togglePaidStatus(
     userId: string,
     txId: string,
     currentStatus: boolean,
-    isGuest: boolean
+    isGuest: boolean,
+    month?: string,
+    currentPaidMonths: string[] = []
   ): Promise<void> {
     if (isGuest || !userId) {
       const current: Transaction[] = JSON.parse(localStorage.getItem(GUEST_TX_KEY) || '[]');
-      const updated = current.map(t => (t.id === txId ? { ...t, isPaid: !currentStatus } : t));
+      const updated = current.map(t => {
+        if (t.id !== txId) return t;
+        let newPaidMonths = t.paidMonths || [];
+        if (month) {
+          newPaidMonths = newPaidMonths.includes(month)
+            ? newPaidMonths.filter(m => m !== month)
+            : [...newPaidMonths, month];
+        }
+        return { ...t, isPaid: !currentStatus, paidMonths: newPaidMonths };
+      });
       localStorage.setItem(GUEST_TX_KEY, JSON.stringify(updated));
       return;
     }
 
     const docRef = doc(db, 'users', userId, 'transactions', txId);
-    await updateDoc(docRef, { isPaid: !currentStatus, updatedAt: new Date().toISOString() });
+    const updates: Record<string, any> = { 
+      isPaid: !currentStatus, 
+      updatedAt: new Date().toISOString() 
+    };
+
+    if (month) {
+      const hasMonth = currentPaidMonths.includes(month);
+      const updatedPaidMonths = hasMonth 
+        ? currentPaidMonths.filter(m => m !== month)
+        : [...currentPaidMonths, month];
+      updates.paidMonths = updatedPaidMonths;
+    }
+
+    await updateDoc(docRef, updates);
   }
 
   /**
@@ -338,8 +487,8 @@ export class FinanceService {
     };
 
     if (isGuest || !userId) {
-      const current: CategoryBudget[] = JSON.parse(localStorage.getItem(GUEST_BUDGETS_KEY) || '[]');
-      const filtered = current.filter(b => b.category !== budget.category && b.id !== budgetId);
+      const current = JSON.parse(localStorage.getItem(GUEST_BUDGETS_KEY) || '[]');
+      const filtered = current.filter((b: CategoryBudget) => b.category.toLowerCase() !== toSave.category.toLowerCase());
       const updated = [...filtered, toSave];
       localStorage.setItem(GUEST_BUDGETS_KEY, JSON.stringify(updated));
       return;
@@ -350,7 +499,7 @@ export class FinanceService {
   }
 
   /**
-   * Remove um limite orçamentário
+   * Deleta limite orçamentário
    */
   static async deleteBudget(
     userId: string,
@@ -369,7 +518,7 @@ export class FinanceService {
   }
 
   /**
-   * Deleta TODOS os dados do usuário (limpeza completa de lançamentos, orçamentos e categorias)
+   * Deleta TODOS os dados do usuário (limpeza completa de lançamentos, orçamentos, categorias e cartões)
    */
   static async deleteAllUserData(userId: string, isGuest: boolean): Promise<void> {
     // 1. Limpa localStorage
@@ -404,6 +553,14 @@ export class FinanceService {
         catSnap.forEach(d => batch.delete(d.ref));
         await batch.commit();
       }
+
+      const cardsRef = collection(db, 'users', userId, 'creditCards');
+      const cardsSnap = await getDocs(cardsRef);
+      if (!cardsSnap.empty) {
+        const batch = writeBatch(db);
+        cardsSnap.forEach(d => batch.delete(d.ref));
+        await batch.commit();
+      }
     } catch (e) {
       console.error('Error clearing user firestore data:', e);
       throw e;
@@ -418,5 +575,6 @@ export class FinanceService {
     localStorage.removeItem(GUEST_TX_KEY);
     localStorage.removeItem(GUEST_BUDGETS_KEY);
     localStorage.removeItem(GUEST_CUSTOM_CATS_KEY);
+    localStorage.removeItem(GUEST_CARDS_KEY);
   }
 }

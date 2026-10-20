@@ -45,6 +45,20 @@ export interface InstallmentDetails {
   purchaseDate: string;       // Data original da compra
 }
 
+export interface CreditCard {
+  id: string;
+  userId: string;
+  cardName: string;         // ex: "Nubank Ultravioleta", "Inter Black"
+  lastFourDigits: string;   // ex: "1234"
+  bankName: string;         // ex: "Nubank", "Inter", "Itaú", "Bradesco"
+  color?: string;           // ex: "#A8B5D1" ou "#E29578"
+  limitAmount?: number;     // Limite total do cartão (R$)
+  closingDay?: number;      // Dia de fechamento da fatura
+  dueDay?: number;          // Dia de vencimento da fatura
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface Transaction {
   id: string;
   userId: string;
@@ -55,8 +69,19 @@ export interface Transaction {
   date: string; // ISO 'YYYY-MM-DD'
   description: string;
   paymentMethod: PaymentMethod;
-  isPaid?: boolean; // Para contas fixas recorrentes
+  isPaid?: boolean; // Para contas fixas recorrentes ou parceladas
   installmentDetails?: InstallmentDetails;
+
+  // Lógica de Recorrência Inteligente (nature === 'fixed')
+  startDate?: string;        // 'YYYY-MM' ou 'YYYY-MM-DD'
+  endDate?: string | null;   // 'YYYY-MM' (mês a partir do qual foi cancelada/descontinuada)
+  paidMonths?: string[];     // Lista de meses ['2026-08', '2026-09'] em que a conta foi marcada como paga/recebida
+
+  // Associação com Cartão de Crédito
+  cardId?: string;
+  cardName?: string;
+  cardLastFour?: string;
+
   createdAt?: string;
   updatedAt?: string;
 }

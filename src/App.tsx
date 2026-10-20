@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from 'react';
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import { FinanceProvider, useFinance } from './context/FinanceContext';
 import { Header } from './components/common/Header';
 import { Sidebar } from './components/common/Sidebar';
@@ -16,7 +16,8 @@ import { ProjectionsTab } from './components/projections/ProjectionsTab';
 import { SettingsTab } from './components/settings/SettingsTab';
 import { TransactionModal } from './components/modals/TransactionModal';
 import { AuthModal } from './components/modals/AuthModal';
-import { WifiOff } from 'lucide-react';
+import { AuthScreen } from './components/auth/AuthScreen';
+import { WifiOff, Loader2 } from 'lucide-react';
 
 const MainContent: React.FC = () => {
   const { currentMonth, addTransaction, pendingBillsCount, isOnline } = useFinance();
@@ -89,7 +90,7 @@ const MainContent: React.FC = () => {
         defaultMonth={currentMonth}
       />
 
-      {/* Modal de Autenticação Firebase (Google & Email) */}
+      {/* Modal de Perfil e Logout */}
       <AuthModal
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
@@ -106,12 +107,35 @@ const MainContent: React.FC = () => {
   );
 };
 
+const AuthGate: React.FC = () => {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen w-full bg-[#0D0D0D] flex flex-col items-center justify-center gap-3">
+        <div className="w-10 h-10 rounded-2xl bg-[#141414] border border-[#262626] flex items-center justify-center shadow-xl">
+          <Loader2 className="w-5 h-5 text-[#A3C9A8] animate-spin" />
+        </div>
+        <span className="text-xs text-[#737373]">Carregando Finances PRO...</span>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <AuthScreen />;
+  }
+
+  return (
+    <FinanceProvider>
+      <MainContent />
+    </FinanceProvider>
+  );
+};
+
 export default function App() {
   return (
     <AuthProvider>
-      <FinanceProvider>
-        <MainContent />
-      </FinanceProvider>
+      <AuthGate />
     </AuthProvider>
   );
 }

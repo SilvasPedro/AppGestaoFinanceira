@@ -4,10 +4,8 @@ import {
   ChevronRight, 
   Wifi, 
   WifiOff, 
-  User as UserIcon, 
-  LogIn, 
-  Sparkles,
-  Settings
+  Settings,
+  LogOut
 } from 'lucide-react';
 import { useFinance } from '../../context/FinanceContext';
 import { useAuth } from '../../context/AuthContext';
@@ -22,7 +20,7 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({ onOpenAuth, onNavigateTab, activeTab }) => {
   const { currentMonth, prevMonth, nextMonth, isOnline } = useFinance();
-  const { user, isGuest } = useAuth();
+  const { user, logout } = useAuth();
 
   // Formatar mês para exibição (ex: "Outubro de 2026")
   const formatMonthTitle = (ym: string) => {
@@ -36,7 +34,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenAuth, onNavigateTab, activ
     <header className="sticky top-0 z-30 w-full bg-[#0D0D0D]/90 backdrop-blur-md border-b border-[#1E1E1E] px-4 py-3 md:hidden">
       <div className="max-w-6xl mx-auto flex items-center justify-between gap-2">
         {/* Brand */}
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg bg-[#171717] border border-[#262626] flex items-center justify-center p-1.5 shadow-xs">
             <svg viewBox="0 0 24 24" fill="none" className="w-full h-full">
               <circle cx="12" cy="12" r="10" stroke="#262626" strokeWidth="2" />
@@ -52,7 +50,6 @@ export const Header: React.FC<HeaderProps> = ({ onOpenAuth, onNavigateTab, activ
                 PRO
               </span>
             </div>
-            <p className="text-[10px] text-[#737373] hidden sm:block">Análise & Projeções Firestore</p>
           </div>
         </div>
 
@@ -61,43 +58,24 @@ export const Header: React.FC<HeaderProps> = ({ onOpenAuth, onNavigateTab, activ
           <button
             onClick={prevMonth}
             title="Mês anterior"
-            className="p-1 rounded-lg text-[#A3A3A3] hover:text-white hover:bg-[#262626] transition"
+            className="p-1 rounded-lg text-[#A3A3A3] hover:text-white hover:bg-[#262626] transition cursor-pointer"
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
-          <span className="px-2 text-xs font-medium text-white min-w-[115px] text-center select-none">
+          <span className="px-2 text-xs font-medium text-white min-w-[110px] text-center select-none">
             {formatMonthTitle(currentMonth)}
           </span>
           <button
             onClick={nextMonth}
             title="Próximo mês"
-            className="p-1 rounded-lg text-[#A3A3A3] hover:text-white hover:bg-[#262626] transition"
+            className="p-1 rounded-lg text-[#A3A3A3] hover:text-white hover:bg-[#262626] transition cursor-pointer"
           >
             <ChevronRight className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Right Action Icons & Status */}
-        <div className="flex items-center gap-2">
-          {/* Online / Offline indicator */}
-          <div 
-            title={isOnline ? "Conectado ao Firebase Firestore" : "Modo Offline - Persistência IndexedDB ativa"}
-            className="flex items-center"
-          >
-            {isOnline ? (
-              <span className="flex items-center gap-1 text-[11px] text-[#A3C9A8] bg-[#A3C9A8]/10 border border-[#A3C9A8]/20 px-2 py-0.5 rounded-full hidden md:inline-flex">
-                <Wifi className="w-3 h-3 text-[#A3C9A8]" />
-                Online
-              </span>
-            ) : (
-              <span className="flex items-center gap-1 text-[11px] text-[#E29578] bg-[#E29578]/10 border border-[#E29578]/20 px-2 py-0.5 rounded-full">
-                <WifiOff className="w-3 h-3 text-[#E29578]" />
-                Offline
-              </span>
-            )}
-          </div>
-
-
+        {/* Right Action Icons */}
+        <div className="flex items-center gap-1.5">
           {/* PWA Install Button */}
           <PWAInstallButton />
 
@@ -106,7 +84,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenAuth, onNavigateTab, activ
             <button
               onClick={() => onNavigateTab('settings')}
               title="Configurações"
-              className={`p-1.5 rounded-xl border transition ${
+              className={`p-1.5 rounded-xl border transition cursor-pointer ${
                 activeTab === 'settings'
                   ? 'bg-[#1F1F1F] text-white border-[#383838]'
                   : 'bg-[#171717] hover:bg-[#262626] text-[#A3A3A3] hover:text-white border-[#262626]'
@@ -116,34 +94,28 @@ export const Header: React.FC<HeaderProps> = ({ onOpenAuth, onNavigateTab, activ
             </button>
           )}
 
-          {/* User Profile / Auth Button */}
+          {/* User Profile Avatar */}
           <button
             onClick={onOpenAuth}
-            className="flex items-center gap-2 pl-2 pr-3 py-1.5 rounded-xl bg-[#171717] hover:bg-[#262626] border border-[#262626] transition"
+            title="Ver Perfil"
+            className="flex items-center p-0.5 rounded-xl bg-[#171717] hover:bg-[#262626] border border-[#262626] transition cursor-pointer"
           >
-            {user ? (
-              <>
-                {user.photoURL ? (
-                  <img src={user.photoURL} alt={user.displayName || 'User'} className="w-5 h-5 rounded-full" />
-                ) : (
-                  <div className="w-5 h-5 rounded-full bg-[#A3C9A8]/20 text-[#A3C9A8] flex items-center justify-center text-[10px] font-bold">
-                    {user.email?.charAt(0).toUpperCase() || 'U'}
-                  </div>
-                )}
-                <span className="text-xs font-medium text-white max-w-[80px] truncate hidden xs:inline">
-                  {user.displayName?.split(' ')[0] || user.email?.split('@')[0]}
-                </span>
-              </>
+            {user?.photoURL ? (
+              <img src={user.photoURL} alt={user.displayName || 'User'} className="w-7 h-7 rounded-xl object-cover" />
             ) : (
-              <>
-                <div className="w-5 h-5 rounded-full bg-[#A8B5D1]/20 text-[#A8B5D1] flex items-center justify-center">
-                  <LogIn className="w-3 h-3" />
-                </div>
-                <span className="text-xs font-medium text-[#A3A3A3] hidden xs:inline">
-                  {isGuest ? 'Convidado' : 'Entrar'}
-                </span>
-              </>
+              <div className="w-7 h-7 rounded-xl bg-[#A3C9A8]/20 text-[#A3C9A8] flex items-center justify-center text-xs font-bold">
+                {user?.email?.charAt(0).toUpperCase() || 'U'}
+              </div>
             )}
+          </button>
+
+          {/* Direct Logout Button on Mobile */}
+          <button
+            onClick={logout}
+            title="Sair da Conta (Logout)"
+            className="p-1.5 rounded-xl bg-[#171717] hover:bg-[#E29578]/15 hover:text-[#E29578] text-[#737373] border border-[#262626] transition cursor-pointer"
+          >
+            <LogOut className="w-4 h-4" />
           </button>
         </div>
       </div>

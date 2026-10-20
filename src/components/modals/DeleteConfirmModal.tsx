@@ -1,14 +1,16 @@
 import React, { useEffect, useState } from 'react';
-import { AlertTriangle, Trash2, X } from 'lucide-react';
+import { Trash2, X, CalendarOff } from 'lucide-react';
 
 interface DeleteConfirmModalProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: () => Promise<void> | void;
+  onDiscontinueFromMonth?: () => Promise<void> | void;
   title: string;
   message: string;
   itemDetail?: string;
   confirmLabel?: string;
+  discontinueLabel?: string;
   isDestructive?: boolean;
 }
 
@@ -16,10 +18,12 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
   isOpen,
   onClose,
   onConfirm,
+  onDiscontinueFromMonth,
   title,
   message,
   itemDetail,
   confirmLabel = 'Excluir',
+  discontinueLabel = 'Excluir apenas deste mês em diante',
   isDestructive = true
 }) => {
   const [submitting, setSubmitting] = useState(false);
@@ -47,6 +51,19 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
     }
   };
 
+  const handleDiscontinue = async () => {
+    if (!onDiscontinueFromMonth) return;
+    setSubmitting(true);
+    try {
+      await onDiscontinueFromMonth();
+      onClose();
+    } catch (err) {
+      console.error('Error discontinuing recurring:', err);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <div
       onClick={onClose}
@@ -58,7 +75,7 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
       >
         <button
           onClick={onClose}
-          className="absolute right-4 top-4 p-1 rounded-xl text-[#737373] hover:text-white hover:bg-[#262626] transition"
+          className="absolute right-4 top-4 p-1.5 rounded-xl text-[#737373] hover:text-white hover:bg-[#262626] transition cursor-pointer"
         >
           <X className="w-5 h-5" />
         </button>
@@ -81,28 +98,61 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
           )}
         </div>
 
-        <div className="flex items-center gap-2 pt-2">
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={submitting}
-            className="flex-1 py-2.5 px-3 rounded-xl bg-[#262626] hover:bg-[#333333] text-xs font-semibold text-[#A3A3A3] hover:text-white transition"
-          >
-            Cancelar
-          </button>
-          <button
-            type="button"
-            onClick={handleConfirm}
-            disabled={submitting}
-            className={`flex-1 py-2.5 px-3 rounded-xl text-xs font-bold transition active:scale-95 disabled:opacity-50 ${
-              isDestructive
-                ? 'bg-[#E29578] hover:bg-[#E29578]/90 text-black shadow-md shadow-[#E29578]/20'
-                : 'bg-white hover:bg-neutral-200 text-black'
-            }`}
-          >
-            {submitting ? 'Aguarde...' : confirmLabel}
-          </button>
-        </div>
+        {onDiscontinueFromMonth ? (
+          <div className="space-y-2 pt-2">
+            <button
+              type="button"
+              onClick={handleDiscontinue}
+              disabled={submitting}
+              className="w-full min-h-[44px] py-2.5 px-3 rounded-xl bg-[#262626] hover:bg-[#333333] border border-[#383838] text-xs font-semibold text-[#A8B5D1] hover:text-white flex items-center justify-center gap-2 transition cursor-pointer"
+            >
+              <CalendarOff className="w-4 h-4 text-[#A8B5D1]" />
+              <span>{discontinueLabel}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleConfirm}
+              disabled={submitting}
+              className="w-full min-h-[44px] py-2.5 px-3 rounded-xl bg-[#E29578] hover:bg-[#E29578]/90 text-black text-xs font-bold transition cursor-pointer shadow-md shadow-[#E29578]/20 flex items-center justify-center gap-2"
+            >
+              <Trash2 className="w-4 h-4" />
+              <span>Excluir Todo o Histórico (Todos os Meses)</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={submitting}
+              className="w-full py-2 text-xs text-[#737373] hover:text-white transition cursor-pointer"
+            >
+              Cancelar
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={submitting}
+              className="flex-1 min-h-[44px] py-2.5 px-3 rounded-xl bg-[#262626] hover:bg-[#333333] text-xs font-semibold text-[#A3A3A3] hover:text-white transition cursor-pointer"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              onClick={handleConfirm}
+              disabled={submitting}
+              className={`flex-1 min-h-[44px] py-2.5 px-3 rounded-xl text-xs font-bold transition active:scale-95 disabled:opacity-50 cursor-pointer ${
+                isDestructive
+                  ? 'bg-[#E29578] hover:bg-[#E29578]/90 text-black shadow-md shadow-[#E29578]/20'
+                  : 'bg-white hover:bg-neutral-200 text-black'
+              }`}
+            >
+              {confirmLabel}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -35,7 +35,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   pendingBillsCount
 }) => {
   const { currentMonth, prevMonth, nextMonth, isOnline } = useFinance();
-  const { user, isGuest } = useAuth();
+  const { user, logout } = useAuth();
 
   const formatMonthTitle = (ym: string) => {
     const [year, month] = ym.split('-').map(Number);
@@ -188,30 +188,34 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         {/* User Card */}
-        <div 
-          onClick={onOpenAuth}
-          className="p-2.5 rounded-2xl bg-[#141414] border border-[#212121] flex items-center justify-between cursor-pointer hover:border-[#383838] transition"
-        >
-          <div className="flex items-center gap-2.5 overflow-hidden">
+        <div className="p-2.5 rounded-2xl bg-[#141414] border border-[#212121] flex items-center justify-between">
+          <div 
+            onClick={onOpenAuth}
+            className="flex items-center gap-2.5 overflow-hidden flex-1 cursor-pointer hover:opacity-80 transition"
+          >
             {user?.photoURL ? (
-              <img src={user.photoURL} alt="Avatar" className="w-7 h-7 rounded-full shrink-0" />
+              <img src={user.photoURL} alt="Avatar" className="w-8 h-8 rounded-full shrink-0 object-cover" />
             ) : (
-              <div className="w-7 h-7 rounded-full bg-[#262626] text-white flex items-center justify-center text-xs font-bold shrink-0">
+              <div className="w-8 h-8 rounded-full bg-[#A3C9A8]/20 text-[#A3C9A8] flex items-center justify-center text-xs font-bold shrink-0">
                 {user?.email?.charAt(0).toUpperCase() || 'U'}
               </div>
             )}
             <div className="overflow-hidden">
               <div className="text-xs font-semibold text-white truncate">
-                {user?.displayName || (isGuest ? 'Usuário Local' : 'Conectado')}
+                {user?.displayName || user?.email?.split('@')[0]}
               </div>
               <div className="text-[10px] text-[#737373] truncate">
-                {user?.email || (isGuest ? 'Modo Demonstração' : 'Firebase Auth')}
+                {user?.email}
               </div>
             </div>
           </div>
-          <div className="text-[#737373] p-1">
-            <LogIn className="w-3.5 h-3.5" />
-          </div>
+          <button 
+            onClick={logout}
+            title="Sair da Conta"
+            className="text-[#737373] hover:text-[#E29578] hover:bg-[#262626] p-1.5 rounded-lg transition cursor-pointer ml-1"
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
         </div>
       </div>
     </aside>

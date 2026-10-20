@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { calculateHealthScore } from './scoreCalculator.ts';
-import { calculateCashFlowProjections, calculateFreedomSimulation } from './projections.ts';
+import { calculateCashFlowProjections, calculateFreedomSimulation, isFixedActiveInMonth } from './projections.ts';
 import { Transaction, CategoryBudget } from '../types/finance.ts';
 
 test('calculateHealthScore should compute 0-1000 score with the 4 pillars', () => {
@@ -62,6 +62,81 @@ test('calculateHealthScore should compute 0-1000 score with the 4 pillars', () =
   // Total should be 300 + 300 + 250 + 40 = 890 (Excelente)
   assert.equal(result.score, 890);
   assert.equal(result.status, 'Excelente');
+});
+
+test('isFixedActiveInMonth correctly checks temporal bounds (startDate and endDate)', () => {
+  const recurringTx: Transaction = {
+    id: 'tx_sub',
+    userId: 'test_u',
+    type: 'expense',
+    nature: 'fixed',
+    amount: 50,
+    category: 'Serviços & Assinaturas',
+    date: '2026-05-10',
+    startDate: '2026-05',
+    endDate: '2026-08', // Canceled starting in August
+    description: 'Streaming',
+    paymentMethod: 'credit_card'
+  };
+
+  // Month before start (April 2026) -> false
+  assert.equal(isFixedActiveInMonth(recurringTx, '2026-04'), false);
+  // Start month (May 2026) -> true
+  assert.equal(isFixedActiveInMonth(recurringTx, '2026-05'), true);
+  // Active month (July 2026) -> true
+  assert.equal(isFixedActiveInMonth(recurringTx, '2026-07'), true);
+  // End month (August 2026) -> false (discontinued from this month onward)
+  assert.equal(isFixedActiveInMonth(recurringTx, '2026-08'), false);
+  // Future month (September 2026) -> false
+  assert.equal(isFixedActiveInMonth(recurringTx, '2026-09'), false);
+});
+
+test('calculateCashFlowProjections respects recurring items discontinuation with endDate', () => {
+  const transactions: Transaction[] = [
+    {
+      id: 'tx_salary',
+      userId: 'test_u',
+      type: 'income',
+      nature: 'fixed',
+      amount: 5000,
+      category: 'Salário',
+      date: '2026-10-01',
+      startDate: '2026-10',
+      description: 'Salário Fixo',
+      paymentMethod: 'bank_transfer'
+    },
+    {
+      id: 'tx_rent',
+      userId: 'test_u',
+      type: 'expense',
+      nature: 'fixed',
+      amount: 2000,
+      category: 'Moradia',
+      date: '2026-10-01',
+      startDate: '2026-10',
+      endDate: '2027-01', // Rent discontinued/ended in Jan 2027
+      description: 'Aluguel',
+      paymentMethod: 'pix'
+    }
+  ];
+
+  // Base month: 2026-10 (Next months: 2026-11, 2026-12, 2027-01)
+  const projections = calculateCashFlowProjections(transactions, 3, '2026-10');
+  assert.equal(projections.length, 3);
+
+  // Month 1 (2026-11): Rent active (2000)
+  assert.equal(projections[0].monthYear, '2026-11');
+  assert.equal(projections[0].fixedExpenses, 2000);
+  assert.equal(projections[0].projectedIncome, 5000);
+
+  // Month 2 (2026-12): Rent active (2000)
+  assert.equal(projections[1].monthYear, '2026-12');
+  assert.equal(projections[1].fixedExpenses, 2000);
+
+  // Month 3 (2027-01): Rent discontinued (0)
+  assert.equal(projections[2].monthYear, '2027-01');
+  assert.equal(projections[2].fixedExpenses, 0);
+  assert.equal(projections[2].projectedIncome, 5000);
 });
 
 test('calculateCashFlowProjections amortizes installments month by month', () => {
