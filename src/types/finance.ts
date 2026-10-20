@@ -71,8 +71,9 @@ export interface CategoryBudget {
 
 export interface HealthScoreResult {
   score: number; // 0 a 1000
-  status: 'Crítico' | 'Em Risco' | 'Saudável' | 'Excelente';
+  status: 'Crítico' | 'Em Risco' | 'Saudável' | 'Excelente' | 'Aguardando Lançamentos';
   statusColor: string; // Hex color
+  isEmpty?: boolean;
   pillars: {
     savingsRate: {
       score: number; // 0 to 300 (Weight 30%)

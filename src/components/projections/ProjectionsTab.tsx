@@ -100,7 +100,7 @@ export const ProjectionsTab: React.FC = () => {
                   stroke={healthScore.statusColor}
                   strokeWidth="10"
                   strokeDasharray="414.7"
-                  strokeDashoffset={414.7 - (414.7 * (healthScore.score / 1000))}
+                  strokeDashoffset={healthScore.isEmpty ? 414.7 : 414.7 - (414.7 * (healthScore.score / 1000))}
                   strokeLinecap="round"
                   fill="none"
                   className="transition-all duration-1000 ease-out"
@@ -108,9 +108,9 @@ export const ProjectionsTab: React.FC = () => {
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
                 <span className="text-3xl font-bold text-white font-mono">
-                  {healthScore.score}
+                  {healthScore.isEmpty ? '—' : healthScore.score}
                 </span>
-                <span className="text-xs text-[#737373]">de 1000</span>
+                <span className="text-xs text-[#737373]">{healthScore.isEmpty ? 'sem dados' : 'de 1000'}</span>
                 <span
                   className="mt-1 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider"
                   style={{ backgroundColor: `${healthScore.statusColor}22`, color: healthScore.statusColor }}
@@ -127,7 +127,9 @@ export const ProjectionsTab: React.FC = () => {
                   Diagnóstico Comportamental
                 </h3>
                 <p className="text-xs text-[#A3A3A3] mt-1 leading-relaxed">
-                  Algoritmo dinâmico e transparente que avalia seu padrão mensal com base em 4 pilares ponderados de finanças pessoais sólidas.
+                  {healthScore.isEmpty
+                    ? 'Sem dados suficientes para calcular o score neste mês. Assim que você cadastrar suas receitas e gastos, o algoritmo avaliará seu equilíbrio financeiro automaticamente.'
+                    : 'Algoritmo dinâmico e transparente que avalia seu padrão mensal com base em 4 pilares ponderados de finanças pessoais sólidas.'}
                 </p>
               </div>
 
@@ -307,6 +309,12 @@ export const ProjectionsTab: React.FC = () => {
               )}
             </div>
 
+            {cashFlowProjections.every(p => p.projectedIncome === 0 && p.totalExpenses === 0) && (
+              <div className="p-4 my-3 rounded-2xl bg-[#0D0D0D] border border-[#1E1E1E] text-center text-xs text-[#737373]">
+                Nenhum parcelamento ativo ou custo fixo cadastrado. Cadastre suas compras parceladas ou contas fixas para projetar o fluxo futuro mês a mês.
+              </div>
+            )}
+
             {/* Visual Bar Graph */}
             <div className="mt-6 pt-4 border-t border-[#1E1E1E]">
               <div className="grid grid-cols-6 gap-2 items-end h-48 px-1">
@@ -455,6 +463,11 @@ export const ProjectionsTab: React.FC = () => {
             </div>
 
             {/* Metas Principais */}
+            {incomeTotal === 0 && (
+              <div className="p-3.5 rounded-2xl bg-[#0D0D0D] border border-[#1E1E1E] text-xs text-[#737373] mt-2">
+                <strong className="text-white">Aguardando receitas:</strong> Cadastre sua renda mensal e custos essenciais no Extrato para calcular o prazo exato da sua reserva de emergência e independência financeira.
+              </div>
+            )}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
               {/* Meta 1: Reserva de Emergência */}
               <div className="p-3.5 rounded-2xl bg-[#0D0D0D] border border-[#1E1E1E]">

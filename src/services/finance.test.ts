@@ -132,7 +132,8 @@ test('calculateFreedomSimulation calculates emergency fund and compound interest
 test('calculateHealthScore should handle zero-data clean state without errors', () => {
   const result = calculateHealthScore([], [], '2026-10');
   assert.equal(result.score, 0);
-  assert.equal(result.status, 'Crítico');
+  assert.equal(result.status, 'Aguardando Lançamentos');
+  assert.equal(result.isEmpty, true);
   assert.equal(result.pillars.savingsRate.score, 0);
   assert.equal(result.pillars.incomeCommitment.score, 0);
   assert.equal(result.pillars.budgetDiscipline.score, 0);

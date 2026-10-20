@@ -13,22 +13,44 @@ import {
 import { db } from '../lib/firebase';
 import { Transaction, CategoryBudget, CustomCategoryItem } from '../types/finance';
 
-const LOCAL_STORAGE_TX_KEY = 'finances_pro_txs_v2';
-const LOCAL_STORAGE_BUDGETS_KEY = 'finances_pro_budgets_v2';
-const LOCAL_STORAGE_CUSTOM_CATS_KEY = 'finances_pro_custom_cats_v2';
+const GUEST_TX_KEY = 'finances_pro_clean_guest_txs';
+const GUEST_BUDGETS_KEY = 'finances_pro_clean_guest_budgets';
+const GUEST_CUSTOM_CATS_KEY = 'finances_pro_clean_guest_cats';
 
 export class FinanceService {
   /**
+   * Remove chaves antigas de sessões anteriores que possam conter dados mockados
+   */
+  static cleanupLegacyStorage(): void {
+    try {
+      const legacyKeys = [
+        'finances_pro_txs_v2',
+        'finances_pro_budgets_v2',
+        'finances_pro_custom_cats_v2',
+        'finances_pro_guest_txs_v1',
+        'finances_pro_guest_budgets_v1',
+        'finances_pro_mock_seeded'
+      ];
+      legacyKeys.forEach(k => localStorage.removeItem(k));
+    } catch {
+      // ignore
+    }
+  }
+
+  /**
    * Assina a coleção de transações do usuário no Firestore em tempo real.
-   * Se for usuário local/convidado, carrega do localStorage sem dados fictícios.
+   * Se for usuário local/convidado, carrega do localStorage isolado de convidado.
+   * NUNCA injeta dados mockados, dados de exemplo ou seeds fictícios.
    */
   static subscribeTransactions(
     userId: string,
     isGuest: boolean,
     callback: (transactions: Transaction[]) => void
   ): () => void {
+    FinanceService.cleanupLegacyStorage();
+
     if (isGuest || !userId) {
-      const stored = localStorage.getItem(LOCAL_STORAGE_TX_KEY);
+      const stored = localStorage.getItem(GUEST_TX_KEY);
       if (stored) {
         try {
           callback(JSON.parse(stored));
@@ -59,17 +81,9 @@ export class FinanceService {
           callback(list);
         },
         (error) => {
-          console.warn('Firestore subscription fallback:', error);
-          const fallback = localStorage.getItem(LOCAL_STORAGE_TX_KEY);
-          if (fallback) {
-            try {
-              callback(JSON.parse(fallback));
-            } catch {
-              callback([]);
-            }
-          } else {
-            callback([]);
-          }
+          console.warn('Firestore subscription status:', error);
+          // Modo seguro: Nunca substituir por dados mockados em caso de erro
+          callback([]);
         }
       );
 
@@ -82,7 +96,7 @@ export class FinanceService {
   }
 
   /**
-   * Assina a coleção de limites orçamentários do usuário no Firestore sem mock data.
+   * Assina a coleção de limites orçamentários do usuário no Firestore em tempo real.
    */
   static subscribeBudgets(
     userId: string,
@@ -90,7 +104,7 @@ export class FinanceService {
     callback: (budgets: CategoryBudget[]) => void
   ): () => void {
     if (isGuest || !userId) {
-      const stored = localStorage.getItem(LOCAL_STORAGE_BUDGETS_KEY);
+      const stored = localStorage.getItem(GUEST_BUDGETS_KEY);
       if (stored) {
         try {
           callback(JSON.parse(stored));
@@ -119,7 +133,7 @@ export class FinanceService {
           callback(list);
         },
         (err) => {
-          console.warn('Firestore budgets subscription error:', err);
+          console.warn('Firestore budgets subscription status:', err);
           callback([]);
         }
       );
@@ -140,7 +154,7 @@ export class FinanceService {
     callback: (categories: CustomCategoryItem[]) => void
   ): () => void {
     if (isGuest || !userId) {
-      const stored = localStorage.getItem(LOCAL_STORAGE_CUSTOM_CATS_KEY);
+      const stored = localStorage.getItem(GUEST_CUSTOM_CATS_KEY);
       if (stored) {
         try {
           callback(JSON.parse(stored));
@@ -158,6 +172,10 @@ export class FinanceService {
       const unsubscribe = onSnapshot(
         catsRef,
         (snapshot) => {
+          if (snapshot.empty) {
+            callback([]);
+            return;
+          }
           const list: CustomCategoryItem[] = [];
           snapshot.forEach((docSnap) => {
             list.push({ id: docSnap.id, ...(docSnap.data() as Omit<CustomCategoryItem, 'id'>) });
@@ -165,9 +183,8 @@ export class FinanceService {
           callback(list);
         },
         (err) => {
-          console.warn('Firestore custom categories subscription error:', err);
-          const fallback = localStorage.getItem(LOCAL_STORAGE_CUSTOM_CATS_KEY);
-          callback(fallback ? JSON.parse(fallback) : []);
+          console.warn('Firestore custom categories subscription status:', err);
+          callback([]);
         }
       );
       return unsubscribe;
@@ -193,10 +210,10 @@ export class FinanceService {
     };
 
     if (isGuest || !userId) {
-      const current = JSON.parse(localStorage.getItem(LOCAL_STORAGE_CUSTOM_CATS_KEY) || '[]');
+      const current = JSON.parse(localStorage.getItem(GUEST_CUSTOM_CATS_KEY) || '[]');
       const filtered = current.filter((c: CustomCategoryItem) => c.name.toLowerCase() !== item.name.toLowerCase());
       const updated = [...filtered, item];
-      localStorage.setItem(LOCAL_STORAGE_CUSTOM_CATS_KEY, JSON.stringify(updated));
+      localStorage.setItem(GUEST_CUSTOM_CATS_KEY, JSON.stringify(updated));
       return;
     }
 
@@ -213,9 +230,9 @@ export class FinanceService {
     isGuest: boolean
   ): Promise<void> {
     if (isGuest || !userId) {
-      const current: CustomCategoryItem[] = JSON.parse(localStorage.getItem(LOCAL_STORAGE_CUSTOM_CATS_KEY) || '[]');
+      const current: CustomCategoryItem[] = JSON.parse(localStorage.getItem(GUEST_CUSTOM_CATS_KEY) || '[]');
       const filtered = current.filter(c => c.id !== categoryId);
-      localStorage.setItem(LOCAL_STORAGE_CUSTOM_CATS_KEY, JSON.stringify(filtered));
+      localStorage.setItem(GUEST_CUSTOM_CATS_KEY, JSON.stringify(filtered));
       return;
     }
 
@@ -241,10 +258,10 @@ export class FinanceService {
     };
 
     if (isGuest || !userId) {
-      const current = JSON.parse(localStorage.getItem(LOCAL_STORAGE_TX_KEY) || '[]');
+      const current = JSON.parse(localStorage.getItem(GUEST_TX_KEY) || '[]');
       const filtered = current.filter((t: Transaction) => t.id !== txId);
       const updated = [fullTx, ...filtered];
-      localStorage.setItem(LOCAL_STORAGE_TX_KEY, JSON.stringify(updated));
+      localStorage.setItem(GUEST_TX_KEY, JSON.stringify(updated));
       return txId;
     }
 
@@ -258,9 +275,9 @@ export class FinanceService {
    */
   static async deleteTransaction(userId: string, txId: string, isGuest: boolean): Promise<void> {
     if (isGuest || !userId) {
-      const current: Transaction[] = JSON.parse(localStorage.getItem(LOCAL_STORAGE_TX_KEY) || '[]');
+      const current: Transaction[] = JSON.parse(localStorage.getItem(GUEST_TX_KEY) || '[]');
       const filtered = current.filter(t => t.id !== txId);
-      localStorage.setItem(LOCAL_STORAGE_TX_KEY, JSON.stringify(filtered));
+      localStorage.setItem(GUEST_TX_KEY, JSON.stringify(filtered));
       return;
     }
 
@@ -278,9 +295,9 @@ export class FinanceService {
     isGuest: boolean
   ): Promise<void> {
     if (isGuest || !userId) {
-      const current: Transaction[] = JSON.parse(localStorage.getItem(LOCAL_STORAGE_TX_KEY) || '[]');
+      const current: Transaction[] = JSON.parse(localStorage.getItem(GUEST_TX_KEY) || '[]');
       const updated = current.map(t => (t.id === txId ? { ...t, isPaid: !currentStatus } : t));
-      localStorage.setItem(LOCAL_STORAGE_TX_KEY, JSON.stringify(updated));
+      localStorage.setItem(GUEST_TX_KEY, JSON.stringify(updated));
       return;
     }
 
@@ -304,10 +321,10 @@ export class FinanceService {
     };
 
     if (isGuest || !userId) {
-      const current: CategoryBudget[] = JSON.parse(localStorage.getItem(LOCAL_STORAGE_BUDGETS_KEY) || '[]');
+      const current: CategoryBudget[] = JSON.parse(localStorage.getItem(GUEST_BUDGETS_KEY) || '[]');
       const filtered = current.filter(b => b.category !== budget.category && b.id !== budgetId);
       const updated = [...filtered, toSave];
-      localStorage.setItem(LOCAL_STORAGE_BUDGETS_KEY, JSON.stringify(updated));
+      localStorage.setItem(GUEST_BUDGETS_KEY, JSON.stringify(updated));
       return;
     }
 
@@ -324,9 +341,9 @@ export class FinanceService {
     isGuest: boolean
   ): Promise<void> {
     if (isGuest || !userId) {
-      const current: CategoryBudget[] = JSON.parse(localStorage.getItem(LOCAL_STORAGE_BUDGETS_KEY) || '[]');
+      const current: CategoryBudget[] = JSON.parse(localStorage.getItem(GUEST_BUDGETS_KEY) || '[]');
       const filtered = current.filter(b => b.id !== budgetId);
-      localStorage.setItem(LOCAL_STORAGE_BUDGETS_KEY, JSON.stringify(filtered));
+      localStorage.setItem(GUEST_BUDGETS_KEY, JSON.stringify(filtered));
       return;
     }
 
@@ -335,14 +352,11 @@ export class FinanceService {
   }
 
   /**
-   * Deleta TODOS os dados do usuário (limpeza completa de dados mockados residuais no Firestore e Local)
+   * Deleta TODOS os dados do usuário (limpeza completa de lançamentos, orçamentos e categorias)
    */
   static async deleteAllUserData(userId: string, isGuest: boolean): Promise<void> {
     // 1. Limpa localStorage
-    localStorage.removeItem(LOCAL_STORAGE_TX_KEY);
-    localStorage.removeItem(LOCAL_STORAGE_BUDGETS_KEY);
-    localStorage.removeItem('finances_pro_guest_txs_v1');
-    localStorage.removeItem('finances_pro_guest_budgets_v1');
+    FinanceService.clearLocalData();
 
     if (isGuest || !userId) {
       return;
@@ -365,6 +379,14 @@ export class FinanceService {
         budgetSnap.forEach(d => batch.delete(d.ref));
         await batch.commit();
       }
+
+      const catRef = collection(db, 'users', userId, 'categories');
+      const catSnap = await getDocs(catRef);
+      if (!catSnap.empty) {
+        const batch = writeBatch(db);
+        catSnap.forEach(d => batch.delete(d.ref));
+        await batch.commit();
+      }
     } catch (e) {
       console.error('Error clearing user firestore data:', e);
       throw e;
@@ -372,12 +394,12 @@ export class FinanceService {
   }
 
   /**
-   * Remove todos os dados locais
+   * Remove todos os dados locais de convidado e legados
    */
   static clearLocalData(): void {
-    localStorage.removeItem(LOCAL_STORAGE_TX_KEY);
-    localStorage.removeItem(LOCAL_STORAGE_BUDGETS_KEY);
-    localStorage.removeItem('finances_pro_guest_txs_v1');
-    localStorage.removeItem('finances_pro_guest_budgets_v1');
+    FinanceService.cleanupLegacyStorage();
+    localStorage.removeItem(GUEST_TX_KEY);
+    localStorage.removeItem(GUEST_BUDGETS_KEY);
+    localStorage.removeItem(GUEST_CUSTOM_CATS_KEY);
   }
 }

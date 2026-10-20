@@ -65,7 +65,7 @@ interface FinanceContextType {
 const FinanceContext = createContext<FinanceContextType | undefined>(undefined);
 
 export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, isGuest } = useAuth();
+  const { user, isGuest, loading: authLoading } = useAuth();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [budgets, setBudgets] = useState<CategoryBudget[]>([]);
   const [customCategories, setCustomCategories] = useState<CustomCategoryItem[]>([]);
@@ -111,7 +111,16 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   // Assinar transações, limites e categorias do Firestore ou localStorage
   useEffect(() => {
+    if (authLoading) {
+      return;
+    }
+
     setLoading(true);
+    // Limpa estado anterior antes de montar nova assinatura para evitar efeito zumbi
+    setTransactions([]);
+    setBudgets([]);
+    setCustomCategories([]);
+
     const userId = user?.uid || 'guest';
     const unsubTx = FinanceService.subscribeTransactions(userId, isGuest, (txs) => {
       setTransactions(txs);
@@ -131,7 +140,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       unsubBudgets();
       unsubCats();
     };
-  }, [user?.uid, isGuest]);
+  }, [user?.uid, isGuest, authLoading]);
 
   // Lista combinada de categorias de despesa (padrão + personalizadas)
   const expenseCategories = useMemo<string[]>(() => {
@@ -316,11 +325,14 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   const deleteTransaction = async (id: string) => {
+    // Atualização otimista imediata no estado da UI
+    setTransactions(prev => prev.filter(t => t.id !== id));
     const userId = user?.uid || 'guest';
     await FinanceService.deleteTransaction(userId, id, isGuest);
   };
 
   const togglePaidStatus = async (id: string, currentStatus: boolean) => {
+    setTransactions(prev => prev.map(t => (t.id === id ? { ...t, isPaid: !currentStatus } : t)));
     const userId = user?.uid || 'guest';
     await FinanceService.togglePaidStatus(userId, id, currentStatus, isGuest);
   };
@@ -341,6 +353,8 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   const deleteBudget = async (budgetId: string) => {
+    // Atualização otimista imediata no estado da UI
+    setBudgets(prev => prev.filter(b => b.id !== budgetId));
     const userId = user?.uid || 'guest';
     await FinanceService.deleteBudget(userId, budgetId, isGuest);
   };
@@ -351,21 +365,26 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   const deleteCustomCategory = async (id: string) => {
+    // Atualização otimista imediata no estado da UI
+    setCustomCategories(prev => prev.filter(c => c.id !== id));
     const userId = user?.uid || 'guest';
     await FinanceService.deleteCustomCategory(userId, id, isGuest);
   };
 
   const purgeAllUserData = async () => {
     const userId = user?.uid || 'guest';
-    await FinanceService.deleteAllUserData(userId, isGuest);
+    // Limpa estado local imediatamente
     setTransactions([]);
     setBudgets([]);
+    setCustomCategories([]);
+    await FinanceService.deleteAllUserData(userId, isGuest);
   };
 
   const clearAllData = () => {
     FinanceService.clearLocalData();
     setTransactions([]);
     setBudgets([]);
+    setCustomCategories([]);
   };
 
   return (

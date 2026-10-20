@@ -9,7 +9,8 @@ import {
   ChevronRight, 
   Sparkles,
   Wallet,
-  Clock
+  Clock,
+  Plus
 } from 'lucide-react';
 import { useFinance } from '../../context/FinanceContext';
 import { TabType } from '../common/BottomNav';
@@ -47,6 +48,90 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({ onNavigateTab, onOpe
 
   return (
     <div className="space-y-5 pb-24 max-w-5xl mx-auto">
+      {/* Onboarding Welcome Card (Zero-State para novo usuário ou mês sem lançamentos) */}
+      {monthTransactions.length === 0 && (
+        <div className="p-6 rounded-3xl bg-gradient-to-br from-[#171717] to-[#121212] border border-[#2B2B2B] shadow-sm space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-mono uppercase tracking-wider text-[#A3C9A8] bg-[#A3C9A8]/10 border border-[#A3C9A8]/20 px-2 py-0.5 rounded-full">
+                  Painel Limpo
+                </span>
+                <span className="text-xs text-[#737373]">Nenhum dado mockado</span>
+              </div>
+              <h2 className="text-lg font-bold text-white mt-2">
+                Bem-vindo ao Finances PRO
+              </h2>
+              <p className="text-xs text-[#A3A3A3] mt-0.5 max-w-xl">
+                Sua conta está limpa e pronta para começar. Nenhum registro fictício foi injetado. Comece adicionando seus primeiros dados reais:
+              </p>
+            </div>
+          </div>
+
+          {/* 4 Ações Rápidas de Início */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
+            <button
+              onClick={onOpenAddModal}
+              className="p-3.5 rounded-2xl bg-[#0D0D0D] border border-[#262626] hover:border-[#A3C9A8]/50 text-left transition group cursor-pointer"
+            >
+              <div className="w-8 h-8 rounded-xl bg-[#A3C9A8]/15 text-[#A3C9A8] flex items-center justify-center text-xs font-bold mb-2">
+                <ArrowUpRight className="w-4 h-4" />
+              </div>
+              <div className="text-xs font-semibold text-white group-hover:text-[#A3C9A8] transition">
+                Cadastrar Receita
+              </div>
+              <div className="text-[10px] text-[#737373] mt-0.5">
+                Salário ou rendimentos
+              </div>
+            </button>
+
+            <button
+              onClick={onOpenAddModal}
+              className="p-3.5 rounded-2xl bg-[#0D0D0D] border border-[#262626] hover:border-[#A8B5D1]/50 text-left transition group cursor-pointer"
+            >
+              <div className="w-8 h-8 rounded-xl bg-[#A8B5D1]/15 text-[#A8B5D1] flex items-center justify-center text-xs font-bold mb-2">
+                <Wallet className="w-4 h-4" />
+              </div>
+              <div className="text-xs font-semibold text-white group-hover:text-[#A8B5D1] transition">
+                Gasto Diário
+              </div>
+              <div className="text-[10px] text-[#737373] mt-0.5">
+                Alimentação, transporte...
+              </div>
+            </button>
+
+            <button
+              onClick={onOpenAddModal}
+              className="p-3.5 rounded-2xl bg-[#0D0D0D] border border-[#262626] hover:border-[#E5A97D]/50 text-left transition group cursor-pointer"
+            >
+              <div className="w-8 h-8 rounded-xl bg-[#E5A97D]/15 text-[#E5A97D] flex items-center justify-center text-xs font-bold mb-2">
+                <Clock className="w-4 h-4" />
+              </div>
+              <div className="text-xs font-semibold text-white group-hover:text-[#E5A97D] transition">
+                Conta Fixa
+              </div>
+              <div className="text-[10px] text-[#737373] mt-0.5">
+                Aluguel, contas recorrentes
+              </div>
+            </button>
+
+            <button
+              onClick={() => onNavigateTab('budgets')}
+              className="p-3.5 rounded-2xl bg-[#0D0D0D] border border-[#262626] hover:border-[#E29578]/50 text-left transition group cursor-pointer"
+            >
+              <div className="w-8 h-8 rounded-xl bg-[#E29578]/15 text-[#E29578] flex items-center justify-center text-xs font-bold mb-2">
+                <Layers className="w-4 h-4" />
+              </div>
+              <div className="text-xs font-semibold text-white group-hover:text-[#E29578] transition">
+                Definir Tetos
+              </div>
+              <div className="text-[10px] text-[#737373] mt-0.5">
+                Limites por categoria
+              </div>
+            </button>
+          </div>
+        </div>
+      )}
       {/* 1. Alertas de Estouro / Vencimento (Compacto com expansão opcional) */}
       {(dangerBudgets.length > 0 || warningBudgets.length > 0 || pendingBillsCount > 0) && (
         <div className="rounded-2xl bg-[#141414] border border-[#262626] overflow-hidden transition-all">
@@ -212,7 +297,7 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({ onNavigateTab, onOpe
                 stroke={healthScore.statusColor}
                 strokeWidth="5"
                 strokeDasharray="163.3"
-                strokeDashoffset={163.3 - (163.3 * (healthScore.score / 1000))}
+                strokeDashoffset={healthScore.isEmpty ? 163.3 : 163.3 - (163.3 * (healthScore.score / 1000))}
                 strokeLinecap="round"
                 fill="none"
                 className="transition-all duration-1000 ease-out"
@@ -220,9 +305,9 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({ onNavigateTab, onOpe
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
               <span className="text-sm font-bold text-white font-mono leading-none">
-                {healthScore.score}
+                {healthScore.isEmpty ? '—' : healthScore.score}
               </span>
-              <span className="text-[8px] text-[#737373]">/1000</span>
+              <span className="text-[8px] text-[#737373]">{healthScore.isEmpty ? 'sem dados' : '/1000'}</span>
             </div>
           </div>
 
@@ -239,13 +324,15 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({ onNavigateTab, onOpe
               </span>
             </div>
             <p className="text-xs text-[#A3A3A3] mt-1 line-clamp-1">
-              {healthScore.actionableTips[0] || 'Seus indicadores financeiros do mês'}
+              {healthScore.isEmpty 
+                ? 'Adicione sua primeira receita ou despesa para iniciar a análise do seu Score.' 
+                : (healthScore.actionableTips[0] || 'Seus indicadores financeiros do mês')}
             </p>
           </div>
         </div>
 
         <button className="flex items-center gap-1.5 text-xs font-semibold text-[#A8B5D1] hover:text-white shrink-0">
-          <span>Ver Pilares & Projeções</span>
+          <span>{healthScore.isEmpty ? 'Conhecer os 4 Pilares' : 'Ver Pilares & Projeções'}</span>
           <ChevronRight className="w-4 h-4" />
         </button>
       </div>
@@ -333,7 +420,13 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({ onNavigateTab, onOpe
 
         {budgetsStatus.length === 0 ? (
           <div className="py-6 text-center text-xs text-[#737373]">
-            Nenhum limite configurado ainda. Toque em &quot;Gerenciar&quot; para definir tetos orçamentários por categoria.
+            <p>Nenhum teto orçamentário configurado ainda.</p>
+            <button
+              onClick={() => onNavigateTab('budgets')}
+              className="mt-2 px-3 py-1.5 rounded-xl bg-[#1C1C1C] hover:bg-[#262626] border border-[#2B2B2B] text-white text-xs font-medium transition cursor-pointer"
+            >
+              + Definir Primeiro Teto
+            </button>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -386,7 +479,13 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({ onNavigateTab, onOpe
 
         {recentTransactions.length === 0 ? (
           <div className="py-8 text-center text-xs text-[#737373]">
-            Nenhum lançamento registrado neste mês.
+            <p>Nenhum lançamento registrado neste mês.</p>
+            <button
+              onClick={onOpenAddModal}
+              className="mt-2 px-4 py-2 rounded-xl bg-white hover:bg-neutral-200 text-black text-xs font-bold transition shadow-xs cursor-pointer"
+            >
+              + Fazer Primeiro Lançamento
+            </button>
           </div>
         ) : (
           <div className="divide-y divide-[#1F1F1F]">
