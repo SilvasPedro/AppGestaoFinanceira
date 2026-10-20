@@ -8,7 +8,8 @@ import {
   query,
   orderBy,
   getDocs,
-  writeBatch
+  writeBatch,
+  deleteField
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { Transaction, CategoryBudget, CustomCategoryItem } from '../types/finance';
@@ -257,7 +258,23 @@ export class FinanceService {
       updatedAt: new Date().toISOString()
     };
 
+    // Remove qualquer valor 'undefined' para compatibilidade estrita com Firestore setDoc
+    const sanitizedDoc: Record<string, any> = {};
+    for (const [key, val] of Object.entries(fullTx)) {
+      if (val !== undefined) {
+        sanitizedDoc[key] = val;
+      }
+    }
+
+    // Se não for compra parcelada, garante a remoção do campo no Firestore e no cache local
+    if (transaction.nature !== 'installment') {
+      delete fullTx.installmentDetails;
+      delete sanitizedDoc.installmentDetails;
+      sanitizedDoc.installmentDetails = deleteField();
+    }
+
     if (isGuest || !userId) {
+      delete fullTx.installmentDetails;
       const current = JSON.parse(localStorage.getItem(GUEST_TX_KEY) || '[]');
       const filtered = current.filter((t: Transaction) => t.id !== txId);
       const updated = [fullTx, ...filtered];
@@ -266,7 +283,7 @@ export class FinanceService {
     }
 
     const docRef = doc(db, 'users', userId, 'transactions', txId);
-    await setDoc(docRef, fullTx, { merge: true });
+    await setDoc(docRef, sanitizedDoc, { merge: true });
     return txId;
   }
 

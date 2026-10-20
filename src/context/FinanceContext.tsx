@@ -320,7 +320,10 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     const userId = user?.uid || 'guest';
     const existing = transactions.find(t => t.id === id);
     if (!existing) return;
-    const merged = { ...existing, ...tx };
+    const merged: Transaction = { ...existing, ...tx };
+    if (merged.nature !== 'installment') {
+      delete merged.installmentDetails;
+    }
     // Atualização otimista imediata na interface
     setTransactions(prev => prev.map(t => (t.id === id ? merged : t)));
     await FinanceService.saveTransaction(userId, merged, isGuest);

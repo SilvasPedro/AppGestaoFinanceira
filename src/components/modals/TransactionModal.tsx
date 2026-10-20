@@ -151,7 +151,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
           await onSave(payload);
         }
       } else {
-        const payload = {
+        const payload: Omit<Transaction, 'id' | 'userId'> = {
           type,
           nature,
           amount: rawVal,
@@ -159,8 +159,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
           date,
           description: description.trim() || (type === 'income' ? 'Receita' : 'Despesa'),
           paymentMethod,
-          isPaid: nature === 'fixed' ? isPaid : true,
-          installmentDetails: undefined
+          isPaid: nature === 'fixed' ? isPaid : true
         };
 
         if (transactionToEdit && onUpdate) {
