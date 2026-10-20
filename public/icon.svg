@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <rect width="512" height="512" rx="128" fill="#0D0D0D" />
+  <circle cx="256" cy="256" r="180" fill="#171717" stroke="#262626" stroke-width="4" />
+  
+  <!-- Outer Sage Green and Terracotta accent arc -->
+  <path d="M 256 106 A 150 150 0 0 1 406 256" stroke="#A3C9A8" stroke-width="24" stroke-linecap="round"/>
+  <path d="M 406 256 A 150 150 0 0 1 256 406" stroke="#A8B5D1" stroke-width="20" stroke-linecap="round" stroke-dasharray="12 16"/>
+  <path d="M 256 406 A 150 150 0 0 1 106 256" stroke="#E29578" stroke-width="24" stroke-linecap="round"/>
+  
+  <!-- Central geometric upward growth glyph -->
+  <path d="M 190 280 L 256 210 L 322 280" stroke="#FFFFFF" stroke-width="20" stroke-linecap="round" stroke-linejoin="round" />
+  <path d="M 256 215 L 256 340" stroke="#FFFFFF" stroke-width="20" stroke-linecap="round" />
+  <circle cx="256" cy="165" r="14" fill="#A3C9A8" />
+</svg>
