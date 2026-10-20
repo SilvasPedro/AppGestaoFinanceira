@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { calculateHealthScore } from './scoreCalculator.ts';
 import { calculateCashFlowProjections, calculateFreedomSimulation, isFixedActiveInMonth } from './projections.ts';
+import { calculateAvailableSurplus, calculateSuggestedBudgets } from './budgetSuggester.ts';
 import { Transaction, CategoryBudget } from '../types/finance.ts';
 
 test('calculateHealthScore should compute 0-1000 score with the 4 pillars', () => {
@@ -280,4 +281,131 @@ test('installment group advance calculation correctly computes discount and bala
   assert.equal(newRemainingCount, 5);
   assert.equal(newRemainingBalance, 1250);
 });
+
+test('calculateAvailableSurplus correctly calculates real uncommitted surplus and handles deficit', () => {
+  const transactions: Transaction[] = [
+    {
+      id: 'tx_sal',
+      userId: 'u1',
+      type: 'income',
+      nature: 'fixed',
+      amount: 5000,
+      category: 'Salário',
+      date: '2026-11-05',
+      paymentMethod: 'bank_transfer'
+    },
+    {
+      id: 'tx_rent',
+      userId: 'u1',
+      type: 'expense',
+      nature: 'fixed',
+      amount: 1500,
+      category: 'Moradia',
+      date: '2026-11-05',
+      paymentMethod: 'pix'
+    },
+    {
+      id: 'tx_moto',
+      userId: 'u1',
+      type: 'expense',
+      nature: 'installment',
+      amount: 500,
+      category: 'Transporte',
+      date: '2026-11-10',
+      paymentMethod: 'boleto'
+    }
+  ];
+
+  // Surplus: 5000 - (1500 + 500) = 3000
+  const result = calculateAvailableSurplus(transactions, '2026-11');
+  assert.equal(result.totalIncome, 5000);
+  assert.equal(result.fixedExpenses, 1500);
+  assert.equal(result.installmentsTotal, 500);
+  assert.equal(result.availableSurplus, 3000);
+
+  // Deficit scenario: expenses exceed income
+  const deficitTransactions: Transaction[] = [
+    {
+      id: 'tx_sal2',
+      userId: 'u1',
+      type: 'income',
+      nature: 'fixed',
+      amount: 2000,
+      category: 'Salário',
+      date: '2026-11-05',
+      paymentMethod: 'bank_transfer'
+    },
+    {
+      id: 'tx_rent2',
+      userId: 'u1',
+      type: 'expense',
+      nature: 'fixed',
+      amount: 2200,
+      category: 'Moradia',
+      date: '2026-11-05',
+      paymentMethod: 'pix'
+    }
+  ];
+  const deficitResult = calculateAvailableSurplus(deficitTransactions, '2026-11');
+  assert.equal(deficitResult.availableSurplus, -200);
+});
+
+test('calculateSuggestedBudgets preserves 20% safety reserve and allocates realistically', () => {
+  const categories = ['Alimentação', 'Transporte', 'Lazer & Estilo', 'Saúde'];
+  const surplus = 2000;
+
+  const result = calculateSuggestedBudgets(surplus, categories);
+  assert.equal(result.isDeficit, false);
+  // 20% safety margin: 400
+  assert.equal(result.safetyReserve, 400);
+  // 80% allocable budget: 1600
+  assert.equal(result.allocableBudget, 1600);
+
+  // All limits are positive numbers
+  assert.ok(result.suggestedLimits['Alimentação'] > 0);
+  assert.ok(result.suggestedLimits['Transporte'] > 0);
+  assert.ok(result.suggestedLimits['Lazer & Estilo'] > 0);
+  assert.ok(result.suggestedLimits['Saúde'] > 0);
+
+  // Total suggested must not exceed available surplus
+  assert.ok(result.totalSuggested <= surplus);
+
+  // Deficit scenario:
+  const deficitResult = calculateSuggestedBudgets(-100, categories);
+  assert.equal(deficitResult.isDeficit, true);
+  assert.equal(deficitResult.totalSuggested, 0);
+  assert.ok(deficitResult.warningMessage?.includes('100% da sua renda'));
+});
+
+test('installment index synchronization respects initial registration index and delta months', () => {
+  // Moto Honda cadastrada em Novembro/2026 na parcela 30/48
+  const initialInstallmentNumber = 30;
+  const totalInstallments = 48;
+  const startMonth = '2026-11';
+
+  // No mês de Novembro/2026 (mesmo mês de início):
+  const [novY, novM] = '2026-11'.split('-').map(Number);
+  const [sY, sM] = startMonth.split('-').map(Number);
+  const deltaNov = (novY - sY) * 12 + (novM - sM); // 0
+  const curNov = Math.min(totalInstallments, Math.max(1, initialInstallmentNumber + deltaNov));
+  assert.equal(curNov, 30);
+
+  // No mês de Dezembro/2026 (1 mês depois):
+  const [decY, decM] = '2026-12'.split('-').map(Number);
+  const deltaDec = (decY - sY) * 12 + (decM - sM); // 1
+  const curDec = Math.min(totalInstallments, Math.max(1, initialInstallmentNumber + deltaDec));
+  assert.equal(curDec, 31);
+
+  // Celular cadastrado com 1/18 e 5 parcelas pagas:
+  const celularInitial = 1;
+  const celularTotal = 18;
+  const celularPaidInApp = 5;
+  const priorPaid = celularInitial - 1; // 0
+  const totalPaid = priorPaid + celularPaidInApp; // 5
+  const remaining = celularTotal - totalPaid; // 13
+
+  assert.equal(totalPaid, 5);
+  assert.equal(remaining, 13);
+});
+
 

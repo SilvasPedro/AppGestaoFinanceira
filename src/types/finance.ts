@@ -43,6 +43,8 @@ export interface InstallmentDetails {
   monthlyAmount: number;      // Valor de cada parcela
   groupId: string;            // Identificador compartilhado para o grupo de parcelas
   purchaseDate: string;       // Data original da compra
+  initialInstallmentNumber?: number; // Parcela no início do registro (ex: 30)
+  startMonth?: string;        // Mês inicial de registro (ex: '2026-11')
 }
 
 export interface CreditCard {
@@ -98,10 +100,13 @@ export interface InstallmentGroupSummary {
   totalAmount: number;
   monthlyAmount: number;
   totalInstallments: number;
-  paidCount: number;
-  remainingCount: number;
+  currentInstallment: number;       // Parcela sincronizada com o mês atual M ou último lançamento
+  initialInstallmentNumber: number; // Parcela inicial cadastrada
+  startMonth: string;               // Mês inicial de cadastro (YYYY-MM)
+  paidCount: number;                // Total de parcelas efetivamente pagas (anteriores + no app)
+  remainingCount: number;           // totalInstallments - paidCount
   remainingBalance: number;
-  progressPercentage: number;
+  progressPercentage: number;       // (currentInstallment / totalInstallments) * 100
   purchaseDate: string;
   firstDate: string;
   lastDate: string;

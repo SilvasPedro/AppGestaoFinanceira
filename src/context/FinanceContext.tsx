@@ -14,6 +14,7 @@ import {
 import { FinanceService } from '../services/financeService';
 import { calculateHealthScore } from '../services/scoreCalculator';
 import { calculateCashFlowProjections, calculateFreedomSimulation } from '../services/projections';
+import { calculateAvailableSurplus, calculateSuggestedBudgets, BudgetSuggestionResult } from '../services/budgetSuggester';
 import { useAuth } from './AuthContext';
 
 export interface BudgetStatus {
@@ -59,6 +60,9 @@ interface FinanceContextType {
   budgetsStatus: BudgetStatus[];
   cashFlowProjections: MonthlyCashFlowProjection[];
   freedomSimulation: ReturnType<typeof calculateFreedomSimulation>;
+  // Orçamentos e Sugestão Inteligente
+  budgetSuggestion: BudgetSuggestionResult;
+  applySuggestedBudgets: (limits: Record<string, number>) => Promise<void>;
   // Compromissos Recorrentes & Parcelamentos
   recurringItems: Transaction[];
   activeFixedCount: number;
@@ -81,6 +85,7 @@ interface FinanceContextType {
     cardLastFour?: string;
     monthlyAmount?: number;
     totalInstallments?: number;
+    currentInstallment?: number;
   }) => Promise<void>;
   saveBudget: (category: string, limitAmount: number) => Promise<void>;
   deleteBudget: (budgetId: string) => Promise<void>;
@@ -333,14 +338,53 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
       const first = txList[0];
       const details = first.installmentDetails!;
-      const totalInstallments = details.totalInstallments || txList.length;
+
+      // Extração de metadados com reconciliação e tolerância a dados legados
+      const descMatch = first.description.match(/\((\d+)\/(\d+)\)/);
+      const parsedCurFromDesc = descMatch ? parseInt(descMatch[1], 10) : undefined;
+      const parsedTotalFromDesc = descMatch ? parseInt(descMatch[2], 10) : undefined;
+
+      const initialInstallmentNumber = details.initialInstallmentNumber 
+        || details.currentInstallment 
+        || parsedCurFromDesc 
+        || 1;
+
+      const totalInstallments = details.totalInstallments 
+        || parsedTotalFromDesc 
+        || (initialInstallmentNumber + txList.length - 1);
+
+      const startMonth = details.startMonth || first.date.slice(0, 7);
       const monthlyAmount = details.monthlyAmount || first.amount;
       const totalAmount = details.totalAmount || (totalInstallments * monthlyAmount);
 
-      const paidCount = txList.filter(t => t.isPaid).length;
+      // Reconciliação com o mês selecionado no app (currentMonth):
+      // 1. Procura se há lançamento específico para este mês no extrato
+      const txInCurrentMonth = txList.find(t => t.date.startsWith(currentMonth));
+      let currentInstallment: number;
+
+      if (txInCurrentMonth && txInCurrentMonth.installmentDetails?.currentInstallment) {
+        currentInstallment = txInCurrentMonth.installmentDetails.currentInstallment;
+      } else {
+        const [curYear, curMonth] = currentMonth.split('-').map(Number);
+        const [sYear, sMonth] = startMonth.split('-').map(Number);
+        const deltaMonths = (curYear - sYear) * 12 + (curMonth - sMonth);
+        const calculated = initialInstallmentNumber + deltaMonths;
+        currentInstallment = Math.min(totalInstallments, Math.max(1, calculated));
+      }
+
+      // Contagem real das parcelas pagas:
+      // - Parcelas anteriores quitadas antes do cadastro (ex: Honda 30/48 => 29 pagas no passado)
+      const priorPaid = Math.max(0, initialInstallmentNumber - 1);
+      // - Parcelas pagas efetivamente dentro do app
+      const inAppPaid = txList.filter(t => t.isPaid).length;
+      // Total consolidado de parcelas pagas
+      const paidCount = Math.min(totalInstallments, priorPaid + inAppPaid);
+      // Parcelas restantes a pagar
       const remainingCount = Math.max(0, totalInstallments - paidCount);
       const remainingBalance = Math.round(remainingCount * monthlyAmount * 100) / 100;
-      const progressPercentage = Math.min(100, Math.round((paidCount / totalInstallments) * 100));
+
+      // Progresso percentual baseado no índice atual sincronizado
+      const progressPercentage = Math.min(100, Math.round((currentInstallment / totalInstallments) * 100));
 
       const isFinished = paidCount >= totalInstallments || remainingCount === 0;
       const cleanDesc = first.description.replace(/\s\(\d+\/\d+\).*$/, '').trim() || 'Compra Parcelada';
@@ -357,6 +401,9 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
         totalAmount,
         monthlyAmount,
         totalInstallments,
+        currentInstallment,
+        initialInstallmentNumber,
+        startMonth,
         paidCount,
         remainingCount,
         remainingBalance,
@@ -373,11 +420,31 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       if (a.isFinished !== b.isFinished) return a.isFinished ? 1 : -1;
       return b.purchaseDate.localeCompare(a.purchaseDate);
     });
-  }, [transactions]);
+  }, [transactions, currentMonth]);
 
   const activeInstallmentsCount = useMemo(() => {
     return installmentGroups.filter(g => !g.isFinished).length;
   }, [installmentGroups]);
+
+  // Sugestão Inteligente de Tetos Orçamentários com base na Sobra Líquida
+  const budgetSuggestion = useMemo<BudgetSuggestionResult>(() => {
+    const { availableSurplus, totalIncome, fixedExpenses, installmentsTotal } = calculateAvailableSurplus(transactions, currentMonth);
+    const historicalSpending: Record<string, number> = {};
+    transactions
+      .filter(t => t.type === 'expense' && t.nature === 'daily')
+      .forEach(t => {
+        historicalSpending[t.category] = (historicalSpending[t.category] || 0) + Number(t.amount);
+      });
+
+    return calculateSuggestedBudgets(
+      availableSurplus,
+      expenseCategories,
+      historicalSpending,
+      totalIncome,
+      fixedExpenses,
+      installmentsTotal
+    );
+  }, [transactions, currentMonth, expenseCategories]);
 
   // Score de Saúde Financeira dinâmico
   const healthScore = useMemo(() => {
@@ -470,21 +537,28 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       const details = tx.installmentDetails;
       const groupId = details.groupId || `grp_${Date.now()}`;
       const [startYear, startMonth, startDay] = tx.date.split('-').map(Number);
+      const initialNum = Number(details.currentInstallment) || 1;
+      const startMonthStr = tx.date.slice(0, 7);
+      const cleanDesc = tx.description.replace(/\s\(\d+\/\d+\)$/, '').trim() || (tx.type === 'income' ? 'Receita Parcelada' : 'Compra Parcelada');
 
       await FinanceService.saveTransaction(
         userId,
         {
           ...tx,
+          description: `${cleanDesc} (${initialNum}/${details.totalInstallments})`,
           installmentDetails: {
             ...details,
-            groupId
+            groupId,
+            initialInstallmentNumber: initialNum,
+            startMonth: startMonthStr,
+            currentInstallment: initialNum
           }
         },
         false
       );
 
-      for (let i = details.currentInstallment + 1; i <= details.totalInstallments; i++) {
-        const futureDate = new Date(startYear, (startMonth - 1) + (i - details.currentInstallment), startDay || 1);
+      for (let i = initialNum + 1; i <= details.totalInstallments; i++) {
+        const futureDate = new Date(startYear, (startMonth - 1) + (i - initialNum), startDay || 1);
         const fYear = futureDate.getFullYear();
         const fMonth = String(futureDate.getMonth() + 1).padStart(2, '0');
         const fDay = String(futureDate.getDate()).padStart(2, '0');
@@ -495,12 +569,14 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
           {
             ...tx,
             date: dateStr,
-            description: `${tx.description.replace(/\s\(\d+\/\d+\)$/, '')} (${i}/${details.totalInstallments})`,
+            description: `${cleanDesc} (${i}/${details.totalInstallments})`,
             isPaid: false, // Parcelas futuras aguardam baixa manual do usuário
             installmentDetails: {
               ...details,
-              currentInstallment: i,
-              groupId
+              groupId,
+              initialInstallmentNumber: initialNum,
+              startMonth: startMonthStr,
+              currentInstallment: i
             }
           },
           false
@@ -575,9 +651,34 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     cardLastFour?: string;
     monthlyAmount?: number;
     totalInstallments?: number;
+    currentInstallment?: number;
   }) => {
     const userId = user?.uid || 'guest';
     await FinanceService.updateInstallmentGroup(userId, groupId, updates, false);
+  };
+
+  const applySuggestedBudgets = async (limits: Record<string, number>) => {
+    const userId = user?.uid || 'guest';
+    const toSave = Object.entries(limits).map(([category, limitAmount]) => ({
+      category,
+      limitAmount
+    }));
+
+    setBudgets(prev => {
+      const map = new Map(prev.map(b => [b.category.toLowerCase(), b]));
+      toSave.forEach(item => {
+        const existing = map.get(item.category.toLowerCase());
+        map.set(item.category.toLowerCase(), {
+          id: existing?.id || `budget_${item.category.toLowerCase().replace(/\s+/g, '_')}`,
+          userId,
+          category: item.category,
+          limitAmount: item.limitAmount
+        });
+      });
+      return Array.from(map.values());
+    });
+
+    await FinanceService.saveBudgetsBatch(userId, toSave, false);
   };
 
   const saveBudget = async (category: string, limitAmount: number) => {
@@ -675,6 +776,8 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
         pendingBillsCount,
         healthScore,
         budgetsStatus,
+        budgetSuggestion,
+        applySuggestedBudgets,
         cashFlowProjections,
         freedomSimulation,
         recurringItems,

@@ -524,14 +524,21 @@ export class FinanceService {
       cardLastFour?: string;
       monthlyAmount?: number;
       totalInstallments?: number;
+      currentInstallment?: number;
     },
     isGuest: boolean
   ): Promise<void> {
     if (isGuest || !userId) {
       const current: Transaction[] = JSON.parse(localStorage.getItem(GUEST_TX_KEY) || '[]');
+      const groupItems = current.filter(t => t.installmentDetails?.groupId === groupId);
+      if (groupItems.length === 0) return;
+
+      const minCur = Math.min(...groupItems.map(t => t.installmentDetails?.currentInstallment || 1));
+      const shift = updates.currentInstallment !== undefined ? (updates.currentInstallment - minCur) : 0;
+
       const updated = current.map(t => {
         if (t.installmentDetails?.groupId !== groupId) return t;
-        const curInstallment = t.installmentDetails.currentInstallment;
+        const curInstallment = (t.installmentDetails.currentInstallment || 1) + shift;
         const total = updates.totalInstallments || t.installmentDetails.totalInstallments;
         const monthly = updates.monthlyAmount !== undefined ? updates.monthlyAmount : t.amount;
         const baseDesc = updates.description !== undefined ? updates.description : t.description.replace(/\s\(\d+\/\d+\).*$/, '');
@@ -546,9 +553,11 @@ export class FinanceService {
           cardLastFour: updates.cardLastFour !== undefined ? updates.cardLastFour : t.cardLastFour,
           installmentDetails: {
             ...t.installmentDetails,
+            currentInstallment: curInstallment,
             totalInstallments: total,
             monthlyAmount: monthly,
-            totalAmount: Math.round(monthly * total * 100) / 100
+            totalAmount: Math.round(monthly * total * 100) / 100,
+            initialInstallmentNumber: updates.currentInstallment !== undefined ? updates.currentInstallment : (t.installmentDetails.initialInstallmentNumber || curInstallment)
           },
           updatedAt: new Date().toISOString()
         };
@@ -561,33 +570,85 @@ export class FinanceService {
     const snapshot = await getDocs(txRef);
     const batch = writeBatch(db);
 
+    const groupDocs: { ref: any; data: any }[] = [];
     snapshot.forEach(docSnap => {
       const data = docSnap.data();
       if (data.installmentDetails?.groupId === groupId) {
-        const curInstallment = data.installmentDetails.currentInstallment;
-        const total = updates.totalInstallments || data.installmentDetails.totalInstallments;
-        const monthly = updates.monthlyAmount !== undefined ? updates.monthlyAmount : data.amount;
-        const baseDesc = updates.description !== undefined ? updates.description : (data.description || '').replace(/\s\(\d+\/\d+\).*$/, '');
-
-        const patch: Record<string, any> = {
-          description: `${baseDesc} (${curInstallment}/${total})`,
-          amount: monthly,
-          'installmentDetails.totalInstallments': total,
-          'installmentDetails.monthlyAmount': monthly,
-          'installmentDetails.totalAmount': Math.round(monthly * total * 100) / 100,
-          updatedAt: new Date().toISOString()
-        };
-
-        if (updates.category) patch.category = updates.category;
-        if (updates.paymentMethod) patch.paymentMethod = updates.paymentMethod;
-        if (updates.cardId !== undefined) patch.cardId = updates.cardId;
-        if (updates.cardName !== undefined) patch.cardName = updates.cardName;
-        if (updates.cardLastFour !== undefined) patch.cardLastFour = updates.cardLastFour;
-
-        batch.update(docSnap.ref, patch);
+        groupDocs.push({ ref: docSnap.ref, data });
       }
     });
 
+    if (groupDocs.length === 0) return;
+
+    const minCur = Math.min(...groupDocs.map(item => item.data.installmentDetails?.currentInstallment || 1));
+    const shift = updates.currentInstallment !== undefined ? (updates.currentInstallment - minCur) : 0;
+
+    groupDocs.forEach(item => {
+      const curInstallment = (item.data.installmentDetails?.currentInstallment || 1) + shift;
+      const total = updates.totalInstallments || item.data.installmentDetails?.totalInstallments || 1;
+      const monthly = updates.monthlyAmount !== undefined ? updates.monthlyAmount : item.data.amount;
+      const baseDesc = updates.description !== undefined ? updates.description : (item.data.description || '').replace(/\s\(\d+\/\d+\).*$/, '');
+
+      const patch: Record<string, any> = {
+        description: `${baseDesc} (${curInstallment}/${total})`,
+        amount: monthly,
+        'installmentDetails.currentInstallment': curInstallment,
+        'installmentDetails.totalInstallments': total,
+        'installmentDetails.monthlyAmount': monthly,
+        'installmentDetails.totalAmount': Math.round(monthly * total * 100) / 100,
+        updatedAt: new Date().toISOString()
+      };
+
+      if (updates.currentInstallment !== undefined) {
+        patch['installmentDetails.initialInstallmentNumber'] = updates.currentInstallment;
+      }
+      if (updates.category) patch.category = updates.category;
+      if (updates.paymentMethod) patch.paymentMethod = updates.paymentMethod;
+      if (updates.cardId !== undefined) patch.cardId = updates.cardId;
+      if (updates.cardName !== undefined) patch.cardName = updates.cardName;
+      if (updates.cardLastFour !== undefined) patch.cardLastFour = updates.cardLastFour;
+
+      batch.update(item.ref, patch);
+    });
+
+    await batch.commit();
+  }
+
+  /**
+   * Salva múltiplos limites orçamentários em lote (Batch write)
+   */
+  static async saveBudgetsBatch(
+    userId: string,
+    budgetsToSave: Array<{ category: string; limitAmount: number }>,
+    isGuest: boolean
+  ): Promise<void> {
+    if (isGuest || !userId) {
+      const current: CategoryBudget[] = JSON.parse(localStorage.getItem(GUEST_BUDGETS_KEY) || '[]');
+      const map = new Map(current.map(b => [b.category.toLowerCase(), b]));
+      budgetsToSave.forEach(item => {
+        const id = `budget_${item.category.toLowerCase().replace(/\s+/g, '_')}`;
+        map.set(item.category.toLowerCase(), {
+          id,
+          userId: 'guest',
+          category: item.category,
+          limitAmount: item.limitAmount
+        });
+      });
+      localStorage.setItem(GUEST_BUDGETS_KEY, JSON.stringify(Array.from(map.values())));
+      return;
+    }
+
+    const batch = writeBatch(db);
+    budgetsToSave.forEach(item => {
+      const budgetId = `budget_${item.category.toLowerCase().replace(/\s+/g, '_')}`;
+      const docRef = doc(db, 'users', userId, 'budgets', budgetId);
+      batch.set(docRef, {
+        id: budgetId,
+        userId,
+        category: item.category,
+        limitAmount: item.limitAmount
+      }, { merge: true });
+    });
     await batch.commit();
   }
 

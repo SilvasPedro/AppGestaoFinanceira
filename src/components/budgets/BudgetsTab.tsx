@@ -1,12 +1,20 @@
 import React, { useState } from 'react';
-import { Target, Plus, AlertTriangle, CheckCircle, Edit2, Trash2 } from 'lucide-react';
+import { Target, Plus, AlertTriangle, CheckCircle, Edit2, Trash2, Sparkles, ShieldCheck, CheckCircle2 } from 'lucide-react';
 import { useFinance } from '../../context/FinanceContext';
-import { BudgetModal } from '../modals/BudgetModal';
+import { SmartBudgetModal } from '../modals/SmartBudgetModal';
 import { DeleteConfirmModal } from '../modals/DeleteConfirmModal';
 
 export const BudgetsTab: React.FC = () => {
-  const { budgets, budgetsStatus, saveBudget, deleteBudget, expenseCategories } = useFinance();
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const { 
+    budgets, 
+    budgetsStatus, 
+    deleteBudget, 
+    expenseCategories,
+    budgetSuggestion,
+    applySuggestedBudgets
+  } = useFinance();
+
+  const [isSmartModalOpen, setIsSmartModalOpen] = useState(false);
   const [budgetToDelete, setBudgetToDelete] = useState<{ id: string; category: string } | null>(null);
 
   const formatBRL = (val: number) => {
@@ -23,15 +31,111 @@ export const BudgetsTab: React.FC = () => {
     return acc;
   }, {} as Record<string, number>);
 
+  const availableSurplus = budgetSuggestion.availableSurplus;
+  const isOverSurplus = availableSurplus > 0 && totalBudgeted > availableSurplus;
+  const surplusUsedPercentage = availableSurplus > 0 ? Math.round((totalBudgeted / availableSurplus) * 100) : 0;
+
   return (
     <div className="space-y-5 pb-24 max-w-5xl mx-auto">
-      {/* Top Banner: Global Budget Summary */}
+      {/* 1. Card de Capacidade Financeira e Sobra Líquida Real */}
+      <div className="p-5 rounded-3xl bg-linear-to-r from-[#171717] to-[#141414] border border-[#262626] shadow-xs space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-[#737373] uppercase tracking-wider font-semibold">
+                Capacidade Disponível do Mês
+              </span>
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                budgetSuggestion.isDeficit 
+                  ? 'bg-[#E29578]/15 text-[#E29578] border border-[#E29578]/30' 
+                  : 'bg-[#A3C9A8]/15 text-[#A3C9A8] border border-[#A3C9A8]/30'
+              }`}>
+                {budgetSuggestion.isDeficit ? 'Orçamento Comprometido' : 'Sobra Líquida Real'}
+              </span>
+            </div>
+
+            <div className="flex items-baseline gap-2 mt-1">
+              <span className={`text-2xl font-bold tracking-tight ${
+                budgetSuggestion.isDeficit ? 'text-[#E29578]' : 'text-[#A3C9A8]'
+              }`}>
+                {formatBRL(availableSurplus)}
+              </span>
+              <span className="text-xs text-[#737373]">
+                {budgetSuggestion.isDeficit ? 'déficit operacional' : 'disponível para limites'}
+              </span>
+            </div>
+
+            <p className="text-xs text-[#737373] mt-1">
+              Renda ({formatBRL(budgetSuggestion.totalIncome)}) − Custos Fixos ({formatBRL(budgetSuggestion.fixedExpenses)}) − Parcelamentos ({formatBRL(budgetSuggestion.installmentsTotal)})
+            </p>
+          </div>
+
+          <button
+            onClick={() => setIsSmartModalOpen(true)}
+            className="px-4 py-2.5 rounded-xl bg-white hover:bg-neutral-200 text-black text-xs font-bold flex items-center justify-center gap-2 transition active:scale-95 shadow-md cursor-pointer self-start sm:self-auto"
+          >
+            <Sparkles className="w-4 h-4 text-black" />
+            <span>Sugerir Limites Inteligentes</span>
+          </button>
+        </div>
+
+        {/* Alerta de Déficit ou Indicador Dinâmico de Somatório dos Tetos */}
+        {budgetSuggestion.isDeficit ? (
+          <div className="p-3 rounded-2xl bg-[#E29578]/10 border border-[#E29578]/30 flex items-start gap-2.5 text-xs text-[#E29578]">
+            <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+            <p className="leading-relaxed">
+              Suas despesas fixas e parcelas consom 100% da sua renda atual. Reduza custos recorrentes antes de fixar novos limites de gastos variáveis.
+            </p>
+          </div>
+        ) : (
+          <div className="p-3 bg-[#0D0D0D] border border-[#262626] rounded-2xl space-y-2">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-[#A3A3A3] font-medium">Comprometimento da Sobra Líquida com Tetos Cadastrados</span>
+              <span className={`font-mono font-bold ${isOverSurplus ? 'text-[#E29578]' : 'text-white'}`}>
+                {formatBRL(totalBudgeted)} <span className="text-[#737373] text-[11px]">/ {formatBRL(availableSurplus)}</span>
+              </span>
+            </div>
+
+            <div className="w-full bg-[#1A1A1A] h-2 rounded-full overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all duration-500 ${
+                  isOverSurplus 
+                    ? 'bg-[#E29578]' 
+                    : surplusUsedPercentage >= 80 
+                    ? 'bg-[#E5A97D]' 
+                    : 'bg-[#A3C9A8]'
+                }`}
+                style={{ width: `${Math.min(100, surplusUsedPercentage)}%` }}
+              />
+            </div>
+
+            <div className="flex items-center justify-between text-[11px]">
+              {isOverSurplus ? (
+                <span className="text-[#E29578] font-semibold flex items-center gap-1">
+                  <AlertTriangle className="w-3.5 h-3.5" />
+                  A soma dos limites ultrapassa sua sobra líquida em {formatBRL(totalBudgeted - availableSurplus)}
+                </span>
+              ) : (
+                <span className="text-[#A3C9A8] flex items-center gap-1">
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  Dentro da capacidade • Margem de {formatBRL(Math.max(0, availableSurplus - totalBudgeted))} preservada
+                </span>
+              )}
+              <span className="text-[#737373] font-mono">
+                {surplusUsedPercentage}% da sobra alocada
+              </span>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* 2. Top Banner: Global Budget Summary */}
       <div className="p-5 rounded-3xl bg-[#141414] border border-[#262626]">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2">
               <span className="text-xs text-[#737373] uppercase tracking-wider font-semibold">
-                Teto Orçamentário Mensal
+                Consumo Mensal dos Tetos
               </span>
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#1E1E1E] text-[#A8B5D1]">
                 {budgetsStatus.length} Categorias Monitoradas
@@ -43,8 +147,8 @@ export const BudgetsTab: React.FC = () => {
           </div>
 
           <button
-            onClick={() => setIsModalOpen(true)}
-            className="px-4 py-2.5 rounded-xl bg-white hover:bg-neutral-200 text-black text-xs font-semibold flex items-center justify-center gap-1.5 transition active:scale-95 shadow-xs"
+            onClick={() => setIsSmartModalOpen(true)}
+            className="px-4 py-2.5 rounded-xl bg-[#262626] hover:bg-[#333333] border border-[#383838] text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition active:scale-95 shadow-xs cursor-pointer"
           >
             <Plus className="w-4 h-4 stroke-[2.5]" />
             <span>Configurar Tetos</span>
@@ -76,7 +180,7 @@ export const BudgetsTab: React.FC = () => {
         </div>
       </div>
 
-      {/* Categorias Grid */}
+      {/* 3. Categorias Grid */}
       <div className="space-y-3">
         <div className="flex items-center justify-between px-1">
           <h3 className="text-xs font-semibold text-[#737373] uppercase tracking-wider">
@@ -93,8 +197,8 @@ export const BudgetsTab: React.FC = () => {
               Nenhum limite configurado ainda. Defina metas mensais por categoria para monitorar seus limites em tempo real.
             </p>
             <button
-              onClick={() => setIsModalOpen(true)}
-              className="px-3.5 py-2 rounded-xl bg-[#262626] hover:bg-[#333333] text-xs font-semibold text-white inline-flex items-center gap-1.5 transition"
+              onClick={() => setIsSmartModalOpen(true)}
+              className="px-3.5 py-2 rounded-xl bg-[#262626] hover:bg-[#333333] text-xs font-semibold text-white inline-flex items-center gap-1.5 transition cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" /> Configurar Primeiro Limite
             </button>
@@ -143,9 +247,9 @@ export const BudgetsTab: React.FC = () => {
 
                     <div className="flex items-center gap-1">
                       <button
-                        onClick={() => setIsModalOpen(true)}
+                        onClick={() => setIsSmartModalOpen(true)}
                         title="Editar teto"
-                        className="p-1 rounded-lg text-[#737373] hover:text-white hover:bg-[#262626] transition"
+                        className="p-1 rounded-lg text-[#737373] hover:text-white hover:bg-[#262626] transition cursor-pointer"
                       >
                         <Edit2 className="w-3.5 h-3.5" />
                       </button>
@@ -153,7 +257,7 @@ export const BudgetsTab: React.FC = () => {
                         <button
                           onClick={() => setBudgetToDelete({ id: matchingBudgetDoc.id!, category: b.category })}
                           title="Remover teto desta categoria"
-                          className="p-1 rounded-lg text-[#525252] hover:text-[#E29578] hover:bg-[#262626] transition"
+                          className="p-1 rounded-lg text-[#525252] hover:text-[#E29578] hover:bg-[#262626] transition cursor-pointer"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -201,13 +305,14 @@ export const BudgetsTab: React.FC = () => {
         )}
       </div>
 
-      {/* Modal para configurar tetos */}
-      <BudgetModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+      {/* Modal Inteligente para configurar tetos com base na renda */}
+      <SmartBudgetModal
+        isOpen={isSmartModalOpen}
+        onClose={() => setIsSmartModalOpen(false)}
         categories={expenseCategories}
         currentBudgets={currentBudgetsMap}
-        onSaveBudget={saveBudget}
+        onSaveBudgets={applySuggestedBudgets}
+        budgetSuggestion={budgetSuggestion}
       />
 
       {/* Modal de Confirmação para exclusão de teto */}

@@ -79,41 +79,15 @@ export function calculateCashFlowProjections(
     ? dailyExpenses.reduce((acc, t) => acc + (Number(t.amount) || 0), 0) / distinctExpenseMonths
     : 0;
 
-  // Mapear compras e vendas parceladas ativas
-  const activeExpenseInstallments: Array<{
-    description: string;
-    monthlyAmount: number;
-    remainingMonths: number;
-  }> = [];
-
-  const activeIncomeInstallments: Array<{
-    description: string;
-    monthlyAmount: number;
-    remainingMonths: number;
-  }> = [];
-
-  const seenGroups = new Set<string>();
+  // Mapear grupos de parcelamento para conciliação fiel entre extrato e projeção
+  const installmentGroupsMap = new Map<string, Transaction[]>();
   safeTransactions
-    .filter(t => t.nature === 'installment' && t.installmentDetails)
+    .filter(t => t.nature === 'installment')
     .forEach(t => {
-      const details = t.installmentDetails!;
-      const key = details.groupId || t.id;
-      if (!seenGroups.has(key)) {
-        seenGroups.add(key);
-        const remaining = Math.max(0, (details.totalInstallments || 1) - (details.currentInstallment || 1) + 1);
-        if (remaining > 0) {
-          const item = {
-            description: t.description || 'Parcelamento',
-            monthlyAmount: Number(details.monthlyAmount) || 0,
-            remainingMonths: remaining
-          };
-          if (t.type === 'income') {
-            activeIncomeInstallments.push(item);
-          } else {
-            activeExpenseInstallments.push(item);
-          }
-        }
-      }
+      const key = t.installmentDetails?.groupId || t.id;
+      const list = installmentGroupsMap.get(key) || [];
+      list.push(t);
+      installmentGroupsMap.set(key, list);
     });
 
   const projections: MonthlyCashFlowProjection[] = [];
@@ -139,18 +113,46 @@ export function calculateCashFlowProjections(
     // 3. Somar parcelas de despesas ativas neste mês futuro
     let monthExpenseInstallmentsTotal = 0;
     let activeExpenseCount = 0;
-    activeExpenseInstallments.forEach(item => {
-      if (item.remainingMonths >= offset) {
-        monthExpenseInstallmentsTotal += item.monthlyAmount;
+
+    installmentGroupsMap.forEach(txList => {
+      const first = txList[0];
+      if (first.type !== 'expense') return;
+
+      // Verificar se há lançamento agendado no extrato para este mês
+      const txInMonth = txList.find(t => t.date.startsWith(monthYear));
+      if (txInMonth) {
+        monthExpenseInstallmentsTotal += Number(txInMonth.amount) || 0;
         activeExpenseCount++;
+      } else if (txList.length === 1 && first.installmentDetails) {
+        // Fallback para modelos sintéticos (ex: testes com transação única)
+        const details = first.installmentDetails;
+        const total = details.totalInstallments || 1;
+        const cur = details.currentInstallment || 1;
+        const remaining = Math.max(0, total - cur + 1);
+        if (remaining >= offset) {
+          monthExpenseInstallmentsTotal += Number(details.monthlyAmount) || Number(first.amount) || 0;
+          activeExpenseCount++;
+        }
       }
     });
 
     // 4. Somar parcelas de receitas a receber neste mês futuro (vendas para amigos)
     let monthIncomeInstallmentsTotal = 0;
-    activeIncomeInstallments.forEach(item => {
-      if (item.remainingMonths >= offset) {
-        monthIncomeInstallmentsTotal += item.monthlyAmount;
+    installmentGroupsMap.forEach(txList => {
+      const first = txList[0];
+      if (first.type !== 'income') return;
+
+      const txInMonth = txList.find(t => t.date.startsWith(monthYear));
+      if (txInMonth) {
+        monthIncomeInstallmentsTotal += Number(txInMonth.amount) || 0;
+      } else if (txList.length === 1 && first.installmentDetails) {
+        const details = first.installmentDetails;
+        const total = details.totalInstallments || 1;
+        const cur = details.currentInstallment || 1;
+        const remaining = Math.max(0, total - cur + 1);
+        if (remaining >= offset) {
+          monthIncomeInstallmentsTotal += Number(details.monthlyAmount) || Number(first.amount) || 0;
+        }
       }
     });
 

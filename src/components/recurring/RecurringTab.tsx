@@ -518,7 +518,9 @@ export const RecurringTab: React.FC = () => {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {activeInstallments.map(group => {
-                const currentNum = group.paidCount + 1;
+                const currentNum = group.currentInstallment;
+                const remainingToFinish = Math.max(0, group.totalInstallments - currentNum);
+                const exactProgress = Math.min(100, Math.round((currentNum / group.totalInstallments) * 100));
                 const endMonthDisplay = formatMonthDisplay(group.lastDate.slice(0, 7));
 
                 return (
@@ -533,9 +535,13 @@ export const RecurringTab: React.FC = () => {
                           <h4 className="text-sm font-semibold text-white truncate">
                             {group.description}
                           </h4>
-                          {group.type === 'income' && (
+                          {group.type === 'income' ? (
                             <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#A3C9A8]/15 text-[#A3C9A8] border border-[#A3C9A8]/30">
                               Receita
+                            </span>
+                          ) : (
+                            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#E29578]/15 text-[#E29578] border border-[#E29578]/30">
+                              Parcelamento
                             </span>
                           )}
                         </div>
@@ -561,21 +567,30 @@ export const RecurringTab: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Barra de Progresso Visual */}
+                    {/* Barra de Progresso Visual Reconciliada */}
                     <div className="space-y-1.5">
                       <div className="flex items-center justify-between text-xs">
-                        <span className="text-[#A3A3A3] font-medium">
-                          Parcela {currentNum > group.totalInstallments ? group.totalInstallments : currentNum} de {group.totalInstallments}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[#E29578] font-bold">
+                            Parcela {currentNum} de {group.totalInstallments}
+                          </span>
+                          <span className="text-[11px] text-[#737373]">
+                            • Faltam {remainingToFinish} parcelas
+                          </span>
+                        </div>
                         <span className="text-white font-mono font-semibold">
-                          {group.progressPercentage}% concluído
+                          {exactProgress}% concluído
                         </span>
                       </div>
                       <div className="w-full h-2 rounded-full bg-[#262626] overflow-hidden">
                         <div
-                          className="h-full bg-linear-to-r from-[#A8B5D1] to-[#A3C9A8] rounded-full transition-all duration-300"
-                          style={{ width: `${group.progressPercentage}%` }}
+                          className="h-full bg-linear-to-r from-[#E29578] to-[#E5A97D] rounded-full transition-all duration-300"
+                          style={{ width: `${exactProgress}%` }}
                         />
+                      </div>
+                      <div className="flex items-center justify-between text-[10px] text-[#737373] pt-0.5">
+                        <span>{group.paidCount} de {group.totalInstallments} parcelas quitadas</span>
+                        <span>Fim previsto: {endMonthDisplay || 'Em breve'}</span>
                       </div>
                     </div>
 

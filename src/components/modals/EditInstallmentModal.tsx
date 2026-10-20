@@ -21,6 +21,7 @@ interface EditInstallmentModalProps {
     cardLastFour?: string;
     monthlyAmount?: number;
     totalInstallments?: number;
+    currentInstallment?: number;
   }) => Promise<void>;
 }
 
@@ -46,6 +47,7 @@ export const EditInstallmentModal: React.FC<EditInstallmentModalProps> = ({
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('credit_card');
   const [selectedCardId, setSelectedCardId] = useState<string>('');
   const [totalInstallments, setTotalInstallments] = useState<number>(1);
+  const [currentInstallment, setCurrentInstallment] = useState<number>(1);
   const [monthlyAmountStr, setMonthlyAmountStr] = useState<string>('');
   const [isCardModalOpen, setIsCardModalOpen] = useState<boolean>(false);
   const [submitting, setSubmitting] = useState(false);
@@ -59,6 +61,7 @@ export const EditInstallmentModal: React.FC<EditInstallmentModalProps> = ({
       setPaymentMethod(installmentGroup.paymentMethod);
       setSelectedCardId(installmentGroup.cardId || (creditCards[0]?.id || ''));
       setTotalInstallments(installmentGroup.totalInstallments);
+      setCurrentInstallment(installmentGroup.currentInstallment || 1);
       setMonthlyAmountStr(String(installmentGroup.monthlyAmount));
     }
   }, [isOpen, installmentGroup, creditCards]);
@@ -80,12 +83,12 @@ export const EditInstallmentModal: React.FC<EditInstallmentModalProps> = ({
 
   const parsedMonthly = parseFloat(monthlyAmountStr.replace(',', '.')) || 0;
   const calculatedTotal = Math.round(parsedMonthly * totalInstallments * 100) / 100;
-  const remainingCount = Math.max(0, totalInstallments - installmentGroup.paidCount);
+  const remainingCount = Math.max(0, totalInstallments - currentInstallment);
   const calculatedRemaining = Math.round(remainingCount * parsedMonthly * 100) / 100;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!description.trim() || parsedMonthly <= 0 || totalInstallments < installmentGroup.paidCount) {
+    if (!description.trim() || parsedMonthly <= 0 || totalInstallments < currentInstallment) {
       return;
     }
 
@@ -100,7 +103,8 @@ export const EditInstallmentModal: React.FC<EditInstallmentModalProps> = ({
         cardName: paymentMethod === 'credit_card' ? selectedCard?.cardName : undefined,
         cardLastFour: paymentMethod === 'credit_card' ? selectedCard?.lastFourDigits : undefined,
         monthlyAmount: parsedMonthly,
-        totalInstallments
+        totalInstallments,
+        currentInstallment
       });
       onClose();
     } catch (err) {
@@ -154,12 +158,12 @@ export const EditInstallmentModal: React.FC<EditInstallmentModalProps> = ({
             />
           </div>
 
-          {/* Valor da Parcela e Total de Parcelas */}
-          <div className="grid grid-cols-2 gap-3">
+          {/* Valor da Parcela, Parcela Vigente e Total de Parcelas */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
             <div>
               <label className="block text-xs font-medium text-[#A3A3A3] mb-1.5 flex items-center gap-1">
                 <DollarSign className="w-3.5 h-3.5 text-[#A8B5D1]" />
-                Valor da Parcela (R$)
+                Valor Parcela
               </label>
               <input
                 type="text"
@@ -168,7 +172,23 @@ export const EditInstallmentModal: React.FC<EditInstallmentModalProps> = ({
                 value={monthlyAmountStr}
                 onChange={(e) => setMonthlyAmountStr(e.target.value)}
                 placeholder="0,00"
-                className="w-full bg-[#0D0D0D] border border-[#262626] rounded-xl px-3.5 py-2.5 text-sm font-semibold text-white placeholder-[#525252] focus:border-[#737373] focus:outline-hidden transition"
+                className="w-full bg-[#0D0D0D] border border-[#262626] rounded-xl px-3 py-2.5 text-sm font-semibold text-white placeholder-[#525252] focus:border-[#737373] focus:outline-hidden transition"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-[#A3A3A3] mb-1.5 flex items-center gap-1">
+                <span className="text-[#E29578] font-bold">#</span>
+                Parcela Vigente
+              </label>
+              <input
+                type="number"
+                min={1}
+                max={totalInstallments}
+                required
+                value={currentInstallment}
+                onChange={(e) => setCurrentInstallment(Math.min(totalInstallments, Math.max(1, parseInt(e.target.value) || 1)))}
+                className="w-full bg-[#0D0D0D] border border-[#262626] rounded-xl px-3 py-2.5 text-sm font-semibold text-white placeholder-[#525252] focus:border-[#737373] focus:outline-hidden transition"
               />
             </div>
 
@@ -179,15 +199,21 @@ export const EditInstallmentModal: React.FC<EditInstallmentModalProps> = ({
               </label>
               <input
                 type="number"
-                min={installmentGroup.paidCount || 1}
+                min={currentInstallment}
                 max={96}
                 required
                 value={totalInstallments}
-                onChange={(e) => setTotalInstallments(Math.max(installmentGroup.paidCount || 1, parseInt(e.target.value) || 1))}
-                className="w-full bg-[#0D0D0D] border border-[#262626] rounded-xl px-3.5 py-2.5 text-sm font-semibold text-white placeholder-[#525252] focus:border-[#737373] focus:outline-hidden transition"
+                onChange={(e) => {
+                  const val = Math.max(currentInstallment, parseInt(e.target.value) || 1);
+                  setTotalInstallments(val);
+                }}
+                className="w-full bg-[#0D0D0D] border border-[#262626] rounded-xl px-3 py-2.5 text-sm font-semibold text-white placeholder-[#525252] focus:border-[#737373] focus:outline-hidden transition"
               />
             </div>
           </div>
+          <p className="text-[11px] text-[#737373] -mt-2">
+            Alterar a parcela vigente ajusta em cascata os índices de todo o extrato.
+          </p>
 
           {/* Resumo de Projeção */}
           <div className="p-3 bg-[#0D0D0D] border border-[#262626] rounded-2xl grid grid-cols-2 gap-2 text-xs">
@@ -200,8 +226,8 @@ export const EditInstallmentModal: React.FC<EditInstallmentModalProps> = ({
               <span className="font-semibold text-[#E29578]">{formatBRL(calculatedRemaining)}</span>
             </div>
             <div className="col-span-2 pt-1 border-t border-[#1C1C1C] flex items-center justify-between text-[11px] text-[#A3A3A3]">
-              <span>Já pagas: <strong className="text-white">{installmentGroup.paidCount}</strong></span>
-              <span>Restantes: <strong className="text-white">{remainingCount}</strong></span>
+              <span>Parcela configurada: <strong className="text-white">{currentInstallment} de {totalInstallments}</strong></span>
+              <span>Faltam quitar: <strong className="text-white">{remainingCount}</strong></span>
             </div>
           </div>
 
