@@ -4,11 +4,10 @@ import {
   TransactionType, 
   TransactionNature, 
   PaymentMethod, 
-  ExpenseCategory, 
-  IncomeCategory, 
   Category,
   Transaction 
 } from '../../types/finance';
+import { useFinance } from '../../context/FinanceContext';
 
 interface TransactionModalProps {
   isOpen: boolean;
@@ -16,25 +15,6 @@ interface TransactionModalProps {
   onSave: (tx: Omit<Transaction, 'id' | 'userId'>) => Promise<void>;
   defaultMonth: string; // 'YYYY-MM'
 }
-
-const EXPENSE_CATEGORIES: ExpenseCategory[] = [
-  'Alimentação',
-  'Moradia',
-  'Transporte',
-  'Lazer & Estilo',
-  'Saúde',
-  'Educação',
-  'Serviços & Assinaturas',
-  'Outros Gastos'
-];
-
-const INCOME_CATEGORIES: IncomeCategory[] = [
-  'Salário',
-  'Freelance / Extra',
-  'Rendimentos',
-  'Vendas',
-  'Outras Receitas'
-];
 
 const PAYMENT_METHODS: { id: PaymentMethod; label: string }[] = [
   { id: 'credit_card', label: 'Cartão Crédito' },
@@ -51,11 +31,12 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
   onSave,
   defaultMonth
 }) => {
+  const { expenseCategories, incomeCategories } = useFinance();
   const [type, setType] = useState<TransactionType>('expense');
   const [nature, setNature] = useState<TransactionNature>('daily');
   const [amountStr, setAmountStr] = useState<string>('');
   const [description, setDescription] = useState<string>('');
-  const [category, setCategory] = useState<Category>('Alimentação');
+  const [category, setCategory] = useState<Category>(expenseCategories[0] || 'Alimentação');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('credit_card');
   const [isPaid, setIsPaid] = useState<boolean>(true);
 
@@ -374,7 +355,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
               onChange={(e) => setCategory(e.target.value as Category)}
               className="w-full px-3.5 py-2.5 bg-[#0D0D0D] border border-[#262626] rounded-xl text-xs text-white focus:outline-hidden focus:border-white transition"
             >
-              {(type === 'expense' ? EXPENSE_CATEGORIES : INCOME_CATEGORIES).map((cat) => (
+              {(type === 'expense' ? expenseCategories : incomeCategories).map((cat) => (
                 <option key={cat} value={cat}>{cat}</option>
               ))}
             </select>

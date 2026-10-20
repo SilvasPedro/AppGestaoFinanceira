@@ -13,6 +13,7 @@ import { DashboardTab } from './components/dashboard/DashboardTab';
 import { TransactionsTab } from './components/transactions/TransactionsTab';
 import { BudgetsTab } from './components/budgets/BudgetsTab';
 import { ProjectionsTab } from './components/projections/ProjectionsTab';
+import { SettingsTab } from './components/settings/SettingsTab';
 import { TransactionModal } from './components/modals/TransactionModal';
 import { AuthModal } from './components/modals/AuthModal';
 import { WifiOff } from 'lucide-react';
@@ -37,7 +38,11 @@ const MainContent: React.FC = () => {
       {/* Main Content Body */}
       <div className="flex-1 flex flex-col min-w-0 min-h-screen">
         {/* Mobile Header (hidden on md+) */}
-        <Header onOpenAuth={() => setIsAuthModalOpen(true)} />
+        <Header 
+          onOpenAuth={() => setIsAuthModalOpen(true)} 
+          onNavigateTab={setActiveTab}
+          activeTab={activeTab}
+        />
 
         {/* Main View Area */}
         <main className="flex-1 w-full px-4 pt-4 md:px-8 md:pt-6 pb-32 md:pb-12 max-w-6xl mx-auto">
@@ -60,6 +65,10 @@ const MainContent: React.FC = () => {
 
           {activeTab === 'projections' && (
             <ProjectionsTab />
+          )}
+
+          {activeTab === 'settings' && (
+            <SettingsTab />
           )}
         </main>
       </div>

@@ -5,9 +5,9 @@ import { ExpenseCategory } from '../../types/finance';
 interface BudgetModalProps {
   isOpen: boolean;
   onClose: () => void;
-  categories: ExpenseCategory[];
+  categories: string[];
   currentBudgets: Record<string, number>;
-  onSaveBudget: (category: ExpenseCategory, amount: number) => Promise<void>;
+  onSaveBudget: (category: string, amount: number) => Promise<void>;
 }
 
 export const BudgetModal: React.FC<BudgetModalProps> = ({
@@ -17,7 +17,7 @@ export const BudgetModal: React.FC<BudgetModalProps> = ({
   currentBudgets,
   onSaveBudget
 }) => {
-  const [selectedCat, setSelectedCat] = useState<ExpenseCategory>(categories[0] || 'Alimentação');
+  const [selectedCat, setSelectedCat] = useState<string>(categories[0] || 'Alimentação');
   const [limitStr, setLimitStr] = useState<string>(
     currentBudgets[categories[0]] ? String(currentBudgets[categories[0]]) : '1000'
   );
@@ -34,7 +34,7 @@ export const BudgetModal: React.FC<BudgetModalProps> = ({
 
   if (!isOpen) return null;
 
-  const handleCategorySelect = (cat: ExpenseCategory) => {
+  const handleCategorySelect = (cat: string) => {
     setSelectedCat(cat);
     const existing = currentBudgets[cat];
     setLimitStr(existing ? String(existing) : '1000');

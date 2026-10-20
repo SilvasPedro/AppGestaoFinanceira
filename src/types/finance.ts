@@ -10,24 +10,31 @@ export type PaymentMethod =
   | 'bank_transfer' 
   | 'boleto';
 
-export type ExpenseCategory = 
-  | 'Moradia' 
-  | 'Alimentação' 
-  | 'Transporte' 
-  | 'Lazer & Estilo' 
-  | 'Saúde' 
-  | 'Educação' 
-  | 'Serviços & Assinaturas' 
-  | 'Outros Gastos';
+export const DEFAULT_EXPENSE_CATEGORIES = [
+  'Alimentação',
+  'Moradia',
+  'Transporte',
+  'Lazer & Estilo',
+  'Saúde',
+  'Educação',
+  'Serviços & Assinaturas',
+  'Outros Gastos'
+] as const;
 
-export type IncomeCategory = 
-  | 'Salário' 
-  | 'Rendimentos' 
-  | 'Freelance / Extra' 
-  | 'Vendas' 
-  | 'Outras Receitas';
+export const DEFAULT_INCOME_CATEGORIES = [
+  'Salário',
+  'Rendimentos',
+  'Freelance / Extra',
+  'Vendas',
+  'Outras Receitas'
+] as const;
 
-export type Category = ExpenseCategory | IncomeCategory;
+export type DefaultExpenseCategory = typeof DEFAULT_EXPENSE_CATEGORIES[number];
+export type DefaultIncomeCategory = typeof DEFAULT_INCOME_CATEGORIES[number];
+
+export type ExpenseCategory = DefaultExpenseCategory | string;
+export type IncomeCategory = DefaultIncomeCategory | string;
+export type Category = string;
 
 export interface InstallmentDetails {
   totalAmount: number;         // Valor total da compra parcelada
@@ -57,7 +64,7 @@ export interface Transaction {
 export interface CategoryBudget {
   id?: string;
   userId: string;
-  category: ExpenseCategory;
+  category: string;
   limitAmount: number;
   monthYear?: string; // opcional: 'YYYY-MM'
 }
@@ -65,33 +72,33 @@ export interface CategoryBudget {
 export interface HealthScoreResult {
   score: number; // 0 a 1000
   status: 'Crítico' | 'Em Risco' | 'Saudável' | 'Excelente';
-  statusColor: string; // Hex color: pastel sage, pastel terracotta, etc.
+  statusColor: string; // Hex color
   pillars: {
     savingsRate: {
       score: number; // 0 to 300 (Weight 30%)
       max: number;
-      percentageValue: number; // taxa % real
+      percentageValue: number;
       label: string;
       status: string;
     };
     incomeCommitment: {
       score: number; // 0 to 300 (Weight 30%)
       max: number;
-      percentageValue: number; // taxa % comprometimento
+      percentageValue: number;
       label: string;
       status: string;
     };
     budgetDiscipline: {
       score: number; // 0 to 250 (Weight 25%)
       max: number;
-      percentageValue: number; // taxa de categorias dentro do teto
+      percentageValue: number;
       label: string;
       status: string;
     };
     entryConsistency: {
       score: number; // 0 to 150 (Weight 15%)
       max: number;
-      daysWithEntries: number; // dias com lançamentos
+      daysWithEntries: number;
       label: string;
       status: string;
     };
@@ -117,4 +124,10 @@ export interface FreedomProjectionPoint {
   investedCapital: number;
   compoundTotal: number;
   passiveMonthlyIncome: number;
+}
+
+export interface CustomCategoryItem {
+  id: string;
+  name: string;
+  type: TransactionType;
 }

@@ -4,7 +4,10 @@ import {
   CategoryBudget, 
   HealthScoreResult, 
   MonthlyCashFlowProjection, 
-  ExpenseCategory 
+  ExpenseCategory,
+  CustomCategoryItem,
+  DEFAULT_EXPENSE_CATEGORIES,
+  DEFAULT_INCOME_CATEGORIES
 } from '../types/finance';
 import { FinanceService } from '../services/financeService';
 import { calculateHealthScore } from '../services/scoreCalculator';
@@ -12,7 +15,7 @@ import { calculateCashFlowProjections, calculateFreedomSimulation } from '../ser
 import { useAuth } from './AuthContext';
 
 interface BudgetStatus {
-  category: ExpenseCategory;
+  category: string;
   limit: number;
   spent: number;
   percentage: number;
@@ -22,6 +25,9 @@ interface BudgetStatus {
 interface FinanceContextType {
   transactions: Transaction[];
   budgets: CategoryBudget[];
+  customCategories: CustomCategoryItem[];
+  expenseCategories: string[];
+  incomeCategories: string[];
   currentMonth: string; // 'YYYY-MM'
   setCurrentMonth: (m: string) => void;
   nextMonth: () => void;
@@ -46,7 +52,11 @@ interface FinanceContextType {
   updateTransaction: (id: string, tx: Partial<Transaction>) => Promise<void>;
   deleteTransaction: (id: string) => Promise<void>;
   togglePaidStatus: (id: string, currentStatus: boolean) => Promise<void>;
-  saveBudget: (category: ExpenseCategory, limitAmount: number) => Promise<void>;
+  saveBudget: (category: string, limitAmount: number) => Promise<void>;
+  deleteBudget: (budgetId: string) => Promise<void>;
+  addCustomCategory: (name: string, type: 'expense' | 'income') => Promise<void>;
+  deleteCustomCategory: (id: string) => Promise<void>;
+  purgeAllUserData: () => Promise<void>;
   clearAllData: () => void;
   annualInterestRate: number;
   setAnnualInterestRate: (rate: number) => void;
@@ -58,16 +68,34 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const { user, isGuest } = useAuth();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [budgets, setBudgets] = useState<CategoryBudget[]>([]);
-  const [currentMonth, setCurrentMonth] = useState<string>('2026-10'); // Data base 2026-10
+  const [customCategories, setCustomCategories] = useState<CustomCategoryItem[]>([]);
+  
+  // Mês de referência persistido no localStorage para não voltar sozinho após refresh
+  const [currentMonth, setCurrentMonthState] = useState<string>(() => {
+    try {
+      const saved = localStorage.getItem('finances_pro_selected_month');
+      if (saved && /^\d{4}-\d{2}$/.test(saved)) {
+        return saved;
+      }
+    } catch {
+      // fallback
+    }
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  });
+
+  const setCurrentMonth = (m: string) => {
+    setCurrentMonthState(m);
+    try {
+      localStorage.setItem('finances_pro_selected_month', m);
+    } catch {
+      // ignore
+    }
+  };
+
   const [isOnline, setIsOnline] = useState<boolean>(typeof navigator !== 'undefined' ? navigator.onLine : true);
   const [loading, setLoading] = useState<boolean>(true);
-  const [annualInterestRate, setAnnualInterestRate] = useState<number>(0.06); // 6% a.a. real acima da inflação
-
-  // Limpeza de resíduos de dados mockados antigos
-  useEffect(() => {
-    localStorage.removeItem('finances_pro_guest_txs_v1');
-    localStorage.removeItem('finances_pro_guest_budgets_v1');
-  }, []);
+  const [annualInterestRate, setAnnualInterestRate] = useState<number>(0.06);
 
   // Monitorar conectividade de rede
   useEffect(() => {
@@ -81,10 +109,10 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     };
   }, []);
 
-  // Assinar transações do Firestore ou localStorage
+  // Assinar transações, limites e categorias do Firestore ou localStorage
   useEffect(() => {
     setLoading(true);
-    const userId = user?.uid || 'guest_demo';
+    const userId = user?.uid || 'guest';
     const unsubTx = FinanceService.subscribeTransactions(userId, isGuest, (txs) => {
       setTransactions(txs);
       setLoading(false);
@@ -94,11 +122,32 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setBudgets(b);
     });
 
+    const unsubCats = FinanceService.subscribeCustomCategories(userId, isGuest, (cats) => {
+      setCustomCategories(cats);
+    });
+
     return () => {
       unsubTx();
       unsubBudgets();
+      unsubCats();
     };
   }, [user?.uid, isGuest]);
+
+  // Lista combinada de categorias de despesa (padrão + personalizadas)
+  const expenseCategories = useMemo<string[]>(() => {
+    const custom = customCategories
+      .filter(c => c.type === 'expense')
+      .map(c => c.name);
+    return [...DEFAULT_EXPENSE_CATEGORIES, ...custom];
+  }, [customCategories]);
+
+  // Lista combinada de categorias de receita (padrão + personalizadas)
+  const incomeCategories = useMemo<string[]>(() => {
+    const custom = customCategories
+      .filter(c => c.type === 'income')
+      .map(c => c.name);
+    return [...DEFAULT_INCOME_CATEGORIES, ...custom];
+  }, [customCategories]);
 
   // Transações do mês selecionado
   const monthTransactions = useMemo(() => {
@@ -195,10 +244,10 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     );
   }, [netSurplus, fixedExpensesTotal, dailyExpensesTotal, annualInterestRate]);
 
-  // Navegação entre meses
+  // Navegação entre meses (atualizando localStorage)
   const nextMonth = () => {
     const [y, m] = currentMonth.split('-').map(Number);
-    const date = new Date(y, m, 1); // m já é próximo mês (0-indexed m é o mês seguinte a m-1)
+    const date = new Date(y, m, 1);
     const newMonth = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
     setCurrentMonth(newMonth);
   };
@@ -212,15 +261,13 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   // Ações de persistência
   const addTransaction = async (tx: Omit<Transaction, 'id' | 'userId'>) => {
-    const userId = user?.uid || 'guest_demo';
+    const userId = user?.uid || 'guest';
     
-    // Se for parcelamento novo com N parcelas, podemos gerar o grupo de transações para amortização automática
     if (tx.nature === 'installment' && tx.installmentDetails && tx.installmentDetails.totalInstallments > 1) {
       const details = tx.installmentDetails;
       const groupId = details.groupId || `grp_${Date.now()}`;
       const [startYear, startMonth, startDay] = tx.date.split('-').map(Number);
 
-      // Salva a parcela atual
       await FinanceService.saveTransaction(
         userId,
         {
@@ -233,7 +280,6 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
         isGuest
       );
 
-      // Gera as parcelas futuras automáticas correspondentes para impactar o fluxo de caixa
       for (let i = details.currentInstallment + 1; i <= details.totalInstallments; i++) {
         const futureDate = new Date(startYear, (startMonth - 1) + (i - details.currentInstallment), startDay || 1);
         const fYear = futureDate.getFullYear();
@@ -262,7 +308,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   const updateTransaction = async (id: string, tx: Partial<Transaction>) => {
-    const userId = user?.uid || 'guest_demo';
+    const userId = user?.uid || 'guest';
     const existing = transactions.find(t => t.id === id);
     if (!existing) return;
     const merged = { ...existing, ...tx };
@@ -270,17 +316,17 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   const deleteTransaction = async (id: string) => {
-    const userId = user?.uid || 'guest_demo';
+    const userId = user?.uid || 'guest';
     await FinanceService.deleteTransaction(userId, id, isGuest);
   };
 
   const togglePaidStatus = async (id: string, currentStatus: boolean) => {
-    const userId = user?.uid || 'guest_demo';
+    const userId = user?.uid || 'guest';
     await FinanceService.togglePaidStatus(userId, id, currentStatus, isGuest);
   };
 
-  const saveBudget = async (category: ExpenseCategory, limitAmount: number) => {
-    const userId = user?.uid || 'guest_demo';
+  const saveBudget = async (category: string, limitAmount: number) => {
+    const userId = user?.uid || 'guest';
     const existing = budgets.find(b => b.category === category);
     await FinanceService.saveBudget(
       userId,
@@ -294,6 +340,28 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     );
   };
 
+  const deleteBudget = async (budgetId: string) => {
+    const userId = user?.uid || 'guest';
+    await FinanceService.deleteBudget(userId, budgetId, isGuest);
+  };
+
+  const addCustomCategory = async (name: string, type: 'expense' | 'income') => {
+    const userId = user?.uid || 'guest';
+    await FinanceService.saveCustomCategory(userId, { name: name.trim(), type }, isGuest);
+  };
+
+  const deleteCustomCategory = async (id: string) => {
+    const userId = user?.uid || 'guest';
+    await FinanceService.deleteCustomCategory(userId, id, isGuest);
+  };
+
+  const purgeAllUserData = async () => {
+    const userId = user?.uid || 'guest';
+    await FinanceService.deleteAllUserData(userId, isGuest);
+    setTransactions([]);
+    setBudgets([]);
+  };
+
   const clearAllData = () => {
     FinanceService.clearLocalData();
     setTransactions([]);
@@ -305,6 +373,9 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       value={{
         transactions,
         budgets,
+        customCategories,
+        expenseCategories,
+        incomeCategories,
         currentMonth,
         setCurrentMonth,
         nextMonth,
@@ -328,6 +399,10 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
         deleteTransaction,
         togglePaidStatus,
         saveBudget,
+        deleteBudget,
+        addCustomCategory,
+        deleteCustomCategory,
+        purgeAllUserData,
         clearAllData,
         annualInterestRate,
         setAnnualInterestRate

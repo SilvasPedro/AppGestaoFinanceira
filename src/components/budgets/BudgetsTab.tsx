@@ -1,23 +1,13 @@
 import React, { useState } from 'react';
-import { Target, Plus, AlertTriangle, CheckCircle, Edit2, TrendingDown } from 'lucide-react';
+import { Target, Plus, AlertTriangle, CheckCircle, Edit2, Trash2 } from 'lucide-react';
 import { useFinance } from '../../context/FinanceContext';
-import { ExpenseCategory } from '../../types/finance';
 import { BudgetModal } from '../modals/BudgetModal';
-
-const ALL_EXPENSE_CATEGORIES: ExpenseCategory[] = [
-  'Alimentação',
-  'Moradia',
-  'Transporte',
-  'Lazer & Estilo',
-  'Saúde',
-  'Serviços & Assinaturas',
-  'Educação',
-  'Outros Gastos'
-];
+import { DeleteConfirmModal } from '../modals/DeleteConfirmModal';
 
 export const BudgetsTab: React.FC = () => {
-  const { budgetsStatus, saveBudget } = useFinance();
+  const { budgets, budgetsStatus, saveBudget, deleteBudget, expenseCategories } = useFinance();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [budgetToDelete, setBudgetToDelete] = useState<{ id: string; category: string } | null>(null);
 
   const formatBRL = (val: number) => {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
@@ -115,6 +105,7 @@ export const BudgetsTab: React.FC = () => {
               const isDanger = b.status === 'danger';
               const isWarning = b.status === 'warning';
               const remaining = b.limit - b.spent;
+              const matchingBudgetDoc = budgets.find(bg => bg.category === b.category);
 
               return (
                 <div
@@ -150,13 +141,24 @@ export const BudgetsTab: React.FC = () => {
                       )}
                     </div>
 
-                    <button
-                      onClick={() => setIsModalOpen(true)}
-                      title="Editar teto"
-                      className="p-1 rounded-lg text-[#525252] hover:text-white hover:bg-[#262626] transition"
-                    >
-                      <Edit2 className="w-3.5 h-3.5" />
-                    </button>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => setIsModalOpen(true)}
+                        title="Editar teto"
+                        className="p-1 rounded-lg text-[#737373] hover:text-white hover:bg-[#262626] transition"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </button>
+                      {matchingBudgetDoc?.id && (
+                        <button
+                          onClick={() => setBudgetToDelete({ id: matchingBudgetDoc.id!, category: b.category })}
+                          title="Remover teto desta categoria"
+                          className="p-1 rounded-lg text-[#525252] hover:text-[#E29578] hover:bg-[#262626] transition"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
                   </div>
 
                   {/* Spent vs Limit Numbers */}
@@ -203,9 +205,25 @@ export const BudgetsTab: React.FC = () => {
       <BudgetModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        categories={ALL_EXPENSE_CATEGORIES}
+        categories={expenseCategories}
         currentBudgets={currentBudgetsMap}
         onSaveBudget={saveBudget}
+      />
+
+      {/* Modal de Confirmação para exclusão de teto */}
+      <DeleteConfirmModal
+        isOpen={!!budgetToDelete}
+        onClose={() => setBudgetToDelete(null)}
+        onConfirm={async () => {
+          if (budgetToDelete) {
+            await deleteBudget(budgetToDelete.id);
+            setBudgetToDelete(null);
+          }
+        }}
+        title="Remover Teto Orçamentário"
+        message="Tem certeza que deseja remover este teto orçamentário? A categoria deixará de ser monitorada com barras de progresso e alertas."
+        itemDetail={budgetToDelete ? `Categoria: ${budgetToDelete.category}` : undefined}
+        confirmLabel="Remover Limite"
       />
     </div>
   );

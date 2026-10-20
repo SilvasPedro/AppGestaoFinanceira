@@ -6,17 +6,21 @@ import {
   WifiOff, 
   User as UserIcon, 
   LogIn, 
-  Sparkles
+  Sparkles,
+  Settings
 } from 'lucide-react';
 import { useFinance } from '../../context/FinanceContext';
 import { useAuth } from '../../context/AuthContext';
 import { PWAInstallButton } from './PWAInstallButton';
+import { TabType } from './BottomNav';
 
 interface HeaderProps {
   onOpenAuth: () => void;
+  onNavigateTab?: (tab: TabType) => void;
+  activeTab?: TabType;
 }
 
-export const Header: React.FC<HeaderProps> = ({ onOpenAuth }) => {
+export const Header: React.FC<HeaderProps> = ({ onOpenAuth, onNavigateTab, activeTab }) => {
   const { currentMonth, prevMonth, nextMonth, isOnline } = useFinance();
   const { user, isGuest } = useAuth();
 
@@ -96,6 +100,21 @@ export const Header: React.FC<HeaderProps> = ({ onOpenAuth }) => {
 
           {/* PWA Install Button */}
           <PWAInstallButton />
+
+          {/* Settings Button */}
+          {onNavigateTab && (
+            <button
+              onClick={() => onNavigateTab('settings')}
+              title="Configurações"
+              className={`p-1.5 rounded-xl border transition ${
+                activeTab === 'settings'
+                  ? 'bg-[#1F1F1F] text-white border-[#383838]'
+                  : 'bg-[#171717] hover:bg-[#262626] text-[#A3A3A3] hover:text-white border-[#262626]'
+              }`}
+            >
+              <Settings className="w-4 h-4" />
+            </button>
+          )}
 
           {/* User Profile / Auth Button */}
           <button

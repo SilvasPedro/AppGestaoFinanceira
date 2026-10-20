@@ -6,13 +6,16 @@ import {
   updateDoc,
   onSnapshot,
   query,
-  orderBy
+  orderBy,
+  getDocs,
+  writeBatch
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { Transaction, CategoryBudget } from '../types/finance';
+import { Transaction, CategoryBudget, CustomCategoryItem } from '../types/finance';
 
 const LOCAL_STORAGE_TX_KEY = 'finances_pro_txs_v2';
 const LOCAL_STORAGE_BUDGETS_KEY = 'finances_pro_budgets_v2';
+const LOCAL_STORAGE_CUSTOM_CATS_KEY = 'finances_pro_custom_cats_v2';
 
 export class FinanceService {
   /**
@@ -129,6 +132,98 @@ export class FinanceService {
   }
 
   /**
+   * Assina categorias personalizadas do usuário
+   */
+  static subscribeCustomCategories(
+    userId: string,
+    isGuest: boolean,
+    callback: (categories: CustomCategoryItem[]) => void
+  ): () => void {
+    if (isGuest || !userId) {
+      const stored = localStorage.getItem(LOCAL_STORAGE_CUSTOM_CATS_KEY);
+      if (stored) {
+        try {
+          callback(JSON.parse(stored));
+        } catch {
+          callback([]);
+        }
+      } else {
+        callback([]);
+      }
+      return () => {};
+    }
+
+    try {
+      const catsRef = collection(db, 'users', userId, 'categories');
+      const unsubscribe = onSnapshot(
+        catsRef,
+        (snapshot) => {
+          const list: CustomCategoryItem[] = [];
+          snapshot.forEach((docSnap) => {
+            list.push({ id: docSnap.id, ...(docSnap.data() as Omit<CustomCategoryItem, 'id'>) });
+          });
+          callback(list);
+        },
+        (err) => {
+          console.warn('Firestore custom categories subscription error:', err);
+          const fallback = localStorage.getItem(LOCAL_STORAGE_CUSTOM_CATS_KEY);
+          callback(fallback ? JSON.parse(fallback) : []);
+        }
+      );
+      return unsubscribe;
+    } catch (e) {
+      console.warn('Error setting up custom categories listener:', e);
+      callback([]);
+      return () => {};
+    }
+  }
+
+  /**
+   * Salva categoria personalizada
+   */
+  static async saveCustomCategory(
+    userId: string,
+    category: Omit<CustomCategoryItem, 'id'> & { id?: string },
+    isGuest: boolean
+  ): Promise<void> {
+    const catId = category.id || `cat_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+    const item: CustomCategoryItem = {
+      ...category,
+      id: catId
+    };
+
+    if (isGuest || !userId) {
+      const current = JSON.parse(localStorage.getItem(LOCAL_STORAGE_CUSTOM_CATS_KEY) || '[]');
+      const filtered = current.filter((c: CustomCategoryItem) => c.name.toLowerCase() !== item.name.toLowerCase());
+      const updated = [...filtered, item];
+      localStorage.setItem(LOCAL_STORAGE_CUSTOM_CATS_KEY, JSON.stringify(updated));
+      return;
+    }
+
+    const docRef = doc(db, 'users', userId, 'categories', catId);
+    await setDoc(docRef, item, { merge: true });
+  }
+
+  /**
+   * Remove categoria personalizada
+   */
+  static async deleteCustomCategory(
+    userId: string,
+    categoryId: string,
+    isGuest: boolean
+  ): Promise<void> {
+    if (isGuest || !userId) {
+      const current: CustomCategoryItem[] = JSON.parse(localStorage.getItem(LOCAL_STORAGE_CUSTOM_CATS_KEY) || '[]');
+      const filtered = current.filter(c => c.id !== categoryId);
+      localStorage.setItem(LOCAL_STORAGE_CUSTOM_CATS_KEY, JSON.stringify(filtered));
+      return;
+    }
+
+    const docRef = doc(db, 'users', userId, 'categories', categoryId);
+    await deleteDoc(docRef);
+  }
+
+  /**
    * Adiciona ou atualiza uma transação (Gastos Diários, Fixos ou Parcelados)
    */
   static async saveTransaction(
@@ -218,6 +313,62 @@ export class FinanceService {
 
     const docRef = doc(db, 'users', userId, 'budgets', budgetId);
     await setDoc(docRef, toSave, { merge: true });
+  }
+
+  /**
+   * Remove um limite orçamentário
+   */
+  static async deleteBudget(
+    userId: string,
+    budgetId: string,
+    isGuest: boolean
+  ): Promise<void> {
+    if (isGuest || !userId) {
+      const current: CategoryBudget[] = JSON.parse(localStorage.getItem(LOCAL_STORAGE_BUDGETS_KEY) || '[]');
+      const filtered = current.filter(b => b.id !== budgetId);
+      localStorage.setItem(LOCAL_STORAGE_BUDGETS_KEY, JSON.stringify(filtered));
+      return;
+    }
+
+    const docRef = doc(db, 'users', userId, 'budgets', budgetId);
+    await deleteDoc(docRef);
+  }
+
+  /**
+   * Deleta TODOS os dados do usuário (limpeza completa de dados mockados residuais no Firestore e Local)
+   */
+  static async deleteAllUserData(userId: string, isGuest: boolean): Promise<void> {
+    // 1. Limpa localStorage
+    localStorage.removeItem(LOCAL_STORAGE_TX_KEY);
+    localStorage.removeItem(LOCAL_STORAGE_BUDGETS_KEY);
+    localStorage.removeItem('finances_pro_guest_txs_v1');
+    localStorage.removeItem('finances_pro_guest_budgets_v1');
+
+    if (isGuest || !userId) {
+      return;
+    }
+
+    // 2. Limpa Firestore em lote
+    try {
+      const txRef = collection(db, 'users', userId, 'transactions');
+      const txSnap = await getDocs(txRef);
+      if (!txSnap.empty) {
+        const batch = writeBatch(db);
+        txSnap.forEach(d => batch.delete(d.ref));
+        await batch.commit();
+      }
+
+      const budgetRef = collection(db, 'users', userId, 'budgets');
+      const budgetSnap = await getDocs(budgetRef);
+      if (!budgetSnap.empty) {
+        const batch = writeBatch(db);
+        budgetSnap.forEach(d => batch.delete(d.ref));
+        await batch.commit();
+      }
+    } catch (e) {
+      console.error('Error clearing user firestore data:', e);
+      throw e;
+    }
   }
 
   /**

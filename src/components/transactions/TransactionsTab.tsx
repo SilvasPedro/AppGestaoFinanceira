@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { useFinance } from '../../context/FinanceContext';
 import { Transaction, TransactionNature, TransactionType } from '../../types/finance';
+import { DeleteConfirmModal } from '../modals/DeleteConfirmModal';
 
 interface TransactionsTabProps {
   onOpenAddModal: () => void;
@@ -29,6 +30,7 @@ export const TransactionsTab: React.FC<TransactionsTabProps> = ({ onOpenAddModal
 
   const [filterType, setFilterType] = useState<'all' | 'daily' | 'fixed' | 'installment' | 'income'>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [txToDelete, setTxToDelete] = useState<Transaction | null>(null);
 
   const formatBRL = (val: number) => {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
@@ -225,9 +227,9 @@ export const TransactionsTab: React.FC<TransactionsTabProps> = ({ onOpenAddModal
                     </span>
                   </div>
 
-                  {/* Botão de Excluir */}
+                  {/* Botão de Excluir com Confirmação */}
                   <button
-                    onClick={() => deleteTransaction(tx.id)}
+                    onClick={() => setTxToDelete(tx)}
                     title="Excluir lançamento"
                     className="p-1.5 rounded-lg text-[#525252] hover:text-[#E29578] hover:bg-[#262626] transition"
                   >
@@ -239,6 +241,22 @@ export const TransactionsTab: React.FC<TransactionsTabProps> = ({ onOpenAddModal
           })
         )}
       </div>
+
+      {/* Modal de Confirmação de Exclusão */}
+      <DeleteConfirmModal
+        isOpen={!!txToDelete}
+        onClose={() => setTxToDelete(null)}
+        onConfirm={async () => {
+          if (txToDelete) {
+            await deleteTransaction(txToDelete.id);
+            setTxToDelete(null);
+          }
+        }}
+        title="Excluir Lançamento"
+        message="Tem certeza que deseja remover este lançamento? O valor será excluído do seu histórico e os saldos serão recalculados automaticamente."
+        itemDetail={txToDelete ? `${txToDelete.description} • ${formatBRL(txToDelete.amount)} (${txToDelete.category})` : undefined}
+        confirmLabel="Sim, Excluir"
+      />
     </div>
   );
 };

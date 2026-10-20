@@ -11,7 +11,8 @@ import {
   WifiOff, 
   LogIn, 
   User as UserIcon,
-  LogOut
+  LogOut,
+  Settings
 } from 'lucide-react';
 import { TabType } from './BottomNav';
 import { useFinance } from '../../context/FinanceContext';
@@ -68,6 +69,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
       label: 'Score & Futuro',
       icon: TrendingUp,
       activeColor: 'text-[#A3C9A8]'
+    },
+    {
+      id: 'settings' as TabType,
+      label: 'Configurações',
+      icon: Settings,
+      activeColor: 'text-[#A8B5D1]'
     }
   ];
 

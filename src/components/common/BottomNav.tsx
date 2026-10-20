@@ -7,7 +7,7 @@ import {
   TrendingUp 
 } from 'lucide-react';
 
-export type TabType = 'dashboard' | 'transactions' | 'budgets' | 'projections';
+export type TabType = 'dashboard' | 'transactions' | 'budgets' | 'projections' | 'settings';
 
 interface BottomNavProps {
   activeTab: TabType;
