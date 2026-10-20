@@ -174,8 +174,12 @@ export const TransactionsTab: React.FC<TransactionsTabProps> = ({ onOpenAddModal
                       )}
 
                       {isInstallment && tx.installmentDetails && (
-                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#E29578]/15 text-[#E29578] border border-[#E29578]/30 font-medium">
-                          Parcela {tx.installmentDetails.currentInstallment} de {tx.installmentDetails.totalInstallments}
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
+                          isIncome
+                            ? 'bg-[#A3C9A8]/15 text-[#A3C9A8] border border-[#A3C9A8]/30'
+                            : 'bg-[#E29578]/15 text-[#E29578] border border-[#E29578]/30'
+                        }`}>
+                          {isIncome ? 'Venda' : 'Parcela'} {tx.installmentDetails.currentInstallment} de {tx.installmentDetails.totalInstallments}
                         </span>
                       )}
                     </div>
@@ -198,12 +202,12 @@ export const TransactionsTab: React.FC<TransactionsTabProps> = ({ onOpenAddModal
 
                 {/* Lado direito: Valor e Ações */}
                 <div className="flex items-center justify-between sm:justify-end gap-3 pt-2 sm:pt-0 border-t sm:border-t-0 border-[#1E1E1E]">
-                  {/* Toggle Pago/Pendente para contas fixas */}
-                  {isFixed && !isIncome && (
+                  {/* Toggle Pago/Recebido para contas fixas e parceladas */}
+                  {(isFixed || isInstallment) && (
                     <button
                       onClick={() => togglePaidStatus(tx.id, !!tx.isPaid)}
-                      title="Clique para alternar Pago / Pendente"
-                      className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium transition ${
+                      title={`Clique para alternar ${isIncome ? 'Recebido / A Receber' : 'Pago / Pendente'}`}
+                      className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium transition cursor-pointer ${
                         tx.isPaid
                           ? 'bg-[#A3C9A8]/15 text-[#A3C9A8] hover:bg-[#A3C9A8]/25 border border-[#A3C9A8]/30'
                           : 'bg-[#E29578]/15 text-[#E29578] hover:bg-[#E29578]/25 border border-[#E29578]/30'
@@ -211,11 +215,11 @@ export const TransactionsTab: React.FC<TransactionsTabProps> = ({ onOpenAddModal
                     >
                       {tx.isPaid ? (
                         <>
-                          <CheckCircle className="w-3 h-3" /> Pago
+                          <CheckCircle className="w-3 h-3" /> {isIncome ? 'Recebido' : 'Pago'}
                         </>
                       ) : (
                         <>
-                          <Clock className="w-3 h-3" /> Pendente
+                          <Clock className="w-3 h-3" /> {isIncome ? 'A Receber' : 'Pendente'}
                         </>
                       )}
                     </button>

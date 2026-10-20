@@ -199,7 +199,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   }, [monthTransactions]);
 
   const pendingBillsCount = useMemo(() => {
-    return monthTransactions.filter(t => t.type === 'expense' && t.nature === 'fixed' && !t.isPaid).length;
+    return monthTransactions.filter(t => t.type === 'expense' && !t.isPaid).length;
   }, [monthTransactions]);
 
   // Score de Saúde Financeira dinâmico
@@ -301,7 +301,8 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
           {
             ...tx,
             date: dateStr,
-            description: `${tx.description} (${i}/${details.totalInstallments})`,
+            description: `${tx.description.replace(/\s\(\d+\/\d+\)$/, '')} (${i}/${details.totalInstallments})`,
+            isPaid: false, // Parcelas futuras aguardam baixa manual do usuário
             installmentDetails: {
               ...details,
               currentInstallment: i,

@@ -512,8 +512,8 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({ onNavigateTab, onOpe
                       {tx.nature === 'installment' && tx.installmentDetails && (
                         <>
                           <span>•</span>
-                          <span className="text-[#A8B5D1]">
-                            {tx.installmentDetails.currentInstallment}/{tx.installmentDetails.totalInstallments}x
+                          <span className={tx.type === 'income' ? 'text-[#A3C9A8]' : 'text-[#A8B5D1]'}>
+                            {tx.type === 'income' ? 'Venda ' : ''}{tx.installmentDetails.currentInstallment}/{tx.installmentDetails.totalInstallments}x
                           </span>
                         </>
                       )}
@@ -529,12 +529,12 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({ onNavigateTab, onOpe
                   >
                     {tx.type === 'income' ? '+' : '-'} {formatBRL(tx.amount)}
                   </div>
-                  {tx.nature === 'fixed' && (
+                  {(tx.nature === 'fixed' || tx.nature === 'installment') && (
                     <div className="text-[9px] mt-0.5">
                       {tx.isPaid ? (
-                        <span className="text-[#A3C9A8]">Pago</span>
+                        <span className="text-[#A3C9A8]">{tx.type === 'income' ? 'Recebido' : 'Pago'}</span>
                       ) : (
-                        <span className="text-[#E29578]">Pendente</span>
+                        <span className="text-[#E29578]">{tx.type === 'income' ? 'A Receber' : 'Pendente'}</span>
                       )}
                     </div>
                   )}

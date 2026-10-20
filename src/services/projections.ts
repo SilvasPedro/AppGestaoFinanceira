@@ -79,8 +79,14 @@ export function calculateCashFlowProjections(
     ? dailyExpenses.reduce((acc, t) => acc + (Number(t.amount) || 0), 0) / distinctExpenseMonths
     : 0;
 
-  // 4. Mapear compras parceladas ativas
-  const activeInstallments: Array<{
+  // 4. Mapear compras e vendas parceladas ativas
+  const activeExpenseInstallments: Array<{
+    description: string;
+    monthlyAmount: number;
+    remainingMonths: number;
+  }> = [];
+
+  const activeIncomeInstallments: Array<{
     description: string;
     monthlyAmount: number;
     remainingMonths: number;
@@ -96,11 +102,16 @@ export function calculateCashFlowProjections(
         seenGroups.add(key);
         const remaining = Math.max(0, (details.totalInstallments || 1) - (details.currentInstallment || 1) + 1);
         if (remaining > 0) {
-          activeInstallments.push({
+          const item = {
             description: t.description || 'Parcelamento',
             monthlyAmount: Number(details.monthlyAmount) || 0,
             remainingMonths: remaining
-          });
+          };
+          if (t.type === 'income') {
+            activeIncomeInstallments.push(item);
+          } else {
+            activeExpenseInstallments.push(item);
+          }
         }
       }
     });
@@ -112,31 +123,39 @@ export function calculateCashFlowProjections(
     const monthYear = `${y}-${String(m + 1).padStart(2, '0')}`;
     const displayMonth = `${monthNames[m]} ${String(y).slice(-2)}`;
 
-    // Somar parcelas ativas neste mês futuro
-    let monthInstallmentsTotal = 0;
-    let activeCount = 0;
-
-    activeInstallments.forEach(item => {
+    // Somar parcelas de despesas ativas neste mês futuro
+    let monthExpenseInstallmentsTotal = 0;
+    let activeExpenseCount = 0;
+    activeExpenseInstallments.forEach(item => {
       if (item.remainingMonths >= offset) {
-        monthInstallmentsTotal += item.monthlyAmount;
-        activeCount++;
+        monthExpenseInstallmentsTotal += item.monthlyAmount;
+        activeExpenseCount++;
       }
     });
 
-    const totalExpenses = fixedExpensesBaseline + monthInstallmentsTotal + avgDailyMonthly;
-    const netSurplus = baselineMonthlyIncome - totalExpenses;
+    // Somar parcelas de receitas a receber neste mês futuro (vendas para amigos)
+    let monthIncomeInstallmentsTotal = 0;
+    activeIncomeInstallments.forEach(item => {
+      if (item.remainingMonths >= offset) {
+        monthIncomeInstallmentsTotal += item.monthlyAmount;
+      }
+    });
+
+    const projectedIncome = baselineMonthlyIncome + monthIncomeInstallmentsTotal;
+    const totalExpenses = fixedExpensesBaseline + monthExpenseInstallmentsTotal + avgDailyMonthly;
+    const netSurplus = projectedIncome - totalExpenses;
 
     projections.push({
       monthYear,
       displayMonth,
       fixedExpenses: Math.round(fixedExpensesBaseline),
-      installmentsTotal: Math.round(monthInstallmentsTotal),
+      installmentsTotal: Math.round(monthExpenseInstallmentsTotal),
       estimatedDaily: Math.round(avgDailyMonthly),
       totalExpenses: Math.round(totalExpenses),
-      projectedIncome: Math.round(baselineMonthlyIncome),
+      projectedIncome: Math.round(projectedIncome),
       netSurplus: Math.round(netSurplus),
-      isDeficit: baselineMonthlyIncome > 0 ? netSurplus < 0 : totalExpenses > 0,
-      activeInstallmentCount: activeCount
+      isDeficit: projectedIncome > 0 ? netSurplus < 0 : totalExpenses > 0,
+      activeInstallmentCount: activeExpenseCount
     });
   }
 

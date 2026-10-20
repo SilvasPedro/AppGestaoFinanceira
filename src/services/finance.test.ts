@@ -121,6 +121,48 @@ test('calculateCashFlowProjections amortizes installments month by month', () =>
   assert.equal(projections[3].installmentsTotal, 0);
 });
 
+test('calculateCashFlowProjections includes installment income (vendas parceladas)', () => {
+  const transactions: Transaction[] = [
+    {
+      id: 'tx_salary',
+      userId: 'test_u',
+      type: 'income',
+      nature: 'fixed',
+      amount: 4000,
+      category: 'Salário',
+      date: '2026-10-01',
+      description: 'Salário Fixo',
+      paymentMethod: 'bank_transfer'
+    },
+    {
+      id: 'tx_sale',
+      userId: 'test_u',
+      type: 'income',
+      nature: 'installment',
+      amount: 250,
+      category: 'Outros',
+      date: '2026-10-01',
+      description: 'Venda videogame para amigo',
+      paymentMethod: 'pix',
+      installmentDetails: {
+        totalAmount: 500,
+        totalInstallments: 2,
+        currentInstallment: 1,
+        monthlyAmount: 250,
+        groupId: 'grp_sale_game',
+        purchaseDate: '2026-10-01'
+      }
+    }
+  ];
+
+  const projections = calculateCashFlowProjections(transactions, 3, '2026-10');
+  assert.equal(projections.length, 3);
+
+  assert.equal(projections[0].projectedIncome, 4250);
+  assert.equal(projections[1].projectedIncome, 4250);
+  assert.equal(projections[2].projectedIncome, 4000);
+});
+
 test('calculateFreedomSimulation calculates emergency fund and compound interest', () => {
   const sim = calculateFreedomSimulation(1000, 5000, 0.06, 10, 2000);
   assert.equal(sim.emergencyTarget, 12000); // 6 x 2000

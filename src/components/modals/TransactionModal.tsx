@@ -108,7 +108,6 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
     if (newType === 'income') {
       setCategory(incomeCategories[0] || 'Salário');
       setPaymentMethod('pix');
-      if (nature === 'installment') setNature('daily');
     } else {
       setCategory(expenseCategories[0] || 'Alimentação');
       setPaymentMethod('credit_card');
@@ -122,19 +121,22 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
 
     setSubmitting(true);
     try {
-      if (nature === 'installment' && type === 'expense') {
+      if (nature === 'installment') {
         const totalAmount = installmentCalcMode === 'total' ? rawVal : rawVal * totalInstallments;
         const monthlyAmount = installmentCalcMode === 'monthly' ? rawVal : rawVal / totalInstallments;
+        const defaultDesc = type === 'income'
+          ? `Venda Parcelada (${currentInstallment}/${totalInstallments})`
+          : `Compra Parcelada (${currentInstallment}/${totalInstallments})`;
 
         const payload = {
-          type: 'expense' as const,
+          type,
           nature: 'installment' as const,
           amount: Math.round(monthlyAmount * 100) / 100,
           category,
           date,
-          description: description.trim() || `Compra Parcelada (${currentInstallment}/${totalInstallments})`,
+          description: description.trim() || defaultDesc,
           paymentMethod,
-          isPaid: true,
+          isPaid,
           installmentDetails: {
             totalAmount: Math.round(totalAmount * 100) / 100,
             totalInstallments: Number(totalInstallments),
@@ -259,19 +261,19 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                 {type === 'expense' ? 'Fixo Recorrente' : 'Salário Fixo'}
               </button>
 
-              {type === 'expense' && (
-                <button
-                  type="button"
-                  onClick={() => setNature('installment')}
-                  className={`py-2 px-2 text-xs font-medium rounded-xl border text-center transition cursor-pointer ${
-                    nature === 'installment'
-                      ? 'border-[#E29578] bg-[#E29578]/15 text-[#E29578]'
-                      : 'border-[#262626] bg-[#171717] text-[#A3A3A3] hover:text-white'
-                  }`}
-                >
-                  Parcelamento
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={() => setNature('installment')}
+                className={`py-2 px-2 text-xs font-medium rounded-xl border text-center transition cursor-pointer ${
+                  nature === 'installment'
+                    ? type === 'income'
+                      ? 'border-[#A3C9A8] bg-[#A3C9A8]/15 text-[#A3C9A8]'
+                      : 'border-[#E29578] bg-[#E29578]/15 text-[#E29578]'
+                    : 'border-[#262626] bg-[#171717] text-[#A3A3A3] hover:text-white'
+                }`}
+              >
+                {type === 'income' ? 'Venda Parcelada' : 'Parcelamento'}
+              </button>
             </div>
           </div>
 
@@ -279,7 +281,9 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
           <div>
             <label className="text-[11px] font-medium text-[#737373] uppercase tracking-wider block mb-1">
               {nature === 'installment'
-                ? installmentCalcMode === 'total' ? 'Valor Total da Compra (R$)' : 'Valor da Parcela Mensal (R$)'
+                ? installmentCalcMode === 'total' 
+                  ? (type === 'income' ? 'Valor Total da Venda (R$)' : 'Valor Total da Compra (R$)')
+                  : (type === 'income' ? 'Valor da Parcela a Receber (R$)' : 'Valor da Parcela Mensal (R$)')
                 : 'Valor (R$)'}
             </label>
             <div className="relative">
@@ -298,8 +302,8 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
             </div>
           </div>
 
-          {/* Detalhes de Parcelamento (Se for compra parcelada) */}
-          {nature === 'installment' && type === 'expense' && (
+          {/* Detalhes de Parcelamento (Se for compra ou venda parcelada) */}
+          {nature === 'installment' && (
             <div className="p-3.5 bg-[#0D0D0D] border border-[#262626] rounded-2xl space-y-3">
               <div className="flex items-center justify-between text-xs">
                 <span className="text-[#A8B5D1] font-medium flex items-center gap-1.5">
@@ -351,8 +355,8 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
 
               {amountStr && (
                 <div className="text-[11px] text-[#A3A3A3] pt-1 border-t border-[#1F1F1F] flex justify-between">
-                  <span>Impacto mensal futuro:</span>
-                  <span className="font-semibold text-[#E29578]">
+                  <span>{type === 'income' ? 'Receita mensal prevista:' : 'Impacto mensal futuro:'}</span>
+                  <span className={`font-semibold ${type === 'income' ? 'text-[#A3C9A8]' : 'text-[#E29578]'}`}>
                     {installmentCalcMode === 'total'
                       ? `R$ ${(parseFloat(amountStr) / totalInstallments).toFixed(2)} / mês`
                       : `R$ ${parseFloat(amountStr).toFixed(2)} / mês (Total: R$ ${(parseFloat(amountStr) * totalInstallments).toFixed(2)})`}
@@ -362,12 +366,16 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
             </div>
           )}
 
-          {/* Toggle Pago / Pendente se for Fixo Recorrente */}
-          {nature === 'fixed' && type === 'expense' && (
+          {/* Toggle Pago / Recebido (Fixo ou Parcelado) */}
+          {(nature === 'fixed' || nature === 'installment') && (
             <div className="flex items-center justify-between p-3 bg-[#0D0D0D] border border-[#262626] rounded-xl">
               <div>
-                <span className="text-xs font-medium text-white block">Já pago este mês?</span>
-                <span className="text-[10px] text-[#737373]">Controle de vencimento e pendências</span>
+                <span className="text-xs font-medium text-white block">
+                  {type === 'income' ? 'Já foi recebido este mês?' : 'Já foi pago este mês?'}
+                </span>
+                <span className="text-[10px] text-[#737373]">
+                  Controle manual de {type === 'income' ? 'recebimento' : 'pagamento'}
+                </span>
               </div>
               <button
                 type="button"
@@ -378,7 +386,9 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                     : 'bg-[#E29578]/20 text-[#E29578] border border-[#E29578]/40'
                 }`}
               >
-                {isPaid ? 'Pago' : 'Pendente'}
+                {type === 'income'
+                  ? (isPaid ? 'Recebido' : 'A Receber')
+                  : (isPaid ? 'Pago' : 'Pendente')}
               </button>
             </div>
           )}
