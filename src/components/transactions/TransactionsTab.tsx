@@ -3,6 +3,7 @@ import {
   Search, 
   Filter, 
   Trash2, 
+  Pencil,
   CheckCircle, 
   Clock, 
   Plus, 
@@ -14,6 +15,7 @@ import {
 import { useFinance } from '../../context/FinanceContext';
 import { Transaction, TransactionNature, TransactionType } from '../../types/finance';
 import { DeleteConfirmModal } from '../modals/DeleteConfirmModal';
+import { TransactionModal } from '../modals/TransactionModal';
 
 interface TransactionsTabProps {
   onOpenAddModal: () => void;
@@ -23,7 +25,9 @@ export const TransactionsTab: React.FC<TransactionsTabProps> = ({ onOpenAddModal
   const { 
     monthTransactions, 
     deleteTransaction, 
+    updateTransaction,
     togglePaidStatus, 
+    currentMonth,
     incomeTotal, 
     expensesTotal 
   } = useFinance();
@@ -31,6 +35,7 @@ export const TransactionsTab: React.FC<TransactionsTabProps> = ({ onOpenAddModal
   const [filterType, setFilterType] = useState<'all' | 'daily' | 'fixed' | 'installment' | 'income'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [txToDelete, setTxToDelete] = useState<Transaction | null>(null);
+  const [txToEdit, setTxToEdit] = useState<Transaction | null>(null);
 
   const formatBRL = (val: number) => {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
@@ -227,11 +232,20 @@ export const TransactionsTab: React.FC<TransactionsTabProps> = ({ onOpenAddModal
                     </span>
                   </div>
 
+                  {/* Botão de Editar */}
+                  <button
+                    onClick={() => setTxToEdit(tx)}
+                    title="Editar informações do lançamento"
+                    className="p-1.5 rounded-lg text-[#737373] hover:text-[#A8B5D1] hover:bg-[#262626] transition cursor-pointer"
+                  >
+                    <Pencil className="w-3.5 h-3.5" />
+                  </button>
+
                   {/* Botão de Excluir com Confirmação */}
                   <button
                     onClick={() => setTxToDelete(tx)}
                     title="Excluir lançamento"
-                    className="p-1.5 rounded-lg text-[#525252] hover:text-[#E29578] hover:bg-[#262626] transition"
+                    className="p-1.5 rounded-lg text-[#737373] hover:text-[#E29578] hover:bg-[#262626] transition cursor-pointer"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
@@ -256,6 +270,19 @@ export const TransactionsTab: React.FC<TransactionsTabProps> = ({ onOpenAddModal
         message="Tem certeza que deseja remover este lançamento? O valor será excluído do seu histórico e os saldos serão recalculados automaticamente."
         itemDetail={txToDelete ? `${txToDelete.description} • ${formatBRL(txToDelete.amount)} (${txToDelete.category})` : undefined}
         confirmLabel="Sim, Excluir"
+      />
+
+      {/* Modal de Edição de Lançamento */}
+      <TransactionModal
+        isOpen={!!txToEdit}
+        onClose={() => setTxToEdit(null)}
+        transactionToEdit={txToEdit}
+        onUpdate={async (id, data) => {
+          await updateTransaction(id, data);
+          setTxToEdit(null);
+        }}
+        onSave={async () => {}}
+        defaultMonth={currentMonth}
       />
     </div>
   );

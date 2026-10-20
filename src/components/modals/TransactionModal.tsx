@@ -14,6 +14,8 @@ interface TransactionModalProps {
   onClose: () => void;
   onSave: (tx: Omit<Transaction, 'id' | 'userId'>) => Promise<void>;
   defaultMonth: string; // 'YYYY-MM'
+  transactionToEdit?: Transaction | null;
+  onUpdate?: (id: string, tx: Partial<Transaction>) => Promise<void>;
 }
 
 const PAYMENT_METHODS: { id: PaymentMethod; label: string }[] = [
@@ -29,7 +31,9 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
   isOpen,
   onClose,
   onSave,
-  defaultMonth
+  defaultMonth,
+  transactionToEdit,
+  onUpdate
 }) => {
   const { expenseCategories, incomeCategories } = useFinance();
   const [type, setType] = useState<TransactionType>('expense');
@@ -53,6 +57,43 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
 
   React.useEffect(() => {
     if (!isOpen) return;
+
+    if (transactionToEdit) {
+      setType(transactionToEdit.type);
+      setNature(transactionToEdit.nature);
+      setAmountStr(String(transactionToEdit.amount));
+      setDescription(transactionToEdit.description || '');
+      setCategory(transactionToEdit.category);
+      setPaymentMethod(transactionToEdit.paymentMethod);
+      setIsPaid(transactionToEdit.isPaid ?? true);
+      setDate(transactionToEdit.date);
+      if (transactionToEdit.installmentDetails) {
+        setTotalInstallments(transactionToEdit.installmentDetails.totalInstallments || 1);
+        setCurrentInstallment(transactionToEdit.installmentDetails.currentInstallment || 1);
+        setInstallmentCalcMode('monthly');
+      } else {
+        setTotalInstallments(10);
+        setCurrentInstallment(1);
+        setInstallmentCalcMode('total');
+      }
+    } else {
+      setType('expense');
+      setNature('daily');
+      setAmountStr('');
+      setDescription('');
+      setCategory(expenseCategories[0] || 'Alimentação');
+      setPaymentMethod('credit_card');
+      setIsPaid(true);
+      const day = String(new Date().getDate()).padStart(2, '0');
+      setDate(`${defaultMonth}-${day}`);
+      setTotalInstallments(10);
+      setCurrentInstallment(1);
+      setInstallmentCalcMode('total');
+    }
+  }, [isOpen, transactionToEdit, defaultMonth, expenseCategories]);
+
+  React.useEffect(() => {
+    if (!isOpen) return;
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
     };
@@ -65,11 +106,11 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
   const handleTypeChange = (newType: TransactionType) => {
     setType(newType);
     if (newType === 'income') {
-      setCategory('Salário');
+      setCategory(incomeCategories[0] || 'Salário');
       setPaymentMethod('pix');
       if (nature === 'installment') setNature('daily');
     } else {
-      setCategory('Alimentação');
+      setCategory(expenseCategories[0] || 'Alimentação');
       setPaymentMethod('credit_card');
     }
   };
@@ -85,9 +126,9 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
         const totalAmount = installmentCalcMode === 'total' ? rawVal : rawVal * totalInstallments;
         const monthlyAmount = installmentCalcMode === 'monthly' ? rawVal : rawVal / totalInstallments;
 
-        await onSave({
-          type: 'expense',
-          nature: 'installment',
+        const payload = {
+          type: 'expense' as const,
+          nature: 'installment' as const,
           amount: Math.round(monthlyAmount * 100) / 100,
           category,
           date,
@@ -99,12 +140,18 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
             totalInstallments: Number(totalInstallments),
             currentInstallment: Number(currentInstallment),
             monthlyAmount: Math.round(monthlyAmount * 100) / 100,
-            groupId: `grp_${Date.now()}`,
-            purchaseDate: date
+            groupId: transactionToEdit?.installmentDetails?.groupId || `grp_${Date.now()}`,
+            purchaseDate: transactionToEdit?.installmentDetails?.purchaseDate || date
           }
-        });
+        };
+
+        if (transactionToEdit && onUpdate) {
+          await onUpdate(transactionToEdit.id, payload);
+        } else {
+          await onSave(payload);
+        }
       } else {
-        await onSave({
+        const payload = {
           type,
           nature,
           amount: rawVal,
@@ -112,13 +159,17 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
           date,
           description: description.trim() || (type === 'income' ? 'Receita' : 'Despesa'),
           paymentMethod,
-          isPaid: nature === 'fixed' ? isPaid : true
-        });
+          isPaid: nature === 'fixed' ? isPaid : true,
+          installmentDetails: undefined
+        };
+
+        if (transactionToEdit && onUpdate) {
+          await onUpdate(transactionToEdit.id, payload);
+        } else {
+          await onSave(payload);
+        }
       }
 
-      // Reset and close
-      setAmountStr('');
-      setDescription('');
       onClose();
     } catch (err) {
       console.error('Error saving transaction:', err);
@@ -141,10 +192,12 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
 
         {/* Header */}
         <div className="flex items-center justify-between pb-3 border-b border-[#262626]">
-          <h2 className="text-base font-semibold text-white">Novo Lançamento</h2>
+          <h2 className="text-base font-semibold text-white">
+            {transactionToEdit ? 'Editar Lançamento' : 'Novo Lançamento'}
+          </h2>
           <button
             onClick={onClose}
-            className="p-1 rounded-xl text-[#737373] hover:text-white hover:bg-[#262626] transition"
+            className="p-1 rounded-xl text-[#737373] hover:text-white hover:bg-[#262626] transition cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -156,7 +209,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
             <button
               type="button"
               onClick={() => handleTypeChange('expense')}
-              className={`py-2 text-xs font-semibold rounded-lg transition ${
+              className={`py-2 text-xs font-semibold rounded-lg transition cursor-pointer ${
                 type === 'expense'
                   ? 'bg-[#E29578] text-black shadow-xs'
                   : 'text-[#A3A3A3] hover:text-white'
@@ -167,7 +220,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
             <button
               type="button"
               onClick={() => handleTypeChange('income')}
-              className={`py-2 text-xs font-semibold rounded-lg transition ${
+              className={`py-2 text-xs font-semibold rounded-lg transition cursor-pointer ${
                 type === 'income'
                   ? 'bg-[#A3C9A8] text-black shadow-xs'
                   : 'text-[#A3A3A3] hover:text-white'
@@ -186,7 +239,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
               <button
                 type="button"
                 onClick={() => setNature('daily')}
-                className={`py-2 px-2 text-xs font-medium rounded-xl border text-center transition ${
+                className={`py-2 px-2 text-xs font-medium rounded-xl border text-center transition cursor-pointer ${
                   nature === 'daily'
                     ? 'border-white bg-[#262626] text-white'
                     : 'border-[#262626] bg-[#171717] text-[#A3A3A3] hover:text-white'
@@ -198,7 +251,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
               <button
                 type="button"
                 onClick={() => setNature('fixed')}
-                className={`py-2 px-2 text-xs font-medium rounded-xl border text-center transition ${
+                className={`py-2 px-2 text-xs font-medium rounded-xl border text-center transition cursor-pointer ${
                   nature === 'fixed'
                     ? 'border-white bg-[#262626] text-white'
                     : 'border-[#262626] bg-[#171717] text-[#A3A3A3] hover:text-white'
@@ -211,7 +264,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                 <button
                   type="button"
                   onClick={() => setNature('installment')}
-                  className={`py-2 px-2 text-xs font-medium rounded-xl border text-center transition ${
+                  className={`py-2 px-2 text-xs font-medium rounded-xl border text-center transition cursor-pointer ${
                     nature === 'installment'
                       ? 'border-[#E29578] bg-[#E29578]/15 text-[#E29578]'
                       : 'border-[#262626] bg-[#171717] text-[#A3A3A3] hover:text-white'
@@ -257,14 +310,14 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                   <button
                     type="button"
                     onClick={() => setInstallmentCalcMode('total')}
-                    className={`px-2 py-0.5 rounded-sm ${installmentCalcMode === 'total' ? 'bg-[#262626] text-white' : 'text-[#737373]'}`}
+                    className={`px-2 py-0.5 rounded-sm cursor-pointer ${installmentCalcMode === 'total' ? 'bg-[#262626] text-white' : 'text-[#737373]'}`}
                   >
                     Valor Total
                   </button>
                   <button
                     type="button"
                     onClick={() => setInstallmentCalcMode('monthly')}
-                    className={`px-2 py-0.5 rounded-sm ${installmentCalcMode === 'monthly' ? 'bg-[#262626] text-white' : 'text-[#737373]'}`}
+                    className={`px-2 py-0.5 rounded-sm cursor-pointer ${installmentCalcMode === 'monthly' ? 'bg-[#262626] text-white' : 'text-[#737373]'}`}
                   >
                     Valor/Mês
                   </button>
@@ -320,7 +373,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
               <button
                 type="button"
                 onClick={() => setIsPaid(!isPaid)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
                   isPaid
                     ? 'bg-[#A3C9A8]/20 text-[#A3C9A8] border border-[#A3C9A8]/40'
                     : 'bg-[#E29578]/20 text-[#E29578] border border-[#E29578]/40'
@@ -396,9 +449,13 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
             <button
               type="submit"
               disabled={submitting || !amountStr}
-              className="w-full py-3.5 rounded-xl bg-white hover:bg-neutral-200 text-black text-xs font-bold uppercase tracking-wider transition active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed shadow-md"
+              className="w-full py-3.5 rounded-xl bg-white hover:bg-neutral-200 text-black text-xs font-bold uppercase tracking-wider transition active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed shadow-md cursor-pointer"
             >
-              {submitting ? 'Salvando no Firestore...' : 'Confirmar Lançamento'}
+              {submitting 
+                ? 'Salvando alterações...' 
+                : transactionToEdit 
+                ? 'Salvar Alterações' 
+                : 'Confirmar Lançamento'}
             </button>
           </div>
         </form>
