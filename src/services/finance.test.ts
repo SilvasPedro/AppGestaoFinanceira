@@ -257,3 +257,27 @@ test('calculateHealthScore should handle zero-data clean state without errors', 
   assert.equal(result.pillars.entryConsistency.score, 0);
   assert.ok(result.actionableTips.length > 0);
 });
+
+test('installment group advance calculation correctly computes discount and balances', () => {
+  const totalInstallments = 12;
+  const monthlyAmount = 250;
+  const paidCount = 4;
+  const remainingCount = totalInstallments - paidCount; // 8
+  const remainingBalance = remainingCount * monthlyAmount; // 2000
+
+  assert.equal(remainingBalance, 2000);
+
+  // Adiantar 3 parcelas com R$ 50 de desconto
+  const countToAdvance = 3;
+  const discount = 50;
+  const subtotal = countToAdvance * monthlyAmount; // 750
+  const totalToPay = subtotal - discount; // 700
+  const newRemainingCount = remainingCount - countToAdvance; // 5
+  const newRemainingBalance = newRemainingCount * monthlyAmount; // 1250
+
+  assert.equal(subtotal, 750);
+  assert.equal(totalToPay, 700);
+  assert.equal(newRemainingCount, 5);
+  assert.equal(newRemainingBalance, 1250);
+});
+

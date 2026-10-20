@@ -408,6 +408,190 @@ export class FinanceService {
   }
 
   /**
+   * Remove todas as parcelas de um grupo de parcelamento (exclusão total)
+   */
+  static async deleteInstallmentGroup(userId: string, groupId: string, isGuest: boolean): Promise<void> {
+    if (isGuest || !userId) {
+      const current: Transaction[] = JSON.parse(localStorage.getItem(GUEST_TX_KEY) || '[]');
+      const filtered = current.filter(t => t.installmentDetails?.groupId !== groupId);
+      localStorage.setItem(GUEST_TX_KEY, JSON.stringify(filtered));
+      return;
+    }
+
+    const txRef = collection(db, 'users', userId, 'transactions');
+    const snapshot = await getDocs(txRef);
+    const batch = writeBatch(db);
+    snapshot.forEach(docSnap => {
+      const data = docSnap.data();
+      if (data.installmentDetails?.groupId === groupId) {
+        batch.delete(docSnap.ref);
+      }
+    });
+    await batch.commit();
+  }
+
+  /**
+   * Adiantamento / Amortização de parcelas:
+   * Pega as próximas K parcelas não pagas do grupo, atualiza sua data para targetDate,
+   * aplica eventual desconto e marca como pagas.
+   */
+  static async advanceInstallments(
+    userId: string,
+    groupId: string,
+    countToAdvance: number,
+    discountAmount: number,
+    targetDate: string,
+    isGuest: boolean
+  ): Promise<void> {
+    if (isGuest || !userId) {
+      const current: Transaction[] = JSON.parse(localStorage.getItem(GUEST_TX_KEY) || '[]');
+      const groupItems = current
+        .filter(t => t.installmentDetails?.groupId === groupId && !t.isPaid)
+        .sort((a, b) => (a.installmentDetails?.currentInstallment || 0) - (b.installmentDetails?.currentInstallment || 0));
+
+      const toAdvance = groupItems.slice(0, countToAdvance);
+      const discountPerItem = toAdvance.length > 0 ? discountAmount / toAdvance.length : 0;
+      const advanceIds = new Set(toAdvance.map(t => t.id));
+
+      const updated = current.map(t => {
+        if (!advanceIds.has(t.id)) return t;
+        const newAmount = Math.max(0, Math.round((t.amount - discountPerItem) * 100) / 100);
+        return {
+          ...t,
+          date: targetDate,
+          isPaid: true,
+          amount: newAmount,
+          description: t.description.includes('Adiantada') ? t.description : `${t.description} (Adiantada)`,
+          updatedAt: new Date().toISOString()
+        };
+      });
+
+      localStorage.setItem(GUEST_TX_KEY, JSON.stringify(updated));
+      return;
+    }
+
+    const txRef = collection(db, 'users', userId, 'transactions');
+    const snapshot = await getDocs(txRef);
+    const matchingDocs: { id: string; ref: any; data: any }[] = [];
+
+    snapshot.forEach(docSnap => {
+      const data = docSnap.data();
+      if (data.installmentDetails?.groupId === groupId && !data.isPaid) {
+        matchingDocs.push({ id: docSnap.id, ref: docSnap.ref, data });
+      }
+    });
+
+    matchingDocs.sort((a, b) => 
+      (a.data.installmentDetails?.currentInstallment || 0) - (b.data.installmentDetails?.currentInstallment || 0)
+    );
+
+    const toAdvance = matchingDocs.slice(0, countToAdvance);
+    if (toAdvance.length === 0) return;
+
+    const discountPerItem = discountAmount > 0 ? discountAmount / toAdvance.length : 0;
+    const batch = writeBatch(db);
+
+    toAdvance.forEach(item => {
+      const oldAmount = Number(item.data.amount) || 0;
+      const newAmount = Math.max(0, Math.round((oldAmount - discountPerItem) * 100) / 100);
+      const oldDesc = String(item.data.description || '');
+      const newDesc = oldDesc.includes('Adiantada') ? oldDesc : `${oldDesc} (Adiantada)`;
+
+      batch.update(item.ref, {
+        date: targetDate,
+        isPaid: true,
+        amount: newAmount,
+        description: newDesc,
+        updatedAt: new Date().toISOString()
+      });
+    });
+
+    await batch.commit();
+  }
+
+  /**
+   * Atualização em lote de parcelamento (edição de descrição, categoria, cartão, valor da parcela)
+   */
+  static async updateInstallmentGroup(
+    userId: string,
+    groupId: string,
+    updates: {
+      description?: string;
+      category?: string;
+      paymentMethod?: PaymentMethod;
+      cardId?: string;
+      cardName?: string;
+      cardLastFour?: string;
+      monthlyAmount?: number;
+      totalInstallments?: number;
+    },
+    isGuest: boolean
+  ): Promise<void> {
+    if (isGuest || !userId) {
+      const current: Transaction[] = JSON.parse(localStorage.getItem(GUEST_TX_KEY) || '[]');
+      const updated = current.map(t => {
+        if (t.installmentDetails?.groupId !== groupId) return t;
+        const curInstallment = t.installmentDetails.currentInstallment;
+        const total = updates.totalInstallments || t.installmentDetails.totalInstallments;
+        const monthly = updates.monthlyAmount !== undefined ? updates.monthlyAmount : t.amount;
+        const baseDesc = updates.description !== undefined ? updates.description : t.description.replace(/\s\(\d+\/\d+\).*$/, '');
+        return {
+          ...t,
+          description: `${baseDesc} (${curInstallment}/${total})`,
+          amount: monthly,
+          category: updates.category || t.category,
+          paymentMethod: updates.paymentMethod || t.paymentMethod,
+          cardId: updates.cardId !== undefined ? updates.cardId : t.cardId,
+          cardName: updates.cardName !== undefined ? updates.cardName : t.cardName,
+          cardLastFour: updates.cardLastFour !== undefined ? updates.cardLastFour : t.cardLastFour,
+          installmentDetails: {
+            ...t.installmentDetails,
+            totalInstallments: total,
+            monthlyAmount: monthly,
+            totalAmount: Math.round(monthly * total * 100) / 100
+          },
+          updatedAt: new Date().toISOString()
+        };
+      });
+      localStorage.setItem(GUEST_TX_KEY, JSON.stringify(updated));
+      return;
+    }
+
+    const txRef = collection(db, 'users', userId, 'transactions');
+    const snapshot = await getDocs(txRef);
+    const batch = writeBatch(db);
+
+    snapshot.forEach(docSnap => {
+      const data = docSnap.data();
+      if (data.installmentDetails?.groupId === groupId) {
+        const curInstallment = data.installmentDetails.currentInstallment;
+        const total = updates.totalInstallments || data.installmentDetails.totalInstallments;
+        const monthly = updates.monthlyAmount !== undefined ? updates.monthlyAmount : data.amount;
+        const baseDesc = updates.description !== undefined ? updates.description : (data.description || '').replace(/\s\(\d+\/\d+\).*$/, '');
+
+        const patch: Record<string, any> = {
+          description: `${baseDesc} (${curInstallment}/${total})`,
+          amount: monthly,
+          'installmentDetails.totalInstallments': total,
+          'installmentDetails.monthlyAmount': monthly,
+          'installmentDetails.totalAmount': Math.round(monthly * total * 100) / 100,
+          updatedAt: new Date().toISOString()
+        };
+
+        if (updates.category) patch.category = updates.category;
+        if (updates.paymentMethod) patch.paymentMethod = updates.paymentMethod;
+        if (updates.cardId !== undefined) patch.cardId = updates.cardId;
+        if (updates.cardName !== undefined) patch.cardName = updates.cardName;
+        if (updates.cardLastFour !== undefined) patch.cardLastFour = updates.cardLastFour;
+
+        batch.update(docSnap.ref, patch);
+      }
+    });
+
+    await batch.commit();
+  }
+
+  /**
    * Descontinua uma transação recorrente fixa a partir de um mês específico
    */
   static async discontinueRecurringTransaction(

@@ -17,6 +17,8 @@ interface TransactionModalProps {
   defaultMonth: string; // 'YYYY-MM'
   transactionToEdit?: Transaction | null;
   onUpdate?: (id: string, tx: Partial<Transaction>) => Promise<void>;
+  initialNature?: TransactionNature;
+  initialType?: TransactionType;
 }
 
 const PAYMENT_METHODS: { id: PaymentMethod; label: string }[] = [
@@ -34,11 +36,13 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
   onSave,
   defaultMonth,
   transactionToEdit,
-  onUpdate
+  onUpdate,
+  initialNature,
+  initialType
 }) => {
   const { expenseCategories, incomeCategories, creditCards, addCreditCard } = useFinance();
-  const [type, setType] = useState<TransactionType>('expense');
-  const [nature, setNature] = useState<TransactionNature>('daily');
+  const [type, setType] = useState<TransactionType>(initialType || 'expense');
+  const [nature, setNature] = useState<TransactionNature>(initialNature || 'daily');
   const [amountStr, setAmountStr] = useState<string>('');
   const [description, setDescription] = useState<string>('');
   const [category, setCategory] = useState<Category>(expenseCategories[0] || 'Alimentação');
@@ -81,12 +85,14 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
         setInstallmentCalcMode('total');
       }
     } else {
-      setType('expense');
-      setNature('daily');
+      const startType = initialType || 'expense';
+      const startNature = initialNature || 'daily';
+      setType(startType);
+      setNature(startNature);
       setAmountStr('');
       setDescription('');
-      setCategory(expenseCategories[0] || 'Alimentação');
-      setPaymentMethod('credit_card');
+      setCategory(startType === 'income' ? (incomeCategories[0] || 'Salário') : (expenseCategories[0] || 'Alimentação'));
+      setPaymentMethod(startType === 'income' ? 'pix' : 'credit_card');
       setIsPaid(true);
       const day = String(new Date().getDate()).padStart(2, '0');
       setDate(`${defaultMonth}-${day}`);
@@ -95,7 +101,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
       setCurrentInstallment(1);
       setInstallmentCalcMode('total');
     }
-  }, [isOpen, transactionToEdit, defaultMonth, expenseCategories, creditCards]);
+  }, [isOpen, transactionToEdit, defaultMonth, expenseCategories, incomeCategories, creditCards, initialType, initialNature]);
 
   React.useEffect(() => {
     if (!isOpen) return;

@@ -13,6 +13,7 @@ import { DashboardTab } from './components/dashboard/DashboardTab';
 import { TransactionsTab } from './components/transactions/TransactionsTab';
 import { BudgetsTab } from './components/budgets/BudgetsTab';
 import { ProjectionsTab } from './components/projections/ProjectionsTab';
+import { RecurringTab } from './components/recurring/RecurringTab';
 import { SettingsTab } from './components/settings/SettingsTab';
 import { TransactionModal } from './components/modals/TransactionModal';
 import { AuthModal } from './components/modals/AuthModal';
@@ -20,7 +21,7 @@ import { AuthScreen } from './components/auth/AuthScreen';
 import { WifiOff, Loader2 } from 'lucide-react';
 
 const MainContent: React.FC = () => {
-  const { currentMonth, addTransaction, pendingBillsCount, isOnline } = useFinance();
+  const { currentMonth, addTransaction, pendingBillsCount, isOnline, activeFixedCount, activeInstallmentsCount } = useFinance();
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
   const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
@@ -60,6 +61,10 @@ const MainContent: React.FC = () => {
             />
           )}
 
+          {activeTab === 'recurring' && (
+            <RecurringTab />
+          )}
+
           {activeTab === 'budgets' && (
             <BudgetsTab />
           )}
@@ -80,6 +85,7 @@ const MainContent: React.FC = () => {
         setActiveTab={setActiveTab}
         onOpenAddModal={() => setIsAddModalOpen(true)}
         pendingBillsCount={pendingBillsCount}
+        recurringBadgeCount={activeFixedCount + activeInstallmentsCount}
       />
 
       {/* Bottom Sheet / Modal para Lançamento Rápido */}

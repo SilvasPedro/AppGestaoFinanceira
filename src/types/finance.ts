@@ -86,6 +86,29 @@ export interface Transaction {
   updatedAt?: string;
 }
 
+export interface InstallmentGroupSummary {
+  groupId: string;
+  description: string;
+  type: TransactionType;
+  category: Category;
+  paymentMethod: PaymentMethod;
+  cardId?: string;
+  cardName?: string;
+  cardLastFour?: string;
+  totalAmount: number;
+  monthlyAmount: number;
+  totalInstallments: number;
+  paidCount: number;
+  remainingCount: number;
+  remainingBalance: number;
+  progressPercentage: number;
+  purchaseDate: string;
+  firstDate: string;
+  lastDate: string;
+  isFinished: boolean;
+  transactions: Transaction[];
+}
+
 export interface CategoryBudget {
   id?: string;
   userId: string;

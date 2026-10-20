@@ -2,6 +2,7 @@ import React from 'react';
 import { 
   LayoutDashboard, 
   ReceiptText, 
+  Repeat,
   Target, 
   TrendingUp, 
   Plus, 
@@ -34,7 +35,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onOpenAuth,
   pendingBillsCount
 }) => {
-  const { currentMonth, prevMonth, nextMonth, isOnline } = useFinance();
+  const { currentMonth, prevMonth, nextMonth, isOnline, activeFixedCount, activeInstallmentsCount } = useFinance();
   const { user, logout } = useAuth();
 
   const formatMonthTitle = (ym: string) => {
@@ -43,6 +44,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
     const str = date.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
     return str.charAt(0).toUpperCase() + str.slice(1);
   };
+
+  const totalRecurringBadge = activeFixedCount + activeInstallmentsCount;
 
   const navItems = [
     {
@@ -57,6 +60,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: ReceiptText,
       activeColor: 'text-[#A8B5D1]',
       badge: pendingBillsCount > 0 ? pendingBillsCount : null
+    },
+    {
+      id: 'recurring' as TabType,
+      label: 'Recorrências & Parcelas',
+      icon: Repeat,
+      activeColor: 'text-[#E5A97D]',
+      badge: totalRecurringBadge > 0 ? totalRecurringBadge : null
     },
     {
       id: 'budgets' as TabType,

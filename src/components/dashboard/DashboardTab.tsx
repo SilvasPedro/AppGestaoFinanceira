@@ -10,7 +10,8 @@ import {
   Sparkles,
   Wallet,
   Clock,
-  Plus
+  Plus,
+  Repeat
 } from 'lucide-react';
 import { useFinance } from '../../context/FinanceContext';
 import { TabType } from '../common/BottomNav';
@@ -31,7 +32,9 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({ onNavigateTab, onOpe
     pendingBillsCount,
     healthScore,
     budgetsStatus,
-    monthTransactions
+    monthTransactions,
+    activeFixedCount,
+    activeInstallmentsCount
   } = useFinance();
 
   const formatBRL = (val: number) => {
@@ -401,6 +404,43 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({ onNavigateTab, onOpe
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Atalho para Compromissos Recorrentes & Parcelamentos */}
+      <div 
+        onClick={() => onNavigateTab('recurring')}
+        className="p-4 sm:p-5 rounded-3xl bg-linear-to-r from-[#171717] to-[#141414] border border-[#262626] hover:border-[#383838] transition cursor-pointer flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 group"
+      >
+        <div className="flex items-center gap-3.5">
+          <div className="w-10 h-10 rounded-2xl bg-[#E5A97D]/15 text-[#E5A97D] border border-[#E5A97D]/25 flex items-center justify-center shrink-0">
+            <Repeat className="w-5 h-5" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h4 className="text-sm font-semibold text-white group-hover:text-[#E5A97D] transition">
+                Compromissos Recorrentes & Parcelamentos
+              </h4>
+              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-md bg-[#262626] text-[#A3A3A3]">
+                Atalho
+              </span>
+            </div>
+            <p className="text-xs text-[#737373] mt-0.5">
+              {activeFixedCount} pagamentos fixos ativos • {activeInstallmentsCount} parcelamentos em andamento
+            </p>
+          </div>
+        </div>
+
+        <button 
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onNavigateTab('recurring');
+          }}
+          className="flex items-center gap-1.5 text-xs font-semibold text-[#E5A97D] group-hover:text-white transition shrink-0 cursor-pointer"
+        >
+          <span>Gerenciar & Adiantar</span>
+          <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
+        </button>
       </div>
 
       {/* 5. Acesso Rápido a Limites Orçamentários */}

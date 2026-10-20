@@ -6,6 +6,8 @@ import {
   MonthlyCashFlowProjection, 
   CustomCategoryItem,
   CreditCard,
+  InstallmentGroupSummary,
+  PaymentMethod,
   DEFAULT_EXPENSE_CATEGORIES,
   DEFAULT_INCOME_CATEGORIES
 } from '../types/finance';
@@ -57,12 +59,29 @@ interface FinanceContextType {
   budgetsStatus: BudgetStatus[];
   cashFlowProjections: MonthlyCashFlowProjection[];
   freedomSimulation: ReturnType<typeof calculateFreedomSimulation>;
+  // Compromissos Recorrentes & Parcelamentos
+  recurringItems: Transaction[];
+  activeFixedCount: number;
+  installmentGroups: InstallmentGroupSummary[];
+  activeInstallmentsCount: number;
   // Actions
   addTransaction: (tx: Omit<Transaction, 'id' | 'userId'>) => Promise<void>;
   updateTransaction: (id: string, tx: Partial<Transaction>) => Promise<void>;
   deleteTransaction: (id: string) => Promise<void>;
   discontinueRecurringTransaction: (id: string, fromMonth: string) => Promise<void>;
   togglePaidStatus: (id: string, currentStatus: boolean) => Promise<void>;
+  deleteInstallmentGroup: (groupId: string) => Promise<void>;
+  advanceInstallments: (groupId: string, count: number, discount: number, targetDate: string) => Promise<void>;
+  updateInstallmentGroup: (groupId: string, updates: {
+    description?: string;
+    category?: string;
+    paymentMethod?: PaymentMethod;
+    cardId?: string;
+    cardName?: string;
+    cardLastFour?: string;
+    monthlyAmount?: number;
+    totalInstallments?: number;
+  }) => Promise<void>;
   saveBudget: (category: string, limitAmount: number) => Promise<void>;
   deleteBudget: (budgetId: string) => Promise<void>;
   addCustomCategory: (name: string, type: 'expense' | 'income') => Promise<void>;
@@ -282,6 +301,84 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     return monthTransactions.filter(t => t.type === 'expense' && !t.isPaid).length;
   }, [monthTransactions]);
 
+  // Recorrências & Parcelamentos
+  const recurringItems = useMemo(() => {
+    return transactions.filter(t => t.nature === 'fixed');
+  }, [transactions]);
+
+  const activeFixedCount = useMemo(() => {
+    return recurringItems.filter(t => {
+      const start = t.startDate || (t.date ? t.date.slice(0, 7) : '');
+      const end = t.endDate || null;
+      return currentMonth >= start && (!end || currentMonth < end);
+    }).length;
+  }, [recurringItems, currentMonth]);
+
+  const installmentGroups = useMemo<InstallmentGroupSummary[]>(() => {
+    const map = new Map<string, Transaction[]>();
+
+    transactions
+      .filter(t => t.nature === 'installment' && t.installmentDetails)
+      .forEach(t => {
+        const gid = t.installmentDetails!.groupId || t.id;
+        const list = map.get(gid) || [];
+        list.push(t);
+        map.set(gid, list);
+      });
+
+    const summaries: InstallmentGroupSummary[] = [];
+
+    map.forEach((txList, gid) => {
+      txList.sort((a, b) => (a.installmentDetails?.currentInstallment || 0) - (b.installmentDetails?.currentInstallment || 0));
+
+      const first = txList[0];
+      const details = first.installmentDetails!;
+      const totalInstallments = details.totalInstallments || txList.length;
+      const monthlyAmount = details.monthlyAmount || first.amount;
+      const totalAmount = details.totalAmount || (totalInstallments * monthlyAmount);
+
+      const paidCount = txList.filter(t => t.isPaid).length;
+      const remainingCount = Math.max(0, totalInstallments - paidCount);
+      const remainingBalance = Math.round(remainingCount * monthlyAmount * 100) / 100;
+      const progressPercentage = Math.min(100, Math.round((paidCount / totalInstallments) * 100));
+
+      const isFinished = paidCount >= totalInstallments || remainingCount === 0;
+      const cleanDesc = first.description.replace(/\s\(\d+\/\d+\).*$/, '').trim() || 'Compra Parcelada';
+
+      summaries.push({
+        groupId: gid,
+        description: cleanDesc,
+        type: first.type,
+        category: first.category,
+        paymentMethod: first.paymentMethod,
+        cardId: first.cardId,
+        cardName: first.cardName,
+        cardLastFour: first.cardLastFour,
+        totalAmount,
+        monthlyAmount,
+        totalInstallments,
+        paidCount,
+        remainingCount,
+        remainingBalance,
+        progressPercentage,
+        purchaseDate: details.purchaseDate || first.date,
+        firstDate: first.date,
+        lastDate: txList[txList.length - 1]?.date || first.date,
+        isFinished,
+        transactions: txList
+      });
+    });
+
+    return summaries.sort((a, b) => {
+      if (a.isFinished !== b.isFinished) return a.isFinished ? 1 : -1;
+      return b.purchaseDate.localeCompare(a.purchaseDate);
+    });
+  }, [transactions]);
+
+  const activeInstallmentsCount = useMemo(() => {
+    return installmentGroups.filter(g => !g.isFinished).length;
+  }, [installmentGroups]);
+
   // Score de Saúde Financeira dinâmico
   const healthScore = useMemo(() => {
     return calculateHealthScore(transactions, budgets, currentMonth);
@@ -422,7 +519,6 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     if (merged.nature !== 'installment') {
       delete merged.installmentDetails;
     }
-    // Atualização otimista imediata na interface
     setTransactions(prev => prev.map(t => (t.id === id ? merged : t)));
     await FinanceService.saveTransaction(userId, merged, false);
   };
@@ -457,6 +553,31 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setTransactions(prev => prev.map(t => (t.id === id ? { ...t, isPaid: !currentStatus } : t)));
       await FinanceService.togglePaidStatus(userId, id, currentStatus, false);
     }
+  };
+
+  const deleteInstallmentGroup = async (groupId: string) => {
+    setTransactions(prev => prev.filter(t => t.installmentDetails?.groupId !== groupId));
+    const userId = user?.uid || 'guest';
+    await FinanceService.deleteInstallmentGroup(userId, groupId, false);
+  };
+
+  const advanceInstallments = async (groupId: string, count: number, discount: number, targetDate: string) => {
+    const userId = user?.uid || 'guest';
+    await FinanceService.advanceInstallments(userId, groupId, count, discount, targetDate, false);
+  };
+
+  const updateInstallmentGroup = async (groupId: string, updates: {
+    description?: string;
+    category?: string;
+    paymentMethod?: PaymentMethod;
+    cardId?: string;
+    cardName?: string;
+    cardLastFour?: string;
+    monthlyAmount?: number;
+    totalInstallments?: number;
+  }) => {
+    const userId = user?.uid || 'guest';
+    await FinanceService.updateInstallmentGroup(userId, groupId, updates, false);
   };
 
   const saveBudget = async (category: string, limitAmount: number) => {
@@ -556,11 +677,18 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
         budgetsStatus,
         cashFlowProjections,
         freedomSimulation,
+        recurringItems,
+        activeFixedCount,
+        installmentGroups,
+        activeInstallmentsCount,
         addTransaction,
         updateTransaction,
         deleteTransaction,
         discontinueRecurringTransaction,
         togglePaidStatus,
+        deleteInstallmentGroup,
+        advanceInstallments,
+        updateInstallmentGroup,
         saveBudget,
         deleteBudget,
         addCustomCategory,
