@@ -46,6 +46,28 @@
   scrollbar-width: none;
 }
 
+/* Custom Number Input & Stepper styling */
+.custom-number-input::-webkit-inner-spin-button,
+.custom-number-input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.custom-number-input {
+  -moz-appearance: textfield;
+}
+
+/* Custom Date Input picker indicator styling */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.85);
+  cursor: pointer;
+  opacity: 0.8;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+  transform: scale(1.1);
+}
+
 /* ==========================================================================
    1. CARDS DA DASHBOARD (PROFUNDIDADE 3D & FLOTAÇÃO SUAVE)
    ========================================================================== */
