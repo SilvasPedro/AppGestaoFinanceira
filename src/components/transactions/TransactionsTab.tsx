@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 import { 
   Search, 
   Trash2, 
@@ -13,7 +13,9 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   Check,
-  Layers
+  Layers,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { useFinance } from '../../context/FinanceContext';
 import { Transaction } from '../../types/finance';
@@ -54,6 +56,52 @@ export const TransactionsTab: React.FC<TransactionsTabProps> = ({ onOpenAddModal
   // Modais de exclusão e edição
   const [txToDelete, setTxToDelete] = useState<Transaction | null>(null);
   const [txToEdit, setTxToEdit] = useState<Transaction | null>(null);
+
+  // 5. Scroll Horizontal e Navegação Magnética dos Cartões de Crédito (Diretriz 2)
+  const cardsScrollRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+
+  const updateScrollButtons = useCallback(() => {
+    const el = cardsScrollRef.current;
+    if (!el) return;
+    const { scrollLeft, scrollWidth, clientWidth } = el;
+    const hasOverflow = scrollWidth > clientWidth + 4;
+    setCanScrollLeft(hasOverflow && scrollLeft > 8);
+    setCanScrollRight(hasOverflow && scrollLeft + clientWidth < scrollWidth - 8);
+  }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(updateScrollButtons, 60);
+    const el = cardsScrollRef.current;
+    if (!el) return () => clearTimeout(timer);
+
+    const handleResize = () => updateScrollButtons();
+    window.addEventListener('resize', handleResize);
+
+    let ro: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== 'undefined') {
+      ro = new ResizeObserver(() => updateScrollButtons());
+      ro.observe(el);
+    }
+
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('resize', handleResize);
+      ro?.disconnect();
+    };
+  }, [creditCards, cardInvoices, updateScrollButtons]);
+
+  const scrollCards = (direction: 'left' | 'right') => {
+    const el = cardsScrollRef.current;
+    if (!el) return;
+    const scrollAmount = 304;
+    el.scrollBy({
+      left: direction === 'left' ? -scrollAmount : scrollAmount,
+      behavior: 'smooth'
+    });
+    setTimeout(updateScrollButtons, 360);
+  };
 
   const formatBRL = (val: number) => {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
@@ -131,158 +179,229 @@ export const TransactionsTab: React.FC<TransactionsTabProps> = ({ onOpenAddModal
               </div>
             </div>
 
-            {selectedCardFilter && (
-              <button
-                type="button"
-                onClick={() => setSelectedCardFilter(null)}
-                className="btn-liquid-glass px-3 py-1 rounded-xl text-xs text-[#A8B5D1] hover:text-white flex items-center gap-1.5 cursor-pointer self-start sm:self-auto"
-              >
-                <X className="w-3.5 h-3.5" />
-                <span>Limpar filtro de cartão</span>
-              </button>
-            )}
-          </div>
+            <div className="flex items-center gap-2 self-start sm:self-auto">
+              {selectedCardFilter && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedCardFilter(null)}
+                  className="btn-liquid-glass px-3 py-1 rounded-xl text-xs text-[#A8B5D1] hover:text-white flex items-center gap-1.5 cursor-pointer"
+                >
+                  <X className="w-3.5 h-3.5" />
+                  <span>Limpar filtro de cartão</span>
+                </button>
+              )}
 
-          {/* Carrossel de Miniaturas 3D de Cartões de Crédito (Diretriz 3) */}
-          <div className="flex items-stretch gap-3.5 overflow-x-auto no-scrollbar py-2 px-1">
-            {/* Miniatura 0: Todos os Cartões (Visão Consolidada) */}
-            <div
-              onClick={() => setSelectedCardFilter(null)}
-              className={`w-64 sm:w-72 h-40 shrink-0 rounded-2xl p-4 flex flex-col justify-between relative overflow-hidden transition-all duration-300 cursor-pointer ${
-                selectedCardFilter === null
-                  ? 'ring-2 ring-white ring-offset-2 ring-offset-[#0D0D0D] scale-[1.02] shadow-2xl'
-                  : 'opacity-75 hover:opacity-100 hover:-translate-y-1'
-              }`}
-              style={{
-                background: 'linear-gradient(135deg, #222222 0%, #121212 100%)',
-                boxShadow: '0 4px 18px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.25)'
-              }}
-            >
-              {/* Brilho radial plástico */}
-              <div className="absolute inset-0 bg-radial from-white/10 to-transparent opacity-50 pointer-events-none" />
-
-              {/* Top Row: Nome + Status */}
-              <div className="flex items-start justify-between relative z-10">
-                <div>
-                  <span className="text-[10px] text-[#737373] uppercase tracking-wider block font-semibold">
-                    Visão Consolidada
-                  </span>
-                  <h4 className="text-sm font-bold text-white tracking-tight">
-                    Todas as Faturas
-                  </h4>
-                </div>
-                {selectedCardFilter === null && (
-                  <span className="inline-flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded-full bg-white text-black shadow-xs">
-                    <Check className="w-2.5 h-2.5 stroke-[3]" /> Ativo
-                  </span>
+              {/* Setas de Navegação Dinâmicas Desktop no Header (Diretriz 2) */}
+              <div className="hidden md:flex items-center gap-1.5">
+                {canScrollLeft && (
+                  <button
+                    type="button"
+                    onClick={() => scrollCards('left')}
+                    aria-label="Ver cartões anteriores"
+                    title="Cartões anteriores"
+                    className="btn-liquid-glass p-1.5 rounded-xl text-white hover:text-[#A8B5D1] hover:scale-105 active:scale-95 transition-all cursor-pointer shadow-sm"
+                  >
+                    <ChevronLeft className="w-4 h-4 stroke-[2.5]" />
+                  </button>
+                )}
+                {canScrollRight && (
+                  <button
+                    type="button"
+                    onClick={() => scrollCards('right')}
+                    aria-label="Ver próximos cartões"
+                    title="Próximos cartões"
+                    className="btn-liquid-glass p-1.5 rounded-xl text-white hover:text-[#A8B5D1] hover:scale-105 active:scale-95 transition-all cursor-pointer shadow-sm"
+                  >
+                    <ChevronRight className="w-4 h-4 stroke-[2.5]" />
+                  </button>
                 )}
               </div>
-
-              {/* Middle Row: Digits */}
-              <div className="text-[11px] font-mono tracking-widest text-[#8C8C8C] relative z-10">
-                •••• •••• •••• TODAS
-              </div>
-
-              {/* Bottom Row: Valor consolidado */}
-              <div className="flex items-end justify-between relative z-10">
-                <div>
-                  <span className="text-[9px] uppercase tracking-wider text-[#737373] block font-semibold">
-                    Total Faturas
-                  </span>
-                  <span className="text-base font-bold font-mono text-white">
-                    {formatBRL(totalCreditCardInvoice)}
-                  </span>
-                </div>
-                <span className="text-[10px] text-[#8C8C8C]">
-                  {creditCards.length} {creditCards.length === 1 ? 'cartão' : 'cartões'}
-                </span>
-              </div>
             </div>
+          </div>
 
-            {/* Miniaturas dos Cartões Individuais */}
-            {creditCards.map(card => {
-              const summary = cardInvoices[card.id];
-              const isSelected = selectedCardFilter === card.id;
-              const totalAmount = summary ? summary.total : 0;
-              const baseColor = card.color || '#3B82F6';
+          {/* Carrossel de Miniaturas 3D de Cartões de Crédito (Diretriz 2 & 3) */}
+          <div className="relative group/cards">
+            {/* Seta Flutuante Esquerda (Desktop - Dinâmica) */}
+            {canScrollLeft && (
+              <button
+                type="button"
+                onClick={() => scrollCards('left')}
+                aria-label="Rolar para cartões anteriores"
+                title="Cartões anteriores"
+                className="hidden md:flex absolute -left-2 top-1/2 -translate-y-1/2 z-20 w-9 h-9 items-center justify-center rounded-full btn-liquid-glass text-white shadow-2xl hover:scale-110 active:scale-95 transition-all cursor-pointer backdrop-blur-md border border-white/20"
+                style={{
+                  boxShadow: '0 8px 24px rgba(0,0,0,0.85), inset 0 1px 0 rgba(255,255,255,0.35)'
+                }}
+              >
+                <ChevronLeft className="w-5 h-5 stroke-[2.5]" />
+              </button>
+            )}
 
-              return (
-                <div
-                  key={card.id}
-                  onClick={() => setSelectedCardFilter(isSelected ? null : card.id)}
-                  className={`w-64 sm:w-72 h-40 shrink-0 rounded-2xl p-4.5 flex flex-col justify-between relative overflow-hidden transition-all duration-300 cursor-pointer ${
-                    isSelected
-                      ? 'ring-2 ring-white ring-offset-2 ring-offset-[#0D0D0D] scale-[1.02] shadow-2xl'
-                      : 'opacity-85 hover:opacity-100 hover:-translate-y-1'
-                  }`}
-                  style={{
-                    background: `linear-gradient(135deg, ${baseColor} 0%, #0F0F0F 95%)`,
-                    boxShadow: isSelected
-                      ? `0 12px 28px -4px ${baseColor}40, 0 4px 12px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255, 255, 255, 0.4)`
-                      : '0 6px 18px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.25)'
-                  }}
-                >
-                  {/* Gloss Reflection Overlay */}
-                  <div 
-                    className="absolute inset-0 pointer-events-none opacity-40"
-                    style={{
-                      background: 'radial-gradient(ellipse at 85% 0%, rgba(255,255,255,0.4) 0%, transparent 65%)'
-                    }}
-                  />
+            {/* Seta Flutuante Direita (Desktop - Dinâmica) */}
+            {canScrollRight && (
+              <button
+                type="button"
+                onClick={() => scrollCards('right')}
+                aria-label="Rolar para próximos cartões"
+                title="Próximos cartões"
+                className="hidden md:flex absolute -right-2 top-1/2 -translate-y-1/2 z-20 w-9 h-9 items-center justify-center rounded-full btn-liquid-glass text-white shadow-2xl hover:scale-110 active:scale-95 transition-all cursor-pointer backdrop-blur-md border border-white/20"
+                style={{
+                  boxShadow: '0 8px 24px rgba(0,0,0,0.85), inset 0 1px 0 rgba(255,255,255,0.35)'
+                }}
+              >
+                <ChevronRight className="w-5 h-5 stroke-[2.5]" />
+              </button>
+            )}
 
-                  {/* Top Row: Chip Metálico + Wifi + Nome do Cartão */}
-                  <div className="flex items-start justify-between relative z-10">
-                    <div className="flex items-center gap-2.5">
-                      {/* Sim Chip Dourado */}
-                      <div className="w-8 h-6 rounded-md bg-linear-to-tr from-amber-400 via-amber-200 to-amber-500 border border-amber-600/50 p-0.5 shadow-sm relative overflow-hidden">
-                        <div className="w-full h-full border border-amber-800/30 rounded-xs flex flex-col justify-around">
-                          <div className="h-[1px] bg-amber-800/40 w-full" />
-                          <div className="h-[1px] bg-amber-800/40 w-full" />
-                        </div>
-                      </div>
-                      <Wifi className="w-3.5 h-3.5 text-white/70 rotate-90" />
-                    </div>
+            <div 
+              ref={cardsScrollRef}
+              onScroll={updateScrollButtons}
+              className="flex items-stretch gap-3.5 overflow-x-auto no-scrollbar scrollbar-hide py-2 px-1 snap-x snap-mandatory scroll-smooth scroll-px-1 touch-pan-x"
+              style={{
+                WebkitOverflowScrolling: 'touch',
+                scrollbarWidth: 'none',
+                msOverflowStyle: 'none'
+              }}
+            >
+              {/* Miniatura 0: Todos os Cartões (Visão Consolidada) */}
+              <div
+                onClick={() => setSelectedCardFilter(null)}
+                className={`w-64 sm:w-72 h-40 shrink-0 snap-start rounded-2xl p-4 flex flex-col justify-between relative overflow-hidden transition-all duration-300 cursor-pointer ${
+                  selectedCardFilter === null
+                    ? 'ring-2 ring-white ring-offset-2 ring-offset-[#0D0D0D] scale-[1.02] shadow-2xl'
+                    : 'opacity-75 hover:opacity-100 hover:-translate-y-1'
+                }`}
+                style={{
+                  background: 'linear-gradient(135deg, #222222 0%, #121212 100%)',
+                  boxShadow: '0 4px 18px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.25)'
+                }}
+              >
+                {/* Brilho radial plástico */}
+                <div className="absolute inset-0 bg-radial from-white/10 to-transparent opacity-50 pointer-events-none" />
 
-                    <div className="text-right">
-                      <span className="text-xs font-bold text-white tracking-tight uppercase block drop-shadow-xs">
-                        {card.cardName}
-                      </span>
-                      {isSelected && (
-                        <span className="inline-flex items-center gap-0.5 text-[8.5px] font-bold px-1.5 py-0.2 rounded-full bg-white text-black mt-0.5 shadow-xs">
-                          <Check className="w-2.5 h-2.5 stroke-[3]" /> Filtrado
-                        </span>
-                      )}
-                    </div>
+                {/* Top Row: Nome + Status */}
+                <div className="flex items-start justify-between relative z-10">
+                  <div>
+                    <span className="text-[10px] text-[#737373] uppercase tracking-wider block font-semibold">
+                      Visão Consolidada
+                    </span>
+                    <h4 className="text-sm font-bold text-white tracking-tight">
+                      Todas as Faturas
+                    </h4>
                   </div>
-
-                  {/* Middle Row: Digits */}
-                  <div className="text-xs font-mono tracking-widest text-white/85 relative z-10 drop-shadow-xs">
-                    •••• •••• •••• {card.lastFourDigits}
-                  </div>
-
-                  {/* Bottom Row: Fatura & Vencimento */}
-                  <div className="flex items-end justify-between relative z-10">
-                    <div>
-                      <span className="text-[9px] uppercase tracking-wider text-white/70 block font-semibold">
-                        Fatura Atual
-                      </span>
-                      <span className="text-base font-bold font-mono text-white drop-shadow-xs">
-                        {formatBRL(totalAmount)}
-                      </span>
-                    </div>
-
-                    <div className="text-right text-[10px] text-white/80">
-                      <span>Vence dia <strong>{card.dueDay || '—'}</strong></span>
-                      {card.limitAmount && card.limitAmount > 0 && (
-                        <span className="block text-[9px] text-white/60">
-                          Lim: {formatBRL(card.limitAmount)}
-                        </span>
-                      )}
-                    </div>
-                  </div>
+                  {selectedCardFilter === null && (
+                    <span className="inline-flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded-full bg-white text-black shadow-xs">
+                      <Check className="w-2.5 h-2.5 stroke-[3]" /> Ativo
+                    </span>
+                  )}
                 </div>
-              );
-            })}
+
+                {/* Middle Row: Digits */}
+                <div className="text-[11px] font-mono tracking-widest text-[#8C8C8C] relative z-10">
+                  •••• •••• •••• TODAS
+                </div>
+
+                {/* Bottom Row: Valor consolidado */}
+                <div className="flex items-end justify-between relative z-10">
+                  <div>
+                    <span className="text-[9px] uppercase tracking-wider text-[#737373] block font-semibold">
+                      Total Faturas
+                    </span>
+                    <span className="text-base font-bold font-mono text-white">
+                      {formatBRL(totalCreditCardInvoice)}
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-[#8C8C8C]">
+                    {creditCards.length} {creditCards.length === 1 ? 'cartão' : 'cartões'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Miniaturas dos Cartões Individuais */}
+              {creditCards.map(card => {
+                const summary = cardInvoices[card.id];
+                const isSelected = selectedCardFilter === card.id;
+                const totalAmount = summary ? summary.total : 0;
+                const baseColor = card.color || '#3B82F6';
+
+                return (
+                  <div
+                    key={card.id}
+                    onClick={() => setSelectedCardFilter(isSelected ? null : card.id)}
+                    className={`w-64 sm:w-72 h-40 shrink-0 snap-start rounded-2xl p-4.5 flex flex-col justify-between relative overflow-hidden transition-all duration-300 cursor-pointer ${
+                      isSelected
+                        ? 'ring-2 ring-white ring-offset-2 ring-offset-[#0D0D0D] scale-[1.02] shadow-2xl'
+                        : 'opacity-85 hover:opacity-100 hover:-translate-y-1'
+                    }`}
+                    style={{
+                      background: `linear-gradient(135deg, ${baseColor} 0%, #0F0F0F 95%)`,
+                      boxShadow: isSelected
+                        ? `0 12px 28px -4px ${baseColor}40, 0 4px 12px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255, 255, 255, 0.4)`
+                        : '0 6px 18px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.25)'
+                    }}
+                  >
+                    {/* Gloss Reflection Overlay */}
+                    <div 
+                      className="absolute inset-0 pointer-events-none opacity-40"
+                      style={{
+                        background: 'radial-gradient(ellipse at 85% 0%, rgba(255,255,255,0.4) 0%, transparent 65%)'
+                      }}
+                    />
+
+                    {/* Top Row: Chip Metálico + Wifi + Nome do Cartão */}
+                    <div className="flex items-start justify-between relative z-10">
+                      <div className="flex items-center gap-2.5">
+                        {/* Sim Chip Dourado */}
+                        <div className="w-8 h-6 rounded-md bg-linear-to-tr from-amber-400 via-amber-200 to-amber-500 border border-amber-600/50 p-0.5 shadow-sm relative overflow-hidden">
+                          <div className="w-full h-full border border-amber-800/30 rounded-xs flex flex-col justify-around">
+                            <div className="h-[1px] bg-amber-800/40 w-full" />
+                            <div className="h-[1px] bg-amber-800/40 w-full" />
+                          </div>
+                        </div>
+                        <Wifi className="w-3.5 h-3.5 text-white/70 rotate-90" />
+                      </div>
+
+                      <div className="text-right">
+                        <span className="text-xs font-bold text-white tracking-tight uppercase block drop-shadow-xs">
+                          {card.cardName}
+                        </span>
+                        {isSelected && (
+                          <span className="inline-flex items-center gap-0.5 text-[8.5px] font-bold px-1.5 py-0.2 rounded-full bg-white text-black mt-0.5 shadow-xs">
+                            <Check className="w-2.5 h-2.5 stroke-[3]" /> Filtrado
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Middle Row: Digits */}
+                    <div className="text-xs font-mono tracking-widest text-white/85 relative z-10 drop-shadow-xs">
+                      •••• •••• •••• {card.lastFourDigits}
+                    </div>
+
+                    {/* Bottom Row: Fatura & Vencimento */}
+                    <div className="flex items-end justify-between relative z-10">
+                      <div>
+                        <span className="text-[9px] uppercase tracking-wider text-white/70 block font-semibold">
+                          Fatura Atual
+                        </span>
+                        <span className="text-base font-bold font-mono text-white drop-shadow-xs">
+                          {formatBRL(totalAmount)}
+                        </span>
+                      </div>
+
+                      <div className="text-right text-[10px] text-white/80">
+                        <span>Vence dia <strong>{card.dueDay || '—'}</strong></span>
+                        {card.limitAmount && card.limitAmount > 0 && (
+                          <span className="block text-[9px] text-white/60">
+                            Lim: {formatBRL(card.limitAmount)}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
       )}

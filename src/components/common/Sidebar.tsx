@@ -2,12 +2,10 @@ import React from 'react';
 import { 
   LayoutDashboard, 
   ReceiptText, 
-  Repeat,
+  Repeat, 
   Target, 
   TrendingUp, 
   Plus, 
-  ChevronLeft, 
-  ChevronRight, 
   Wifi, 
   WifiOff, 
   LogOut,
@@ -33,21 +31,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
   pendingBillsCount
 }) => {
   const { 
-    currentMonth, 
-    prevMonth, 
-    nextMonth, 
     isOnline, 
     activeFixedCount, 
     activeInstallmentsCount
   } = useFinance();
   const { user, logout } = useAuth();
-
-  const formatMonthTitle = (ym: string) => {
-    const [year, month] = ym.split('-').map(Number);
-    const date = new Date(year, month - 1, 1);
-    const str = date.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
-    return str.charAt(0).toUpperCase() + str.slice(1);
-  };
 
   const totalRecurringBadge = activeFixedCount + activeInstallmentsCount;
 
@@ -183,32 +171,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </button>
             );
           })}
-        </div>
-
-        {/* Month Selector in Sidebar */}
-        <div className="p-3 rounded-2xl bg-[#141414] border border-[#212121]">
-          <span className="text-[10px] font-semibold text-[#525252] uppercase tracking-wider block mb-2">
-            Mês de Referência
-          </span>
-          <div className="flex items-center justify-between gap-1">
-            <button
-              onClick={prevMonth}
-              title="Mês anterior"
-              className="p-1.5 rounded-lg text-[#A3A3A3] hover:text-white hover:bg-[#262626] transition cursor-pointer"
-            >
-              <ChevronLeft className="w-3.5 h-3.5" />
-            </button>
-            <span className="text-xs font-medium text-white truncate text-center">
-              {formatMonthTitle(currentMonth)}
-            </span>
-            <button
-              onClick={nextMonth}
-              title="Próximo mês"
-              className="p-1.5 rounded-lg text-[#A3A3A3] hover:text-white hover:bg-[#262626] transition cursor-pointer"
-            >
-              <ChevronRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
         </div>
       </div>
 
