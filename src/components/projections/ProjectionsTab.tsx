@@ -71,7 +71,7 @@ export const ProjectionsTab: React.FC = () => {
   return (
     <div className="space-y-5 pb-24 w-full">
       {/* Sub Navigation Tabs */}
-      <div className="flex items-center gap-1.5 p-1 bg-[#141414] border border-[#262626] rounded-2xl overflow-x-auto no-scrollbar">
+      <div className="card-depth-3d flex items-center gap-1.5 p-1 rounded-2xl overflow-x-auto no-scrollbar">
         <button
           onClick={() => setActiveSubTab('score')}
           className={`flex-1 py-2 px-3 text-xs font-semibold rounded-xl whitespace-nowrap transition cursor-pointer ${
@@ -114,8 +114,8 @@ export const ProjectionsTab: React.FC = () => {
       {/* ============================================================= */}
       {activeSubTab === 'score' && (
         <div className="space-y-4">
-          {/* Main Score Hero Card */}
-          <div className="p-6 rounded-3xl bg-[#141414] border border-[#262626] flex flex-col md:flex-row items-center gap-6">
+          {/* Main Score Hero Card (3D Depth) */}
+          <div className="card-depth-hero p-6 rounded-3xl flex flex-col md:flex-row items-center gap-6">
             {/* Visual Gauge */}
             <div className="relative w-40 h-40 flex items-center justify-center shrink-0">
               <svg className="w-40 h-40 -rotate-90">
@@ -188,7 +188,7 @@ export const ProjectionsTab: React.FC = () => {
           {/* 4 Pillars Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {/* Pilar 1: Taxa de Poupança */}
-            <div className="p-4 rounded-2xl bg-[#141414] border border-[#262626] space-y-2">
+            <div className="card-depth-3d p-4 rounded-2xl space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold text-white">Taxa de Poupança (30%)</span>
                 <span className="text-xs font-mono font-bold text-[#A3C9A8]">
@@ -207,7 +207,7 @@ export const ProjectionsTab: React.FC = () => {
             </div>
 
             {/* Pilar 2: Comprometimento da Renda */}
-            <div className="p-4 rounded-2xl bg-[#141414] border border-[#262626] space-y-2">
+            <div className="card-depth-3d p-4 rounded-2xl space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold text-white">Comprometimento com Fixos (30%)</span>
                 <span className="text-xs font-mono font-bold text-[#A8B5D1]">
@@ -226,7 +226,7 @@ export const ProjectionsTab: React.FC = () => {
             </div>
 
             {/* Pilar 3: Disciplina de Orçamento */}
-            <div className="p-4 rounded-2xl bg-[#141414] border border-[#262626] space-y-2">
+            <div className="card-depth-3d p-4 rounded-2xl space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold text-white">Disciplina de Tetos (25%)</span>
                 <span className="text-xs font-mono font-bold text-[#E5A97D]">
@@ -245,7 +245,7 @@ export const ProjectionsTab: React.FC = () => {
             </div>
 
             {/* Pilar 4: Consistência de Lançamentos */}
-            <div className="p-4 rounded-2xl bg-[#141414] border border-[#262626] space-y-2">
+            <div className="card-depth-3d p-4 rounded-2xl space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold text-white">Consistência de Registro (15%)</span>
                 <span className="text-xs font-mono font-bold text-[#E29578]">

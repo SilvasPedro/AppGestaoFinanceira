@@ -11,7 +11,8 @@ import {
   Wallet,
   Clock,
   Plus,
-  Repeat
+  Repeat,
+  Target
 } from 'lucide-react';
 import { useFinance } from '../../context/FinanceContext';
 import { TabType } from '../common/BottomNav';
@@ -48,6 +49,31 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({ onNavigateTab, onOpe
   const recentTransactions = monthTransactions.slice(0, 5);
 
   const [showAlertsExpanded, setShowAlertsExpanded] = React.useState(false);
+  const [budgetCategoryView, setBudgetCategoryView] = React.useState<'budgets' | 'categories'>('budgets');
+
+  // Agrupamento detalhado de gastos por categoria no mês vigente (Diretriz 3)
+  const categorySpending = React.useMemo(() => {
+    const expenseTx = monthTransactions.filter(tx => tx.type === 'expense');
+    const catMap: Record<string, { total: number; count: number }> = {};
+
+    expenseTx.forEach(tx => {
+      const cat = tx.category || 'Outros';
+      if (!catMap[cat]) {
+        catMap[cat] = { total: 0, count: 0 };
+      }
+      catMap[cat].total += tx.amount;
+      catMap[cat].count += 1;
+    });
+
+    return Object.entries(catMap)
+      .map(([category, data]) => ({
+        category,
+        spent: data.total,
+        count: data.count,
+        percentage: expensesTotal > 0 ? (data.total / expensesTotal) * 100 : 0
+      }))
+      .sort((a, b) => b.spent - a.spent);
+  }, [monthTransactions, expensesTotal]);
 
   return (
     <div className="space-y-6 pb-24 w-full">
@@ -278,10 +304,10 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({ onNavigateTab, onOpe
         </div>
       </div>
 
-      {/* 3. Score de Saúde Financeira (Mini Banner Interativo 3D com Liquid Glass) */}
+      {/* 3. Score de Saúde Financeira (Banner Interativo com Profundidade 3D em Repouso e Liquid Glass) */}
       <div 
         onClick={() => onNavigateTab('projections')}
-        className="card-depth-3d-interactive p-5 rounded-3xl bg-linear-to-r from-[#171717] to-[#121212] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 cursor-pointer group"
+        className="card-depth-3d card-depth-3d-interactive p-5 rounded-3xl bg-linear-to-r from-[#171717] to-[#121212] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 cursor-pointer group"
       >
         <div className="flex items-center gap-4">
           {/* Circular Score Gauge */}
@@ -408,10 +434,10 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({ onNavigateTab, onOpe
         </div>
       </div>
 
-      {/* Atalho para Compromissos Recorrentes & Parcelamentos (Card Interativo 3D com Liquid Glass) */}
+      {/* Atalho para Compromissos Recorrentes & Parcelamentos (Card Interativo 3D em Repouso com Liquid Glass) */}
       <div 
         onClick={() => onNavigateTab('recurring')}
-        className="card-depth-3d-interactive p-4 sm:p-5 rounded-3xl bg-linear-to-r from-[#171717] to-[#141414] cursor-pointer flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 group"
+        className="card-depth-3d card-depth-3d-interactive p-4 sm:p-5 rounded-3xl bg-linear-to-r from-[#171717] to-[#141414] cursor-pointer flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 group"
       >
         <div className="flex items-center gap-3.5">
           <div className="w-10 h-10 rounded-2xl bg-[#E5A97D]/15 text-[#E5A97D] border border-[#E5A97D]/25 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
@@ -445,62 +471,159 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({ onNavigateTab, onOpe
         </button>
       </div>
 
-      {/* 5. Acesso Rápido a Limites Orçamentários (Card 3D) */}
+      {/* 5. Alternância na Visão Geral: Tetos Orçamentários vs Gastos por Categoria (Diretriz 3) */}
       <div className="card-depth-3d p-5 rounded-3xl">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xs font-semibold text-[#737373] uppercase tracking-wider">
-            Tetos Orçamentários em Tempo Real
-          </h3>
-          <button
-            onClick={() => onNavigateTab('budgets')}
-            className="btn-liquid-glass px-2.5 py-1 rounded-lg text-xs font-medium text-[#A8B5D1] hover:text-white flex items-center gap-1"
-          >
-            <span>Gerenciar</span>
-            <ChevronRight className="w-3.5 h-3.5" />
-          </button>
-        </div>
-
-        {budgetsStatus.length === 0 ? (
-          <div className="py-6 text-center text-xs text-[#737373]">
-            <p>Nenhum teto orçamentário configurado ainda.</p>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+          {/* Toggle Segmentado em Liquid Glass */}
+          <div className="flex items-center gap-1 p-1 bg-[#0D0D0D] border border-[#242424] rounded-xl self-start">
             <button
-              onClick={() => onNavigateTab('budgets')}
-              className="btn-liquid-glass-primary mt-2 px-3 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer"
+              type="button"
+              onClick={() => setBudgetCategoryView('budgets')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer flex items-center gap-1.5 ${
+                budgetCategoryView === 'budgets'
+                  ? 'bg-[#1F1F1F] text-white shadow-xs border border-[#333333]'
+                  : 'text-[#858585] hover:text-white'
+              }`}
             >
-              + Definir Primeiro Teto
+              <Target className="w-3.5 h-3.5 text-[#E29578]" />
+              <span>Tetos Orçamentários</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setBudgetCategoryView('categories')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer flex items-center gap-1.5 ${
+                budgetCategoryView === 'categories'
+                  ? 'bg-[#1F1F1F] text-white shadow-xs border border-[#333333]'
+                  : 'text-[#858585] hover:text-white'
+              }`}
+            >
+              <Layers className="w-3.5 h-3.5 text-[#A8B5D1]" />
+              <span>Gastos por Categoria</span>
             </button>
           </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {budgetsStatus.slice(0, 4).map(b => (
-              <div key={b.category} className="p-3 bg-[#0D0D0D] border border-[#1E1E1E] rounded-2xl">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="font-medium text-white">{b.category}</span>
-                  <span className="text-[#A3A3A3] text-[11px]">
-                    {formatBRL(b.spent)} / <span className="text-[#737373]">{formatBRL(b.limit)}</span>
-                  </span>
+
+          {/* Botão de Ação contextual */}
+          {budgetCategoryView === 'budgets' ? (
+            <button
+              onClick={() => onNavigateTab('budgets')}
+              className="btn-liquid-glass px-2.5 py-1 rounded-lg text-xs font-medium text-[#A8B5D1] hover:text-white flex items-center gap-1 self-end sm:self-auto"
+            >
+              <span>Gerenciar Tetos</span>
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          ) : (
+            <button
+              onClick={() => onNavigateTab('transactions')}
+              className="btn-liquid-glass px-2.5 py-1 rounded-lg text-xs font-medium text-[#A8B5D1] hover:text-white flex items-center gap-1 self-end sm:self-auto"
+            >
+              <span>Ver Extrato</span>
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
+
+        {/* Visualização 1: Tetos Orçamentários */}
+        {budgetCategoryView === 'budgets' && (
+          <>
+            {budgetsStatus.length === 0 ? (
+              <div className="py-6 text-center text-xs text-[#737373]">
+                <p>Nenhum teto orçamentário configurado ainda.</p>
+                <button
+                  onClick={() => onNavigateTab('budgets')}
+                  className="btn-liquid-glass-primary mt-2 px-3 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer"
+                >
+                  + Definir Primeiro Teto
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {budgetsStatus.slice(0, 6).map(b => (
+                  <div key={b.category} className="p-3 bg-[#0D0D0D] border border-[#1E1E1E] rounded-2xl">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-medium text-white">{b.category}</span>
+                      <span className="text-[#A3A3A3] text-[11px]">
+                        {formatBRL(b.spent)} / <span className="text-[#737373]">{formatBRL(b.limit)}</span>
+                      </span>
+                    </div>
+                    <div className="w-full bg-[#1E1E1E] h-2 rounded-full mt-2 overflow-hidden">
+                      <div 
+                        className={`h-full rounded-full transition-all duration-500 ${
+                          b.status === 'danger'
+                            ? 'bg-[#E29578]'
+                            : b.status === 'warning'
+                            ? 'bg-[#E5A97D]'
+                            : 'bg-[#A3C9A8]'
+                        }`}
+                        style={{ width: `${Math.min(100, b.percentage)}%` }}
+                      />
+                    </div>
+                    <div className="flex justify-between items-center text-[10px] mt-1.5 text-[#737373]">
+                      <span>{Math.round(b.percentage)}% consumido</span>
+                      <span className={b.status === 'danger' ? 'text-[#E29578] font-semibold' : ''}>
+                        {b.status === 'danger' ? 'Limite excedido' : `Resta ${formatBRL(Math.max(0, b.limit - b.spent))}`}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Visualização 2: Gastos por Categoria (Detalhamento do que foi gasto) */}
+        {budgetCategoryView === 'categories' && (
+          <>
+            {categorySpending.length === 0 ? (
+              <div className="py-6 text-center text-xs text-[#737373]">
+                <p>Nenhuma despesa registrada para categorizar neste mês.</p>
+                <button
+                  onClick={onOpenAddModal}
+                  className="btn-liquid-glass-primary mt-2 px-3 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer"
+                >
+                  + Adicionar Despesa
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {categorySpending.map(cat => (
+                    <div 
+                      key={cat.category}
+                      className="p-3.5 bg-[#0D0D0D] border border-[#1E1E1E] rounded-2xl hover:border-[#2C2C2C] transition"
+                    >
+                      <div className="flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-[#A8B5D1]" />
+                          <span className="font-semibold text-white">{cat.category}</span>
+                        </div>
+                        <span className="font-bold text-white font-mono">
+                          {formatBRL(cat.spent)}
+                        </span>
+                      </div>
+                      <div className="w-full bg-[#1E1E1E] h-2 rounded-full mt-2 overflow-hidden">
+                        <div 
+                          className="bg-[#A8B5D1] h-full rounded-full transition-all duration-500"
+                          style={{ width: `${Math.min(100, Math.max(3, cat.percentage))}%` }}
+                        />
+                      </div>
+                      <div className="flex justify-between items-center text-[10px] mt-1.5 text-[#737373]">
+                        <span>{cat.count} lançamento(s)</span>
+                        <span className="text-[#A3A3A3] font-medium font-mono">
+                          {cat.percentage.toFixed(1)}% do total gasto
+                        </span>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                <div className="w-full bg-[#1E1E1E] h-2 rounded-full mt-2 overflow-hidden">
-                  <div 
-                    className={`h-full rounded-full transition-all duration-500 ${
-                      b.status === 'danger'
-                        ? 'bg-[#E29578]'
-                        : b.status === 'warning'
-                        ? 'bg-[#E5A97D]'
-                        : 'bg-[#A3C9A8]'
-                    }`}
-                    style={{ width: `${Math.min(100, b.percentage)}%` }}
-                  />
-                </div>
-                <div className="flex justify-between items-center text-[10px] mt-1.5 text-[#737373]">
-                  <span>{Math.round(b.percentage)}% consumido</span>
-                  <span className={b.status === 'danger' ? 'text-[#E29578] font-semibold' : ''}>
-                    {b.status === 'danger' ? 'Limite excedido' : `Resta ${formatBRL(Math.max(0, b.limit - b.spent))}`}
-                  </span>
+
+                {/* Sub-rodapé informativo com totais */}
+                <div className="pt-2.5 flex items-center justify-between text-[11px] text-[#737373] px-1 border-t border-[#1C1C1C]">
+                  <span>Total de categorias com gastos: <strong className="text-white">{categorySpending.length}</strong></span>
+                  <span>Total em despesas: <strong className="text-[#E29578]">{formatBRL(expensesTotal)}</strong></span>
                 </div>
               </div>
-            ))}
-          </div>
+            )}
+          </>
         )}
       </div>
 

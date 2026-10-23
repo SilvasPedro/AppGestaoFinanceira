@@ -11,9 +11,7 @@ import {
   Wifi, 
   WifiOff, 
   LogOut,
-  Settings,
-  Maximize2,
-  Minimize2
+  Settings
 } from 'lucide-react';
 import { TabType } from './BottomNav';
 import { useFinance } from '../../context/FinanceContext';
@@ -40,9 +38,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     nextMonth, 
     isOnline, 
     activeFixedCount, 
-    activeInstallmentsCount,
-    layoutMode,
-    setLayoutMode
+    activeInstallmentsCount
   } = useFinance();
   const { user, logout } = useAuth();
 
@@ -211,36 +207,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
               className="p-1.5 rounded-lg text-[#A3A3A3] hover:text-white hover:bg-[#262626] transition cursor-pointer"
             >
               <ChevronRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        </div>
-
-        {/* Desktop Layout Switcher Shortcut (Diretriz 4) */}
-        <div className="p-3 rounded-2xl bg-[#141414] border border-[#212121] space-y-2">
-          <div className="flex items-center justify-between text-[10px] uppercase tracking-wider font-semibold">
-            <span className="text-[#666666]">Modo de Tela</span>
-            <span className="font-mono text-[9px] text-[#A8B5D1]">
-              {layoutMode === 'expanded' ? '100% Full' : 'Contido'}
-            </span>
-          </div>
-          <div className="toggle-segmented-glass w-full">
-            <button
-              type="button"
-              onClick={() => setLayoutMode('normal')}
-              className={`toggle-segment-btn flex-1 justify-center ${layoutMode === 'normal' ? 'toggle-segment-active' : ''}`}
-              title="Modo Normal: Centralizado e contido (max-w-6xl)"
-            >
-              <Minimize2 className="w-3 h-3" />
-              <span>Normal</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setLayoutMode('expanded')}
-              className={`toggle-segment-btn flex-1 justify-center ${layoutMode === 'expanded' ? 'toggle-segment-active' : ''}`}
-              title="Modo Expandido: 100% da largura da tela"
-            >
-              <Maximize2 className="w-3 h-3" />
-              <span>Expandido</span>
             </button>
           </div>
         </div>

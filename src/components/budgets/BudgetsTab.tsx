@@ -72,7 +72,7 @@ export const BudgetsTab: React.FC = () => {
 
           <button
             onClick={() => setIsSmartModalOpen(true)}
-            className="px-4 py-2.5 rounded-xl bg-white hover:bg-neutral-200 text-black text-xs font-bold flex items-center justify-center gap-2 transition active:scale-95 shadow-md cursor-pointer self-start sm:self-auto"
+            className="btn-liquid-glass-primary px-4 py-2.5 rounded-xl text-black text-xs font-bold flex items-center justify-center gap-2 transition active:scale-95 shadow-md cursor-pointer self-start sm:self-auto"
           >
             <Sparkles className="w-4 h-4 text-black" />
             <span>Sugerir Limites Inteligentes</span>
@@ -129,8 +129,8 @@ export const BudgetsTab: React.FC = () => {
         )}
       </div>
 
-      {/* 2. Top Banner: Global Budget Summary */}
-      <div className="p-5 rounded-3xl bg-[#141414] border border-[#262626]">
+      {/* 2. Top Banner: Global Budget Summary (Card 3D) */}
+      <div className="card-depth-3d p-5 rounded-3xl">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2">
@@ -148,7 +148,7 @@ export const BudgetsTab: React.FC = () => {
 
           <button
             onClick={() => setIsSmartModalOpen(true)}
-            className="px-4 py-2.5 rounded-xl bg-[#262626] hover:bg-[#333333] border border-[#383838] text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition active:scale-95 shadow-xs cursor-pointer"
+            className="btn-liquid-glass px-4 py-2.5 rounded-xl text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition active:scale-95 shadow-xs cursor-pointer"
           >
             <Plus className="w-4 h-4 stroke-[2.5]" />
             <span>Configurar Tetos</span>
@@ -214,12 +214,12 @@ export const BudgetsTab: React.FC = () => {
               return (
                 <div
                   key={b.category}
-                  className={`p-4 rounded-2xl bg-[#141414] border transition ${
+                  className={`card-depth-3d-interactive p-4 rounded-2xl transition ${
                     isDanger
-                      ? 'border-[#E29578]/40 shadow-xs shadow-[#E29578]/5'
+                      ? 'border-[#E29578]/50!'
                       : isWarning
-                      ? 'border-[#E5A97D]/40'
-                      : 'border-[#262626] hover:border-[#383838]'
+                      ? 'border-[#E5A97D]/50!'
+                      : ''
                   }`}
                 >
                   <div className="flex items-center justify-between mb-2">

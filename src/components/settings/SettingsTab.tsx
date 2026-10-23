@@ -104,7 +104,7 @@ export const SettingsTab: React.FC = () => {
       )}
 
       {/* 1. Gestão de Cartões de Crédito */}
-      <div className="p-5 rounded-3xl bg-[#141414] border border-[#262626] space-y-4">
+      <div className="card-depth-3d p-5 rounded-3xl space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-xl bg-[#A8B5D1]/15 text-[#A8B5D1] flex items-center justify-center">
@@ -121,7 +121,7 @@ export const SettingsTab: React.FC = () => {
           <button
             type="button"
             onClick={() => setIsCardModalOpen(true)}
-            className="py-2 px-3 rounded-xl bg-white hover:bg-neutral-200 text-black text-xs font-semibold flex items-center gap-1.5 transition active:scale-95 cursor-pointer shadow-xs"
+            className="btn-liquid-glass-primary py-2 px-3.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition active:scale-95 cursor-pointer shadow-xs"
           >
             <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
             <span>Novo Cartão</span>
@@ -180,7 +180,7 @@ export const SettingsTab: React.FC = () => {
       </div>
 
       {/* 2. Categorias Personalizadas */}
-      <div className="p-5 rounded-3xl bg-[#141414] border border-[#262626] space-y-4">
+      <div className="card-depth-3d p-5 rounded-3xl space-y-4">
         <div>
           <h3 className="text-sm font-semibold text-white flex items-center gap-2">
             <Tag className="w-4 h-4 text-[#A8B5D1]" /> Categorias Personalizadas
@@ -230,7 +230,7 @@ export const SettingsTab: React.FC = () => {
               <button
                 type="submit"
                 disabled={submittingCat || !newCategoryName.trim()}
-                className="py-2 px-4 rounded-xl bg-white hover:bg-neutral-200 text-black text-xs font-semibold flex items-center gap-1.5 transition active:scale-95 disabled:opacity-40 cursor-pointer shadow-xs"
+                className="btn-liquid-glass-primary py-2 px-4 rounded-xl text-xs font-bold flex items-center gap-1.5 transition active:scale-95 disabled:opacity-40 cursor-pointer shadow-xs"
               >
                 <Plus className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Adicionar</span>
@@ -300,7 +300,7 @@ export const SettingsTab: React.FC = () => {
       </div>
 
       {/* 3. Limpeza Completa de Dados do Firestore */}
-      <div className="p-5 rounded-3xl bg-[#141414] border border-[#E29578]/30 space-y-3">
+      <div className="card-depth-3d p-5 rounded-3xl border border-[#E29578]/40 space-y-3">
         <div className="flex items-start gap-3">
           <div className="w-10 h-10 rounded-2xl bg-[#E29578]/15 border border-[#E29578]/30 flex items-center justify-center text-[#E29578] shrink-0">
             <Database className="w-5 h-5 stroke-[2]" />
@@ -319,7 +319,7 @@ export const SettingsTab: React.FC = () => {
           <button
             type="button"
             onClick={() => setShowPurgeModal(true)}
-            className="py-2.5 px-4 rounded-xl bg-[#E29578]/15 hover:bg-[#E29578]/25 border border-[#E29578]/40 text-[#E29578] text-xs font-semibold flex items-center gap-2 transition active:scale-95 cursor-pointer"
+            className="btn-liquid-glass py-2.5 px-4 rounded-xl border border-[#E29578]/40 text-[#E29578] text-xs font-semibold flex items-center gap-2 transition active:scale-95 cursor-pointer"
           >
             <Trash2 className="w-4 h-4" />
             <span>Zerar Todos os Lançamentos do Banco</span>
@@ -328,7 +328,7 @@ export const SettingsTab: React.FC = () => {
       </div>
 
       {/* 4. Informações da Conta & Sessão */}
-      <div className="p-5 rounded-3xl bg-[#141414] border border-[#262626] space-y-3">
+      <div className="card-depth-3d p-5 rounded-3xl space-y-3">
         <h3 className="text-xs font-semibold text-[#737373] uppercase tracking-wider">
           Informações da Conta & Nuvem
         </h3>

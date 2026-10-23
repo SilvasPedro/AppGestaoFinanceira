@@ -183,14 +183,14 @@ export const RecurringTab: React.FC = () => {
         <div className="flex items-center gap-2">
           <button
             onClick={() => handleOpenAddFixed('expense')}
-            className="flex-1 sm:flex-none py-2 px-3 rounded-xl bg-[#171717] hover:bg-[#222222] border border-[#262626] text-xs font-semibold text-white flex items-center justify-center gap-1.5 transition cursor-pointer"
+            className="btn-liquid-glass flex-1 sm:flex-none py-2 px-3.5 rounded-xl text-xs font-semibold text-white flex items-center justify-center gap-1.5 transition cursor-pointer"
           >
             <Repeat className="w-3.5 h-3.5 text-[#E5A97D]" />
             <span>+ Gasto Fixo</span>
           </button>
           <button
             onClick={handleOpenAddInstallment}
-            className="flex-1 sm:flex-none py-2 px-3 rounded-xl bg-white hover:bg-neutral-200 text-black text-xs font-bold flex items-center justify-center gap-1.5 transition shadow-sm cursor-pointer"
+            className="btn-liquid-glass-primary flex-1 sm:flex-none py-2 px-3.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition shadow-sm cursor-pointer"
           >
             <Layers className="w-3.5 h-3.5" />
             <span>+ Parcelamento</span>
@@ -198,13 +198,13 @@ export const RecurringTab: React.FC = () => {
         </div>
       </div>
 
-      {/* Tabs Principais */}
-      <div className="flex items-center gap-1.5 p-1 bg-[#141414] border border-[#262626] rounded-2xl overflow-x-auto no-scrollbar">
+      {/* Tabs Principais com Vidro e Profundidade 3D */}
+      <div className="card-depth-3d flex items-center gap-1.5 p-1 rounded-2xl overflow-x-auto no-scrollbar">
         <button
           onClick={() => setActiveSubTab('recurring')}
           className={`flex-1 min-w-[130px] py-2.5 px-3 rounded-xl text-xs font-semibold transition cursor-pointer flex items-center justify-center gap-2 ${
             activeSubTab === 'recurring'
-              ? 'bg-[#262626] text-white shadow-xs'
+              ? 'bg-[#222222] text-white shadow-xs border border-white/10'
               : 'text-[#737373] hover:text-white'
           }`}
         >
@@ -219,7 +219,7 @@ export const RecurringTab: React.FC = () => {
           onClick={() => setActiveSubTab('installments')}
           className={`flex-1 min-w-[140px] py-2.5 px-3 rounded-xl text-xs font-semibold transition cursor-pointer flex items-center justify-center gap-2 ${
             activeSubTab === 'installments'
-              ? 'bg-[#262626] text-white shadow-xs'
+              ? 'bg-[#222222] text-white shadow-xs border border-white/10'
               : 'text-[#737373] hover:text-white'
           }`}
         >
@@ -234,7 +234,7 @@ export const RecurringTab: React.FC = () => {
           onClick={() => setActiveSubTab('history')}
           className={`flex-1 min-w-[110px] py-2.5 px-3 rounded-xl text-xs font-semibold transition cursor-pointer flex items-center justify-center gap-2 ${
             activeSubTab === 'history'
-              ? 'bg-[#262626] text-white shadow-xs'
+              ? 'bg-[#222222] text-white shadow-xs border border-white/10'
               : 'text-[#737373] hover:text-white'
           }`}
         >
@@ -251,9 +251,9 @@ export const RecurringTab: React.FC = () => {
       {/* ==================================================================== */}
       {activeSubTab === 'recurring' && (
         <div className="space-y-4">
-          {/* Métricas dos Gastos Fixos */}
+          {/* Métricas dos Gastos Fixos (3D Depth) */}
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            <div className="p-4 bg-[#141414] border border-[#262626] rounded-2xl space-y-1">
+            <div className="card-depth-hero p-4 rounded-2xl space-y-1">
               <span className="text-[10px] text-[#737373] uppercase tracking-wider font-semibold block">
                 Despesas Fixas / Mês
               </span>
@@ -262,7 +262,7 @@ export const RecurringTab: React.FC = () => {
               </p>
             </div>
 
-            <div className="p-4 bg-[#141414] border border-[#262626] rounded-2xl space-y-1">
+            <div className="card-depth-hero p-4 rounded-2xl space-y-1">
               <span className="text-[10px] text-[#737373] uppercase tracking-wider font-semibold block">
                 Receitas Fixas / Mês
               </span>
@@ -271,7 +271,7 @@ export const RecurringTab: React.FC = () => {
               </p>
             </div>
 
-            <div className="col-span-2 md:col-span-1 p-4 bg-[#141414] border border-[#262626] rounded-2xl space-y-1">
+            <div className="col-span-2 md:col-span-1 card-depth-hero p-4 rounded-2xl space-y-1">
               <span className="text-[10px] text-[#737373] uppercase tracking-wider font-semibold block">
                 Saldo Fixo Líquido
               </span>
@@ -319,7 +319,7 @@ export const RecurringTab: React.FC = () => {
 
           {/* Lista de Recorrências */}
           {filteredRecurring.length === 0 ? (
-            <div className="p-8 md:p-12 text-center bg-[#141414] border border-[#262626] rounded-3xl space-y-3">
+            <div className="card-depth-3d p-8 md:p-12 text-center rounded-3xl space-y-3">
               <div className="w-12 h-12 rounded-2xl bg-[#262626] text-[#737373] mx-auto flex items-center justify-center">
                 <Repeat className="w-6 h-6 stroke-[1.5]" />
               </div>
@@ -330,13 +330,13 @@ export const RecurringTab: React.FC = () => {
               <div className="pt-2 flex items-center justify-center gap-2">
                 <button
                   onClick={() => handleOpenAddFixed('expense')}
-                  className="px-4 py-2.5 rounded-xl bg-white text-black font-semibold text-xs hover:bg-neutral-200 transition cursor-pointer"
+                  className="btn-liquid-glass px-4 py-2.5 rounded-xl text-white font-semibold text-xs cursor-pointer"
                 >
                   + Cadastrar Despesa Fixa
                 </button>
                 <button
                   onClick={() => handleOpenAddFixed('income')}
-                  className="px-4 py-2.5 rounded-xl bg-[#262626] text-white font-semibold text-xs hover:bg-[#333333] border border-[#383838] transition cursor-pointer"
+                  className="btn-liquid-glass-primary px-4 py-2.5 rounded-xl font-bold text-xs cursor-pointer"
                 >
                   + Cadastrar Receita Fixa
                 </button>
@@ -354,7 +354,7 @@ export const RecurringTab: React.FC = () => {
                 return (
                   <div 
                     key={item.id}
-                    className="p-4 bg-[#141414] border border-[#262626] hover:border-[#383838] rounded-2xl space-y-3 transition group"
+                    className="card-depth-3d-interactive p-4.5 rounded-2xl space-y-3 transition group"
                   >
                     {/* Top Row: Description + Amount */}
                     <div className="flex items-start justify-between gap-3">
@@ -434,11 +434,11 @@ export const RecurringTab: React.FC = () => {
                       </button>
                     </div>
 
-                    {/* Bottom Row: Actions */}
+                    {/* Bottom Row: Actions com Liquid Glass */}
                     <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#1C1C1C]">
                       <button
                         onClick={() => setEditRecurring(item)}
-                        className="py-1.5 px-3 rounded-xl bg-[#1C1C1C] hover:bg-[#262626] text-xs text-[#A3A3A3] hover:text-white transition flex items-center gap-1 cursor-pointer"
+                        className="btn-liquid-glass py-1.5 px-3 rounded-xl text-xs text-[#A3A3A3] hover:text-white flex items-center gap-1 cursor-pointer"
                       >
                         <Pencil className="w-3.5 h-3.5" />
                         <span>Editar</span>
@@ -446,7 +446,7 @@ export const RecurringTab: React.FC = () => {
 
                       <button
                         onClick={() => setDeleteRecurringTarget(item)}
-                        className="py-1.5 px-3 rounded-xl bg-[#1C1C1C] hover:bg-[#262626] text-xs text-[#E29578] hover:text-[#E29578]/90 transition flex items-center gap-1 cursor-pointer"
+                        className="btn-liquid-glass py-1.5 px-3 rounded-xl text-xs text-[#E29578] hover:text-[#E29578] flex items-center gap-1 cursor-pointer"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                         <span>Gerenciar / Excluir</span>
@@ -465,9 +465,9 @@ export const RecurringTab: React.FC = () => {
       {/* ==================================================================== */}
       {activeSubTab === 'installments' && (
         <div className="space-y-4">
-          {/* Métricas dos Parcelamentos */}
+          {/* Métricas dos Parcelamentos (3D Depth) */}
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            <div className="p-4 bg-[#141414] border border-[#262626] rounded-2xl space-y-1">
+            <div className="card-depth-hero p-4 rounded-2xl space-y-1">
               <span className="text-[10px] text-[#737373] uppercase tracking-wider font-semibold block">
                 Saldo Devedor Total
               </span>
@@ -476,7 +476,7 @@ export const RecurringTab: React.FC = () => {
               </p>
             </div>
 
-            <div className="p-4 bg-[#141414] border border-[#262626] rounded-2xl space-y-1">
+            <div className="card-depth-hero p-4 rounded-2xl space-y-1">
               <span className="text-[10px] text-[#737373] uppercase tracking-wider font-semibold block">
                 Comprometimento Mensal
               </span>
@@ -486,7 +486,7 @@ export const RecurringTab: React.FC = () => {
               </p>
             </div>
 
-            <div className="col-span-2 md:col-span-1 p-4 bg-[#141414] border border-[#262626] rounded-2xl space-y-1">
+            <div className="col-span-2 md:col-span-1 card-depth-hero p-4 rounded-2xl space-y-1">
               <span className="text-[10px] text-[#737373] uppercase tracking-wider font-semibold block">
                 Compras Parceladas Ativas
               </span>
@@ -498,7 +498,7 @@ export const RecurringTab: React.FC = () => {
 
           {/* Lista de Parcelamentos Ativos */}
           {activeInstallments.length === 0 ? (
-            <div className="p-8 md:p-12 text-center bg-[#141414] border border-[#262626] rounded-3xl space-y-3">
+            <div className="card-depth-3d p-8 md:p-12 text-center rounded-3xl space-y-3">
               <div className="w-12 h-12 rounded-2xl bg-[#262626] text-[#737373] mx-auto flex items-center justify-center">
                 <Layers className="w-6 h-6 stroke-[1.5]" />
               </div>
@@ -509,7 +509,7 @@ export const RecurringTab: React.FC = () => {
               <div className="pt-2">
                 <button
                   onClick={handleOpenAddInstallment}
-                  className="px-4 py-2.5 rounded-xl bg-white text-black font-semibold text-xs hover:bg-neutral-200 transition cursor-pointer"
+                  className="btn-liquid-glass-primary px-4 py-2.5 rounded-xl text-black font-bold text-xs cursor-pointer"
                 >
                   + Cadastrar Compra Parcelada
                 </button>
@@ -526,7 +526,7 @@ export const RecurringTab: React.FC = () => {
                 return (
                   <div
                     key={group.groupId}
-                    className="p-5 bg-[#141414] border border-[#262626] hover:border-[#383838] rounded-3xl space-y-4 transition group"
+                    className="card-depth-3d-interactive p-5 rounded-3xl space-y-4 transition group"
                   >
                     {/* Cabeçalho do Card */}
                     <div className="flex items-start justify-between gap-3">
@@ -622,11 +622,11 @@ export const RecurringTab: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Botões de Ação */}
+                    {/* Botões de Ação com Liquid Glass */}
                     <div className="flex items-center gap-2 pt-1">
                       <button
                         onClick={() => setAdvanceGroup(group)}
-                        className="flex-1 py-2.5 px-3 rounded-xl bg-[#262626] hover:bg-[#333333] border border-[#383838] text-xs font-semibold text-[#E5A97D] hover:text-white flex items-center justify-center gap-1.5 transition cursor-pointer shadow-xs active:scale-98"
+                        className="btn-liquid-glass flex-1 py-2.5 px-3 rounded-xl text-xs font-semibold text-[#E5A97D] hover:text-white flex items-center justify-center gap-1.5 transition cursor-pointer shadow-xs active:scale-98"
                       >
                         <FastForward className="w-3.5 h-3.5" />
                         <span>Adiantar Parcelas</span>
@@ -635,7 +635,7 @@ export const RecurringTab: React.FC = () => {
                       <button
                         onClick={() => setEditGroup(group)}
                         title="Editar Parcelamento"
-                        className="p-2.5 rounded-xl bg-[#1C1C1C] hover:bg-[#262626] text-[#A3A3A3] hover:text-white transition cursor-pointer"
+                        className="btn-liquid-glass p-2.5 rounded-xl text-[#A3A3A3] hover:text-white transition cursor-pointer"
                       >
                         <Pencil className="w-4 h-4" />
                       </button>
@@ -643,7 +643,7 @@ export const RecurringTab: React.FC = () => {
                       <button
                         onClick={() => setDeleteGroupTarget(group)}
                         title="Excluir Parcelamento"
-                        className="p-2.5 rounded-xl bg-[#1C1C1C] hover:bg-[#262626] text-[#E29578] hover:text-[#E29578]/90 transition cursor-pointer"
+                        className="btn-liquid-glass p-2.5 rounded-xl text-[#E29578] hover:text-[#E29578] transition cursor-pointer"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -683,7 +683,7 @@ export const RecurringTab: React.FC = () => {
                     {finishedInstallments.map(group => (
                       <div
                         key={group.groupId}
-                        className="p-4 bg-[#141414] border border-[#262626] rounded-2xl space-y-3 opacity-80 hover:opacity-100 transition"
+                        className="card-depth-3d p-4 rounded-2xl space-y-3 opacity-90 hover:opacity-100 transition"
                       >
                         <div className="flex items-start justify-between gap-3">
                           <div>
@@ -725,7 +725,7 @@ export const RecurringTab: React.FC = () => {
                     {discontinuedRecurring.map(item => (
                       <div
                         key={item.id}
-                        className="p-4 bg-[#141414] border border-[#262626] rounded-2xl space-y-2 opacity-80 hover:opacity-100 transition"
+                        className="card-depth-3d p-4 rounded-2xl space-y-2 opacity-90 hover:opacity-100 transition"
                       >
                         <div className="flex items-start justify-between gap-3">
                           <div>

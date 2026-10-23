@@ -196,7 +196,7 @@ export const TransactionsTab: React.FC<TransactionsTabProps> = ({ onOpenAddModal
         </div>
         <button
           onClick={onOpenAddModal}
-          className="px-3.5 py-2.5 rounded-2xl bg-white hover:bg-neutral-200 text-black text-xs font-semibold flex items-center gap-1.5 transition active:scale-95 shrink-0 shadow-sm cursor-pointer"
+          className="btn-liquid-glass-primary px-3.5 py-2.5 rounded-2xl text-xs font-bold flex items-center gap-1.5 transition active:scale-95 shrink-0 shadow-sm cursor-pointer"
         >
           <Plus className="w-4 h-4 stroke-[2.5]" />
           <span className="hidden sm:inline">Novo Lançamento</span>
@@ -271,7 +271,7 @@ export const TransactionsTab: React.FC<TransactionsTabProps> = ({ onOpenAddModal
             return (
               <div
                 key={tx.id}
-                className="p-3.5 sm:p-4 rounded-2xl bg-[#141414] border border-[#212121] hover:border-[#2D2D2D] transition flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                className="card-depth-3d-interactive p-3.5 sm:p-4 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition"
               >
                 {/* Lado esquerdo: Detalhes do lançamento */}
                 <div className="flex items-start gap-3">
@@ -374,7 +374,7 @@ export const TransactionsTab: React.FC<TransactionsTabProps> = ({ onOpenAddModal
                   <button
                     onClick={() => setTxToEdit(tx)}
                     title="Editar informações do lançamento"
-                    className="p-1.5 rounded-lg text-[#737373] hover:text-[#A8B5D1] hover:bg-[#262626] transition cursor-pointer"
+                    className="btn-liquid-glass p-1.5 rounded-lg text-[#A3A3A3] hover:text-[#A8B5D1] cursor-pointer"
                   >
                     <Pencil className="w-3.5 h-3.5" />
                   </button>
@@ -383,7 +383,7 @@ export const TransactionsTab: React.FC<TransactionsTabProps> = ({ onOpenAddModal
                   <button
                     onClick={() => setTxToDelete(tx)}
                     title="Excluir lançamento"
-                    className="p-1.5 rounded-lg text-[#737373] hover:text-[#E29578] hover:bg-[#262626] transition cursor-pointer"
+                    className="btn-liquid-glass p-1.5 rounded-lg text-[#E29578] hover:text-[#E29578] cursor-pointer"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
