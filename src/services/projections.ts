@@ -65,18 +65,35 @@ export function calculateCashFlowProjections(
     return projections;
   }
 
-  // Identificar média de receitas pontuais/variáveis se não houver fixas
-  const allIncomes = safeTransactions.filter(t => t.type === 'income');
-  const distinctIncomeMonths = new Set(allIncomes.map(t => t.date ? t.date.slice(0, 7) : '')).size || 1;
-  const avgIncome = allIncomes.length > 0 
-    ? allIncomes.reduce((acc, t) => acc + (Number(t.amount) || 0), 0) / distinctIncomeMonths
+  // 1. Receita real do mês base (para usar como baseline imediato de renda mensal)
+  const baseMonthIncomes = (baseMonthYear && /^\d{4}-\d{2}$/.test(baseMonthYear))
+    ? safeTransactions
+        .filter(t => t.type === 'income' && t.date && t.date.startsWith(baseMonthYear))
+        .reduce((acc, t) => acc + (Number(t.amount) || 0), 0)
     : 0;
 
-  // Identificar gastos diários médios dos últimos meses
-  const dailyExpenses = safeTransactions.filter(t => t.type === 'expense' && t.nature === 'daily');
-  const distinctExpenseMonths = new Set(dailyExpenses.map(t => t.date ? t.date.slice(0, 7) : '')).size || 1;
-  const avgDailyMonthly = dailyExpenses.length > 0
-    ? dailyExpenses.reduce((acc, t) => acc + (Number(t.amount) || 0), 0) / distinctExpenseMonths
+  // 2. Média histórica de receitas mensais em meses com receita
+  const incomeMonthMap = new Map<string, number>();
+  safeTransactions
+    .filter(t => t.type === 'income')
+    .forEach(t => {
+      const ym = t.date ? t.date.slice(0, 7) : '';
+      if (ym) incomeMonthMap.set(ym, (incomeMonthMap.get(ym) || 0) + (Number(t.amount) || 0));
+    });
+  const avgIncome = incomeMonthMap.size > 0 
+    ? Array.from(incomeMonthMap.values()).reduce((sum, v) => sum + v, 0) / incomeMonthMap.size
+    : 0;
+
+  // 3. Gastos diários médios dos últimos meses (informativo)
+  const dailyExpensesMonthMap = new Map<string, number>();
+  safeTransactions
+    .filter(t => t.type === 'expense' && t.nature === 'daily')
+    .forEach(t => {
+      const ym = t.date ? t.date.slice(0, 7) : '';
+      if (ym) dailyExpensesMonthMap.set(ym, (dailyExpensesMonthMap.get(ym) || 0) + (Number(t.amount) || 0));
+    });
+  const avgDailyMonthly = dailyExpensesMonthMap.size > 0
+    ? Array.from(dailyExpensesMonthMap.values()).reduce((sum, v) => sum + v, 0) / dailyExpensesMonthMap.size
     : 0;
 
   // Mapear grupos de parcelamento para conciliação fiel entre extrato e projeção
@@ -99,16 +116,29 @@ export function calculateCashFlowProjections(
     const monthYear = `${y}-${String(m + 1).padStart(2, '0')}`;
     const displayMonth = `${monthNames[m]} ${String(y).slice(-2)}`;
 
-    // 1. Receitas fixas ativas neste mês futuro
+    // 1. Receitas do mês:
+    // a. Se o usuário já cadastrou transações de receita no próprio mês futuro (ex: já tem salário lançado em Dezembro)
+    const actualIncomesInMonth = safeTransactions
+      .filter(t => t.type === 'income' && t.nature !== 'installment' && t.date && t.date.startsWith(monthYear))
+      .reduce((acc, t) => acc + (Number(t.amount) || 0), 0);
+
+    // b. Receitas fixas ativas neste mês futuro (recorrências com startDate / sem endDate)
     const fixedIncomesInMonth = safeTransactions
       .filter(t => t.type === 'income' && t.nature === 'fixed' && isFixedActiveInMonth(t, monthYear))
       .reduce((acc, t) => acc + (Number(t.amount) || 0), 0);
-    const monthBaselineIncome = fixedIncomesInMonth > 0 ? fixedIncomesInMonth : avgIncome;
 
-    // 2. Custos fixos ativos neste mês futuro
-    const fixedExpensesInMonth = safeTransactions
+    // c. Linha de base da renda mensal (se não houver fixa ativa nem lançamento real no mês, herda a renda do mês base ou média)
+    const recurringOrBase = fixedIncomesInMonth > 0 ? fixedIncomesInMonth : (baseMonthIncomes > 0 ? baseMonthIncomes : avgIncome);
+    const monthBaselineIncome = actualIncomesInMonth > 0 ? actualIncomesInMonth : recurringOrBase;
+
+    // 2. Custos fixos e despesas comprometidas no mês:
+    const actualFixedInMonth = safeTransactions
+      .filter(t => t.type === 'expense' && t.nature === 'fixed' && t.date && t.date.startsWith(monthYear))
+      .reduce((acc, t) => acc + (Number(t.amount) || 0), 0);
+    const recurringFixedInMonth = safeTransactions
       .filter(t => t.type === 'expense' && t.nature === 'fixed' && isFixedActiveInMonth(t, monthYear))
       .reduce((acc, t) => acc + (Number(t.amount) || 0), 0);
+    const fixedExpensesInMonth = Math.max(actualFixedInMonth, recurringFixedInMonth);
 
     // 3. Somar parcelas de despesas ativas neste mês futuro
     let monthExpenseInstallmentsTotal = 0;
@@ -157,7 +187,14 @@ export function calculateCashFlowProjections(
     });
 
     const projectedIncome = monthBaselineIncome + monthIncomeInstallmentsTotal;
-    const totalExpenses = fixedExpensesInMonth + monthExpenseInstallmentsTotal + avgDailyMonthly;
+
+    // Despesas já lançadas no mês que não sejam parcelas (para sincronizar exatamente com a Visão Geral caso o mês já tenha lançamentos)
+    const actualOtherExpensesInMonth = safeTransactions
+      .filter(t => t.type === 'expense' && t.nature !== 'installment' && t.date && t.date.startsWith(monthYear))
+      .reduce((acc, t) => acc + (Number(t.amount) || 0), 0);
+
+    const committedExpenses = fixedExpensesInMonth + monthExpenseInstallmentsTotal;
+    const totalExpenses = Math.max(committedExpenses, actualOtherExpensesInMonth + monthExpenseInstallmentsTotal);
     const netSurplus = projectedIncome - totalExpenses;
 
     projections.push({

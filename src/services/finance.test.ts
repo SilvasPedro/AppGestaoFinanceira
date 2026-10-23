@@ -239,6 +239,60 @@ test('calculateCashFlowProjections includes installment income (vendas parcelada
   assert.equal(projections[2].projectedIncome, 4000);
 });
 
+test('calculateCashFlowProjections correctly predicts surplus when future month has income covering installments', () => {
+  const transactions: Transaction[] = [
+    {
+      id: 'tx_sal_nov',
+      userId: 'test_u',
+      type: 'income',
+      nature: 'daily',
+      amount: 4254,
+      category: 'Salário',
+      date: '2026-11-05',
+      description: 'Salário Novembro',
+      paymentMethod: 'bank_transfer'
+    },
+    {
+      id: 'tx_sal_dec',
+      userId: 'test_u',
+      type: 'income',
+      nature: 'daily',
+      amount: 4254,
+      category: 'Salário',
+      date: '2026-12-05',
+      description: 'Salário Dezembro',
+      paymentMethod: 'bank_transfer'
+    },
+    {
+      id: 'tx_inst_dec',
+      userId: 'test_u',
+      type: 'expense',
+      nature: 'installment',
+      amount: 1254,
+      category: 'Compras',
+      date: '2026-12-10',
+      description: 'Parcela Notebook (1/10)',
+      paymentMethod: 'credit_card',
+      installmentDetails: {
+        groupId: 'grp_note',
+        totalAmount: 12540,
+        totalInstallments: 10,
+        currentInstallment: 1,
+        monthlyAmount: 1254,
+        purchaseDate: '2026-12-10'
+      }
+    }
+  ];
+
+  // Base month: 2026-11, month 1 is 2026-12
+  const projections = calculateCashFlowProjections(transactions, 2, '2026-11');
+  assert.equal(projections[0].monthYear, '2026-12');
+  assert.equal(projections[0].projectedIncome, 4254);
+  assert.equal(projections[0].installmentsTotal, 1254);
+  assert.equal(projections[0].netSurplus, 3000); // 4254 - 1254 = +3000!
+  assert.equal(projections[0].isDeficit, false); // Must NOT be deficit!
+});
+
 test('calculateFreedomSimulation calculates emergency fund and compound interest', () => {
   const sim = calculateFreedomSimulation(1000, 5000, 0.06, 10, 2000);
   assert.equal(sim.emergencyTarget, 12000); // 6 x 2000

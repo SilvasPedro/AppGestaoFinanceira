@@ -4,8 +4,6 @@ import {
   AlertCircle, 
   ShieldCheck, 
   Sparkles, 
-  Info, 
-  Percent, 
   Calendar, 
   Layers,
   ChevronRight,
@@ -14,7 +12,12 @@ import {
   PiggyBank,
   CheckCircle2,
   TrendingDown,
-  ArrowRight
+  ArrowRight,
+  ArrowUpRight,
+  Repeat,
+  Wallet,
+  Zap,
+  Info
 } from 'lucide-react';
 import { useFinance } from '../../context/FinanceContext';
 import { calculateFreedomSimulation } from '../../services/projections';
@@ -70,27 +73,29 @@ export const ProjectionsTab: React.FC = () => {
 
   return (
     <div className="space-y-5 pb-24 w-full">
-      {/* Sub Navigation Tabs */}
-      <div className="card-depth-3d flex items-center gap-1.5 p-1 rounded-2xl overflow-x-auto no-scrollbar">
+      {/* Sub Navigation Tabs com Estilo Liquid Glass */}
+      <div className="card-depth-3d flex items-center gap-1.5 p-1.5 rounded-2xl overflow-x-auto no-scrollbar border border-white/10">
         <button
           onClick={() => setActiveSubTab('score')}
-          className={`flex-1 py-2 px-3 text-xs font-semibold rounded-xl whitespace-nowrap transition cursor-pointer ${
+          className={`flex-1 py-2.5 px-3.5 text-xs font-bold rounded-xl whitespace-nowrap transition-all cursor-pointer flex items-center justify-center gap-2 ${
             activeSubTab === 'score'
-              ? 'bg-white text-black shadow-xs'
-              : 'text-[#A3A3A3] hover:text-white'
+              ? 'btn-liquid-glass-primary text-black shadow-md'
+              : 'btn-liquid-glass text-[#8C8C8C] hover:text-white'
           }`}
         >
-          Score de Saúde (0-1000)
+          <ShieldCheck className="w-3.5 h-3.5" />
+          <span>Score de Saúde</span>
         </button>
 
         <button
           onClick={() => setActiveSubTab('debt_curve')}
-          className={`flex-1 py-2 px-3 text-xs font-semibold rounded-xl whitespace-nowrap transition flex items-center justify-center gap-1.5 cursor-pointer ${
+          className={`flex-1 py-2.5 px-3.5 text-xs font-bold rounded-xl whitespace-nowrap transition-all cursor-pointer flex items-center justify-center gap-2 ${
             activeSubTab === 'debt_curve'
-              ? 'bg-white text-black shadow-xs'
-              : 'text-[#A3A3A3] hover:text-white'
+              ? 'btn-liquid-glass-primary text-black shadow-md'
+              : 'btn-liquid-glass text-[#8C8C8C] hover:text-white'
           }`}
         >
+          <Layers className="w-3.5 h-3.5" />
           <span>Curva de Parcelas & Déficit</span>
           {hasAnyDeficit && (
             <span className="w-2 h-2 rounded-full bg-[#E29578] animate-pulse" />
@@ -99,13 +104,14 @@ export const ProjectionsTab: React.FC = () => {
 
         <button
           onClick={() => setActiveSubTab('freedom_curve')}
-          className={`flex-1 py-2 px-3 text-xs font-semibold rounded-xl whitespace-nowrap transition cursor-pointer ${
+          className={`flex-1 py-2.5 px-3.5 text-xs font-bold rounded-xl whitespace-nowrap transition-all cursor-pointer flex items-center justify-center gap-2 ${
             activeSubTab === 'freedom_curve'
-              ? 'bg-white text-black shadow-xs'
-              : 'text-[#A3A3A3] hover:text-white'
+              ? 'btn-liquid-glass-primary text-black shadow-md'
+              : 'btn-liquid-glass text-[#8C8C8C] hover:text-white'
           }`}
         >
-          Liberdade Financeira
+          <Target className="w-3.5 h-3.5" />
+          <span>Liberdade Financeira</span>
         </button>
       </div>
 
@@ -154,51 +160,46 @@ export const ProjectionsTab: React.FC = () => {
               </div>
             </div>
 
-            {/* Score Explanation & Status description */}
-            <div className="space-y-3 flex-1 text-center md:text-left">
-              <div>
-                <h3 className="text-base font-semibold text-white">
-                  Diagnóstico Comportamental
-                </h3>
-                <p className="text-xs text-[#A3A3A3] mt-1 leading-relaxed">
-                  {healthScore.isEmpty
-                    ? 'Sem dados suficientes para calcular o score neste mês. Assim que você cadastrar suas receitas e gastos, o algoritmo avaliará seu equilíbrio financeiro automaticamente.'
-                    : 'Algoritmo dinâmico e transparente que avalia seu padrão mensal com base em 4 pilares ponderados de finanças pessoais sólidas.'}
-                </p>
+            {/* Score Context */}
+            <div className="space-y-2 text-center md:text-left flex-1">
+              <div className="flex items-center justify-center md:justify-start gap-2">
+                <ShieldCheck className="w-5 h-5 text-[#A3C9A8]" />
+                <h3 className="text-base font-bold text-white">Score de Governança Pessoal</h3>
               </div>
-
-              {/* Status scale bar */}
-              <div className="space-y-1">
-                <div className="flex justify-between text-[10px] text-[#737373]">
-                  <span>0 (Crítico)</span>
-                  <span>400 (Em Risco)</span>
-                  <span>650 (Saudável)</span>
-                  <span>1000 (Excelente)</span>
-                </div>
-                <div className="h-2 w-full rounded-full bg-[#1E1E1E] flex overflow-hidden">
-                  <div className="w-[40%] bg-[#E29578]/50" />
-                  <div className="w-[25%] bg-[#E5A97D]/50" />
-                  <div className="w-[20%] bg-[#A8B5D1]/50" />
-                  <div className="w-[15%] bg-[#A3C9A8]/50" />
-                </div>
+              <p className="text-xs text-[#A3A3A3] leading-relaxed">
+                Calculado com base em 4 pilares: taxa de poupança (35%), comprometimento de renda (25%), disciplina de tetos (25%) e consistência de registros (15%).
+              </p>
+              <div className="pt-2 flex flex-wrap gap-2 justify-center md:justify-start">
+                <span className="text-[11px] px-2.5 py-1 rounded-lg bg-[#141414] border border-[#262626] text-[#A3A3A3]">
+                  Poupança: <strong className="text-white font-mono">{healthScore.pillars.savingsRate.score}/350</strong>
+                </span>
+                <span className="text-[11px] px-2.5 py-1 rounded-lg bg-[#141414] border border-[#262626] text-[#A3A3A3]">
+                  Comprometimento: <strong className="text-white font-mono">{healthScore.pillars.incomeCommitment.score}/250</strong>
+                </span>
+                <span className="text-[11px] px-2.5 py-1 rounded-lg bg-[#141414] border border-[#262626] text-[#A3A3A3]">
+                  Tetos: <strong className="text-white font-mono">{healthScore.pillars.budgetDiscipline.score}/250</strong>
+                </span>
+                <span className="text-[11px] px-2.5 py-1 rounded-lg bg-[#141414] border border-[#262626] text-[#A3A3A3]">
+                  Registros: <strong className="text-white font-mono">{healthScore.pillars.entryConsistency.score}/150</strong>
+                </span>
               </div>
             </div>
           </div>
 
-          {/* 4 Pillars Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {/* Detailed 4 Pillars Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Pilar 1: Taxa de Poupança */}
-            <div className="card-depth-3d p-4 rounded-2xl space-y-2">
+            <div className="card-depth-3d p-4 rounded-2xl space-y-2 border border-white/10">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-white">Taxa de Poupança (30%)</span>
+                <span className="text-xs font-semibold text-white">Taxa de Poupança (35%)</span>
                 <span className="text-xs font-mono font-bold text-[#A3C9A8]">
-                  {healthScore.pillars.savingsRate.score}/300
+                  {healthScore.pillars.savingsRate.score}/350
                 </span>
               </div>
               <div className="h-1.5 w-full bg-[#1E1E1E] rounded-full overflow-hidden">
                 <div 
                   className="h-full bg-[#A3C9A8] transition-all duration-500"
-                  style={{ width: `${(healthScore.pillars.savingsRate.score / 300) * 100}%` }}
+                  style={{ width: `${(healthScore.pillars.savingsRate.score / 350) * 100}%` }}
                 />
               </div>
               <p className="text-[11px] text-[#737373]">
@@ -206,18 +207,18 @@ export const ProjectionsTab: React.FC = () => {
               </p>
             </div>
 
-            {/* Pilar 2: Comprometimento da Renda */}
-            <div className="card-depth-3d p-4 rounded-2xl space-y-2">
+            {/* Pilar 2: Comprometimento de Renda */}
+            <div className="card-depth-3d p-4 rounded-2xl space-y-2 border border-white/10">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-white">Comprometimento com Fixos (30%)</span>
+                <span className="text-xs font-semibold text-white">Comprometimento de Renda (25%)</span>
                 <span className="text-xs font-mono font-bold text-[#A8B5D1]">
-                  {healthScore.pillars.incomeCommitment.score}/300
+                  {healthScore.pillars.incomeCommitment.score}/250
                 </span>
               </div>
               <div className="h-1.5 w-full bg-[#1E1E1E] rounded-full overflow-hidden">
                 <div 
                   className="h-full bg-[#A8B5D1] transition-all duration-500"
-                  style={{ width: `${(healthScore.pillars.incomeCommitment.score / 300) * 100}%` }}
+                  style={{ width: `${(healthScore.pillars.incomeCommitment.score / 250) * 100}%` }}
                 />
               </div>
               <p className="text-[11px] text-[#737373]">
@@ -225,8 +226,8 @@ export const ProjectionsTab: React.FC = () => {
               </p>
             </div>
 
-            {/* Pilar 3: Disciplina de Orçamento */}
-            <div className="card-depth-3d p-4 rounded-2xl space-y-2">
+            {/* Pilar 3: Disciplina de Tetos */}
+            <div className="card-depth-3d p-4 rounded-2xl space-y-2 border border-white/10">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold text-white">Disciplina de Tetos (25%)</span>
                 <span className="text-xs font-mono font-bold text-[#E5A97D]">
@@ -245,7 +246,7 @@ export const ProjectionsTab: React.FC = () => {
             </div>
 
             {/* Pilar 4: Consistência de Lançamentos */}
-            <div className="card-depth-3d p-4 rounded-2xl space-y-2">
+            <div className="card-depth-3d p-4 rounded-2xl space-y-2 border border-white/10">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold text-white">Consistência de Registro (15%)</span>
                 <span className="text-xs font-mono font-bold text-[#E29578]">
@@ -264,16 +265,16 @@ export const ProjectionsTab: React.FC = () => {
             </div>
           </div>
 
-          {/* Actionable Tips */}
+          {/* Actionable Tips com Estilo Liquid Glass */}
           {healthScore.actionableTips.length > 0 && (
-            <div className="p-5 rounded-3xl bg-[#141414] border border-[#262626] space-y-3">
+            <div className="card-depth-3d p-5 rounded-3xl space-y-3 border border-white/10">
               <div className="flex items-center gap-2 text-xs font-semibold text-white">
                 <Sparkles className="w-4 h-4 text-[#A3C9A8]" />
                 <span>Recomendações Comportamentais para o seu Perfil</span>
               </div>
               <div className="space-y-2">
                 {healthScore.actionableTips.map((tip, idx) => (
-                  <div key={idx} className="flex items-start gap-2.5 text-xs text-[#A3A3A3] p-2.5 rounded-xl bg-[#0D0D0D]">
+                  <div key={idx} className="flex items-start gap-2.5 text-xs text-[#A3A3A3] p-3 rounded-2xl bg-[#121212] border border-white/5">
                     <div className="w-1.5 h-1.5 rounded-full bg-[#A3C9A8] mt-1.5 shrink-0" />
                     <span>{tip}</span>
                   </div>
@@ -285,63 +286,182 @@ export const ProjectionsTab: React.FC = () => {
       )}
 
       {/* ============================================================= */}
-      {/* SEÇÃO 2: CURVA DE PARCELAS & DÉFICIT FUTURO */}
+      {/* SEÇÃO 2: CURVA DE PARCELAS & DÉFICIT FUTURO (RECALCULADA & 3D) */}
       {/* ============================================================= */}
       {activeSubTab === 'debt_curve' && (
         <div className="space-y-4">
-          <div className="p-5 rounded-3xl bg-[#141414] border border-[#262626] space-y-3">
-            <h3 className="text-sm font-semibold text-white">
-              Projeção Futura de Caixa (Próximos 6 Meses)
-            </h3>
-            <p className="text-xs text-[#737373] leading-relaxed">
-              Simulação considerando as receitas fixas, parcelamentos de compras e vendas ativas e média de gastos.
-            </p>
+          {/* Header Hero Card */}
+          <div className="card-depth-3d p-5 sm:p-6 rounded-3xl space-y-4 border border-white/10">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl btn-liquid-glass flex items-center justify-center text-[#A8B5D1] shadow-md">
+                  <Layers className="w-5 h-5 stroke-[2.5]" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white tracking-tight">
+                    Projeção de Fluxo de Caixa (Próximos 6 Meses)
+                  </h3>
+                  <p className="text-xs text-[#8C8C8C] mt-0.5">
+                    Amortização progressiva de parcelamentos, custos fixos e conciliação do saldo futuro.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 self-start sm:self-auto">
+                <span className={`text-xs px-3 py-1.5 rounded-full font-bold flex items-center gap-1.5 ${
+                  hasAnyDeficit
+                    ? 'bg-[#E29578]/15 text-[#E29578] border border-[#E29578]/30 shadow-xs'
+                    : 'bg-[#A3C9A8]/15 text-[#A3C9A8] border border-[#A3C9A8]/30 shadow-xs'
+                }`}>
+                  {hasAnyDeficit ? (
+                    <>
+                      <AlertCircle className="w-3.5 h-3.5" />
+                      <span>Atenção a meses com déficit</span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      <span>Superávit em todos os meses</span>
+                    </>
+                  )}
+                </span>
+              </div>
+            </div>
+
+            {/* Quick Metrics Bar */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
+              <div className="p-3 rounded-2xl bg-[#121212] border border-white/8">
+                <span className="text-[10px] text-[#737373] uppercase tracking-wider block font-semibold">Horizonte</span>
+                <span className="text-sm font-bold font-mono text-white mt-0.5 block">6 Meses</span>
+              </div>
+              <div className="p-3 rounded-2xl bg-[#121212] border border-white/8">
+                <span className="text-[10px] text-[#737373] uppercase tracking-wider block font-semibold">Parcelas no Início</span>
+                <span className="text-sm font-bold font-mono text-[#E29578] mt-0.5 block">
+                  {formatBRL(cashFlowProjections[0]?.installmentsTotal || 0)}
+                </span>
+              </div>
+              <div className="p-3 rounded-2xl bg-[#121212] border border-white/8">
+                <span className="text-[10px] text-[#737373] uppercase tracking-wider block font-semibold">Parcelas no Final</span>
+                <span className="text-sm font-bold font-mono text-[#A3C9A8] mt-0.5 block">
+                  {formatBRL(cashFlowProjections[cashFlowProjections.length - 1]?.installmentsTotal || 0)}
+                </span>
+              </div>
+              <div className="p-3 rounded-2xl bg-[#121212] border border-white/8">
+                <span className="text-[10px] text-[#737373] uppercase tracking-wider block font-semibold">Alívio Projetado</span>
+                <span className="text-sm font-bold font-mono text-white mt-0.5 block">
+                  {formatBRL(Math.max(0, (cashFlowProjections[0]?.installmentsTotal || 0) - (cashFlowProjections[cashFlowProjections.length - 1]?.installmentsTotal || 0)))}
+                </span>
+              </div>
+            </div>
           </div>
 
-          {/* Month by month projection table */}
-          <div className="p-5 rounded-3xl bg-[#141414] border border-[#262626]">
-            <h4 className="text-xs font-semibold text-[#737373] uppercase tracking-wider mb-3">
-              Amortização Progressiva de Parcelas
-            </h4>
-            <div className="divide-y divide-[#1F1F1F]">
-              {cashFlowProjections.map((p) => (
-                <div key={p.monthYear} className="py-3 flex items-center justify-between text-xs">
-                  <div>
-                    <div className="font-semibold text-white flex items-center gap-2">
-                      <span>{p.displayMonth}</span>
-                      {p.isDeficit && (
-                        <span className="text-[9px] px-1.5 py-0.5 rounded-sm bg-[#E29578]/20 text-[#E29578]">
-                          Déficit
+          {/* Month by Month Projection Modular Cards (Visual 3D & Liquid Glass) */}
+          <div className="space-y-3">
+            {cashFlowProjections.map((p) => {
+              const isPositive = p.netSurplus >= 0;
+              const commitmentPercent = p.projectedIncome > 0
+                ? Math.min(100, Math.round((p.totalExpenses / p.projectedIncome) * 100))
+                : 0;
+
+              return (
+                <div 
+                  key={p.monthYear} 
+                  className="card-depth-3d-interactive p-4 sm:p-5 rounded-2xl transition-all border border-white/10 hover:border-white/20 bg-[#141414]"
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="space-y-2 flex-1">
+                      <div className="flex items-center gap-2.5">
+                        <span className="text-sm font-bold text-white tracking-tight flex items-center gap-1.5">
+                          <Calendar className="w-4 h-4 text-[#A8B5D1]" />
+                          {p.displayMonth}
                         </span>
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 ${
+                          p.isDeficit
+                            ? 'bg-[#E29578]/20 text-[#E29578] border border-[#E29578]/40 shadow-xs'
+                            : 'bg-[#A3C9A8]/20 text-[#A3C9A8] border border-[#A3C9A8]/40 shadow-xs'
+                        }`}>
+                          {p.isDeficit ? (
+                            <>
+                              <AlertCircle className="w-3 h-3" />
+                              <span>Déficit Previsto</span>
+                            </>
+                          ) : (
+                            <>
+                              <CheckCircle2 className="w-3 h-3" />
+                              <span>Superávit Previsto</span>
+                            </>
+                          )}
+                        </span>
+                      </div>
+
+                      {/* Subtitle breakdown with clean badges */}
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[#8C8C8C]">
+                        <span className="flex items-center gap-1">
+                          <ArrowUpRight className="w-3.5 h-3.5 text-[#A3C9A8]" />
+                          Receita: <strong className="text-white font-mono">{formatBRL(p.projectedIncome)}</strong>
+                        </span>
+                        <span>•</span>
+                        <span className="flex items-center gap-1">
+                          <Repeat className="w-3.5 h-3.5 text-[#737373]" />
+                          Fixos: <strong className="text-white font-mono">{formatBRL(p.fixedExpenses)}</strong>
+                        </span>
+                        <span>•</span>
+                        <span className="flex items-center gap-1">
+                          <Layers className="w-3.5 h-3.5 text-[#E29578]" />
+                          Parcelas: <strong className="text-[#E29578] font-mono">{formatBRL(p.installmentsTotal)}</strong>
+                          <span className="text-[10px] text-[#737373]">({p.activeInstallmentCount} {p.activeInstallmentCount === 1 ? 'ativa' : 'ativas'})</span>
+                        </span>
+                      </div>
+
+                      {/* Commitment Progress Bar */}
+                      {p.projectedIncome > 0 && (
+                        <div className="pt-1 max-w-md">
+                          <div className="flex justify-between text-[10px] text-[#737373] mb-1">
+                            <span>Renda Comprometida: {commitmentPercent}%</span>
+                            <span>Sobra Livre: {100 - commitmentPercent}%</span>
+                          </div>
+                          <div className="h-1.5 w-full bg-[#262626] rounded-full overflow-hidden">
+                            <div 
+                              className={`h-full transition-all duration-500 ${
+                                commitmentPercent > 100
+                                  ? 'bg-[#E29578]'
+                                  : commitmentPercent > 70
+                                  ? 'bg-[#E5A97D]'
+                                  : 'bg-[#A3C9A8]'
+                              }`}
+                              style={{ width: `${Math.min(100, commitmentPercent)}%` }}
+                            />
+                          </div>
+                        </div>
                       )}
                     </div>
-                    <div className="text-[11px] text-[#737373] mt-0.5">
-                      Fixos: {formatBRL(p.fixedExpenses)} • Parcelas: <strong className="text-[#E29578]">{formatBRL(p.installmentsTotal)}</strong> ({p.activeInstallmentCount} ativas)
-                    </div>
-                  </div>
 
-                  <div className="text-right">
-                    <div className={`font-mono font-bold ${p.isDeficit ? 'text-[#E29578]' : 'text-[#A3C9A8]'}`}>
-                      {p.netSurplus >= 0 ? '+' : ''}{formatBRL(p.netSurplus)}
-                    </div>
-                    <div className="text-[10px] text-[#737373]">
-                      Sobra prevista
+                    {/* Right Column: Net Surplus */}
+                    <div className="text-left sm:text-right pt-2 sm:pt-0 border-t sm:border-t-0 border-white/5">
+                      <span className="text-[10px] uppercase tracking-wider text-[#737373] block font-semibold">
+                        Sobra Prevista
+                      </span>
+                      <div className={`text-xl sm:text-2xl font-bold font-mono tracking-tight ${
+                        isPositive ? 'text-[#A3C9A8]' : 'text-[#E29578]'
+                      }`}>
+                        {isPositive ? '+' : ''}{formatBRL(p.netSurplus)}
+                      </div>
                     </div>
                   </div>
                 </div>
-              ))}
-            </div>
+              );
+            })}
           </div>
         </div>
       )}
 
       {/* ============================================================= */}
-      {/* SEÇÃO 3: LIBERDADE FINANCEIRA & METAS SIMPLIFICADAS */}
+      {/* SEÇÃO 3: LIBERDADE FINANCEIRA (ESTILO LIQUID GLASS & 3D)        */}
       {/* ============================================================= */}
       {activeSubTab === 'freedom_curve' && (
         <div className="space-y-4">
-          {/* 1. Card Destaque: Aporte Mensal Realista */}
-          <div className="p-5 sm:p-6 rounded-3xl bg-[#141414] border border-[#262626] space-y-4">
+          {/* 1. Card Destaque: Diagnóstico de Aporte Mensal */}
+          <div className="card-depth-3d p-5 sm:p-6 rounded-3xl space-y-4 border border-white/10">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <span className="text-[11px] font-semibold text-[#A8B5D1] uppercase tracking-wider block">
@@ -353,7 +473,7 @@ export const ProjectionsTab: React.FC = () => {
               </div>
 
               <div className="flex items-center gap-2">
-                <span className={`text-xs px-3 py-1 rounded-full font-medium ${
+                <span className={`text-xs px-3 py-1.5 rounded-full font-bold shadow-xs ${
                   netSurplus >= recommendedSaving && incomeTotal > 0
                     ? 'bg-[#A3C9A8]/15 text-[#A3C9A8] border border-[#A3C9A8]/30'
                     : netSurplus > 0
@@ -371,7 +491,7 @@ export const ProjectionsTab: React.FC = () => {
 
             {/* Comparação Direta */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-              <div className="p-4 rounded-2xl bg-[#0D0D0D] border border-[#1E1E1E]">
+              <div className="p-4 rounded-2xl bg-[#121212] border border-white/8 space-y-1">
                 <div className="flex items-center justify-between text-xs text-[#737373]">
                   <span>Aporte Atual Real (Sobra Líquida)</span>
                   <span className="text-[10px]">Receitas - Despesas</span>
@@ -386,7 +506,7 @@ export const ProjectionsTab: React.FC = () => {
                 </p>
               </div>
 
-              <div className="p-4 rounded-2xl bg-[#0D0D0D] border border-[#1E1E1E]">
+              <div className="p-4 rounded-2xl bg-[#121212] border border-white/8 space-y-1">
                 <div className="flex items-center justify-between text-xs text-[#737373]">
                   <span>Aporte Recomendado (Regra 20%)</span>
                   <span className="text-[10px] text-[#A8B5D1]">Alvo Saudável</span>
@@ -404,7 +524,7 @@ export const ProjectionsTab: React.FC = () => {
           </div>
 
           {/* 2. Simulador Interativo Simples (Slider de Aporte Mensal) */}
-          <div className="p-5 sm:p-6 rounded-3xl bg-[#141414] border border-[#262626] space-y-4">
+          <div className="card-depth-3d p-5 sm:p-6 rounded-3xl space-y-4 border border-white/10">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
                 <h3 className="text-sm font-bold text-white flex items-center gap-2">
@@ -416,7 +536,7 @@ export const ProjectionsTab: React.FC = () => {
                 </p>
               </div>
 
-              <div className="flex items-center gap-2 bg-[#0D0D0D] px-3 py-1.5 rounded-xl border border-[#262626] self-start sm:self-auto">
+              <div className="flex items-center gap-2 bg-[#121212] px-3.5 py-1.5 rounded-xl border border-white/10 self-start sm:self-auto shadow-xs">
                 <span className="text-xs text-[#737373]">Aporte Simulado:</span>
                 <span className="text-sm font-bold font-mono text-[#A3C9A8]">{formatBRL(simulatedSaving)}/mês</span>
               </div>
@@ -434,13 +554,13 @@ export const ProjectionsTab: React.FC = () => {
                 className="w-full accent-white cursor-pointer h-2 bg-[#262626] rounded-lg"
               />
 
-              {/* Botões de atalho rápido */}
+              {/* Botões de atalho rápido com estilo Liquid Glass */}
               <div className="flex flex-wrap items-center gap-1.5 pt-1">
                 {netSurplus > 0 && (
                   <button
                     type="button"
                     onClick={() => setCustomMonthlySaving(Math.round(netSurplus))}
-                    className="px-2.5 py-1 rounded-lg bg-[#0D0D0D] hover:bg-[#1E1E1E] border border-[#262626] text-[11px] text-[#A3C9A8] cursor-pointer"
+                    className="btn-liquid-glass px-3 py-1 rounded-xl text-[11px] text-[#A3C9A8] cursor-pointer"
                   >
                     Usar Sobra Real ({formatBRL(netSurplus)})
                   </button>
@@ -450,21 +570,21 @@ export const ProjectionsTab: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setCustomMonthlySaving(Math.round(incomeTotal * 0.10))}
-                      className="px-2.5 py-1 rounded-lg bg-[#0D0D0D] hover:bg-[#1E1E1E] border border-[#262626] text-[11px] text-[#A3A3A3] hover:text-white cursor-pointer"
+                      className="btn-liquid-glass px-3 py-1 rounded-xl text-[11px] text-[#A3A3A3] hover:text-white cursor-pointer"
                     >
                       10% da Renda ({formatBRL(incomeTotal * 0.10)})
                     </button>
                     <button
                       type="button"
                       onClick={() => setCustomMonthlySaving(Math.round(incomeTotal * 0.20))}
-                      className="px-2.5 py-1 rounded-lg bg-[#0D0D0D] hover:bg-[#1E1E1E] border border-[#262626] text-[11px] text-[#A8B5D1] hover:text-white cursor-pointer"
+                      className="btn-liquid-glass px-3 py-1 rounded-xl text-[11px] text-[#A8B5D1] hover:text-white cursor-pointer"
                     >
                       20% da Renda ({formatBRL(incomeTotal * 0.20)})
                     </button>
                     <button
                       type="button"
                       onClick={() => setCustomMonthlySaving(Math.round(incomeTotal * 0.30))}
-                      className="px-2.5 py-1 rounded-lg bg-[#0D0D0D] hover:bg-[#1E1E1E] border border-[#262626] text-[11px] text-[#A3A3A3] hover:text-white cursor-pointer"
+                      className="btn-liquid-glass px-3 py-1 rounded-xl text-[11px] text-[#A3A3A3] hover:text-white cursor-pointer"
                     >
                       30% da Renda ({formatBRL(incomeTotal * 0.30)})
                     </button>
@@ -473,22 +593,22 @@ export const ProjectionsTab: React.FC = () => {
               </div>
             </div>
 
-            {/* Slider de Taxa de Juros Real */}
-            <div className="pt-2 border-t border-[#1F1F1F] flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-[#737373]">
+            {/* Slider de Taxa de Juros Real com Toggle Segmented Glass */}
+            <div className="pt-2 border-t border-white/8 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-[#737373]">
               <div className="flex items-center gap-2">
                 <span>Rendimento Real Anual (acima da inflação):</span>
                 <strong className="text-white font-mono">{Math.round(annualInterestRate * 100)}% a.a.</strong>
               </div>
-              <div className="flex gap-1">
+              <div className="toggle-segmented-glass p-0.5 flex gap-1">
                 {[0.04, 0.06, 0.08, 0.10].map(rate => (
                   <button
                     key={rate}
                     type="button"
                     onClick={() => setAnnualInterestRate(rate)}
-                    className={`px-2 py-0.5 rounded-md text-[10px] font-mono cursor-pointer ${
+                    className={`px-2.5 py-1 rounded-lg text-[10px] font-mono cursor-pointer transition-all ${
                       annualInterestRate === rate
-                        ? 'bg-white text-black font-bold'
-                        : 'bg-[#0D0D0D] text-[#737373] hover:text-white border border-[#262626]'
+                        ? 'toggle-segment-active text-white'
+                        : 'text-[#737373] hover:text-white'
                     }`}
                   >
                     {rate * 100}%
@@ -498,18 +618,18 @@ export const ProjectionsTab: React.FC = () => {
             </div>
           </div>
 
-          {/* 3. Metas em Cartões Modulares e Objetivos (Substituindo tabelas densas) */}
+          {/* 3. Metas em Cartões Modulares e Objetivos (Estilo 3D Hero) */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Card 1: Reserva de Emergência */}
-            <div className="p-5 rounded-3xl bg-[#141414] border border-[#262626] space-y-3 relative overflow-hidden">
+            <div className="card-depth-3d p-5 rounded-3xl space-y-3 relative overflow-hidden border border-white/10">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-xs text-[#A8B5D1] font-semibold">
-                  <div className="w-7 h-7 rounded-lg bg-[#A8B5D1]/15 flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-xl btn-liquid-glass flex items-center justify-center">
                     <PiggyBank className="w-4 h-4 text-[#A8B5D1]" />
                   </div>
-                  <span>Card 1: Reserva de Emergência</span>
+                  <span>Reserva de Emergência</span>
                 </div>
-                <span className="text-[10px] text-[#737373] bg-[#0D0D0D] px-2 py-0.5 rounded-full border border-[#262626]">
+                <span className="text-[10px] text-[#A8B5D1] bg-[#A8B5D1]/10 px-2.5 py-0.5 rounded-full border border-[#A8B5D1]/20 font-semibold">
                   6 Meses de Custo
                 </span>
               </div>
@@ -521,7 +641,7 @@ export const ProjectionsTab: React.FC = () => {
                 </div>
               </div>
 
-              <div className="p-3 bg-[#0D0D0D] border border-[#1E1E1E] rounded-2xl space-y-1.5">
+              <div className="p-3.5 bg-[#121212] border border-white/8 rounded-2xl space-y-1.5">
                 <div className="flex justify-between text-xs">
                   <span className="text-[#737373]">Aporte mensal planejado:</span>
                   <span className="font-mono text-white font-semibold">{formatBRL(simulatedSaving)}/mês</span>
@@ -542,15 +662,15 @@ export const ProjectionsTab: React.FC = () => {
             </div>
 
             {/* Card 2: Independência / Liberdade Financeira (Renda Passiva) */}
-            <div className="p-5 rounded-3xl bg-[#141414] border border-[#262626] space-y-3 relative overflow-hidden">
+            <div className="card-depth-3d p-5 rounded-3xl space-y-3 relative overflow-hidden border border-white/10">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-xs text-[#A3C9A8] font-semibold">
-                  <div className="w-7 h-7 rounded-lg bg-[#A3C9A8]/15 flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-xl btn-liquid-glass flex items-center justify-center">
                     <Target className="w-4 h-4 text-[#A3C9A8]" />
                   </div>
-                  <span>Card 2: Independência Financeira</span>
+                  <span>Independência Financeira</span>
                 </div>
-                <span className="text-[10px] text-[#A3C9A8] bg-[#A3C9A8]/10 px-2 py-0.5 rounded-full border border-[#A3C9A8]/20">
+                <span className="text-[10px] text-[#A3C9A8] bg-[#A3C9A8]/10 px-2.5 py-0.5 rounded-full border border-[#A3C9A8]/20 font-semibold">
                   Regra dos 4% (300x)
                 </span>
               </div>
@@ -562,8 +682,7 @@ export const ProjectionsTab: React.FC = () => {
                 </div>
               </div>
 
-              {/* Destaque tipográfico solicitado */}
-              <div className="p-3 bg-[#0D0D0D] border border-[#1E1E1E] rounded-2xl">
+              <div className="p-3.5 bg-[#121212] border border-white/8 rounded-2xl">
                 <p className="text-xs text-white leading-relaxed">
                   Guardando <strong className="text-[#A3C9A8] font-mono">{formatBRL(simulatedSaving)}/mês</strong>, você atinge esta meta em{' '}
                   <strong className="text-white font-mono underline decoration-[#A3C9A8]">
@@ -572,7 +691,7 @@ export const ProjectionsTab: React.FC = () => {
                       : '—'}
                   </strong>.
                 </p>
-                <div className="flex justify-between items-center text-[11px] text-[#737373] mt-2 pt-2 border-t border-[#1A1A1A]">
+                <div className="flex justify-between items-center text-[11px] text-[#737373] mt-2 pt-2 border-t border-white/8">
                   <span>Renda Passiva Mensal Gerada:</span>
                   <span className="font-mono text-[#A3C9A8] font-semibold">
                     +{formatBRL(essentialCost)}/mês
@@ -587,7 +706,7 @@ export const ProjectionsTab: React.FC = () => {
           </div>
 
           {/* 4. Trajetória de Acumulação em Cards Modulares (5, 10 e 20 anos) */}
-          <div className="p-5 rounded-3xl bg-[#141414] border border-[#262626] space-y-3">
+          <div className="card-depth-3d p-5 rounded-3xl space-y-3 border border-white/10">
             <h4 className="text-xs font-semibold text-[#737373] uppercase tracking-wider">
               Evolução Patrimonial com Juros Compostos
             </h4>
@@ -596,7 +715,7 @@ export const ProjectionsTab: React.FC = () => {
               {[5, 10, 20].map((years) => {
                 const pt = simulatedFreedom.points.find(p => p.year === years);
                 return (
-                  <div key={years} className="p-3.5 bg-[#0D0D0D] border border-[#1E1E1E] rounded-2xl space-y-1">
+                  <div key={years} className="card-depth-3d-interactive p-4 bg-[#121212] border border-white/8 rounded-2xl space-y-1">
                     <div className="flex items-center justify-between text-xs">
                       <span className="font-semibold text-white">Em {years} anos</span>
                       <span className="text-[10px] text-[#737373] font-mono">
