@@ -50,10 +50,10 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({ onNavigateTab, onOpe
   const [showAlertsExpanded, setShowAlertsExpanded] = React.useState(false);
 
   return (
-    <div className="space-y-5 pb-24 max-w-5xl mx-auto">
+    <div className="space-y-6 pb-24 w-full">
       {/* Onboarding Welcome Card (Zero-State para novo usuário ou mês sem lançamentos) */}
       {monthTransactions.length === 0 && (
-        <div className="p-6 rounded-3xl bg-gradient-to-br from-[#171717] to-[#121212] border border-[#2B2B2B] shadow-sm space-y-4">
+        <div className="card-depth-3d p-6 rounded-3xl bg-linear-to-br from-[#171717] to-[#121212] space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <div className="flex items-center gap-2">
@@ -71,13 +71,13 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({ onNavigateTab, onOpe
             </div>
           </div>
 
-          {/* 4 Ações Rápidas de Início */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
+          {/* 4 Ações Rápidas de Início com Liquid Glass */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-1">
             <button
               onClick={onOpenAddModal}
-              className="p-3.5 rounded-2xl bg-[#0D0D0D] border border-[#262626] hover:border-[#A3C9A8]/50 text-left transition group cursor-pointer"
+              className="btn-liquid-glass p-3.5 rounded-2xl text-left transition group cursor-pointer"
             >
-              <div className="w-8 h-8 rounded-xl bg-[#A3C9A8]/15 text-[#A3C9A8] flex items-center justify-center text-xs font-bold mb-2">
+              <div className="w-8 h-8 rounded-xl bg-[#A3C9A8]/15 text-[#A3C9A8] flex items-center justify-center text-xs font-bold mb-2 group-hover:scale-105 transition-transform">
                 <ArrowUpRight className="w-4 h-4" />
               </div>
               <div className="text-xs font-semibold text-white group-hover:text-[#A3C9A8] transition">
@@ -90,9 +90,9 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({ onNavigateTab, onOpe
 
             <button
               onClick={onOpenAddModal}
-              className="p-3.5 rounded-2xl bg-[#0D0D0D] border border-[#262626] hover:border-[#A8B5D1]/50 text-left transition group cursor-pointer"
+              className="btn-liquid-glass p-3.5 rounded-2xl text-left transition group cursor-pointer"
             >
-              <div className="w-8 h-8 rounded-xl bg-[#A8B5D1]/15 text-[#A8B5D1] flex items-center justify-center text-xs font-bold mb-2">
+              <div className="w-8 h-8 rounded-xl bg-[#A8B5D1]/15 text-[#A8B5D1] flex items-center justify-center text-xs font-bold mb-2 group-hover:scale-105 transition-transform">
                 <Wallet className="w-4 h-4" />
               </div>
               <div className="text-xs font-semibold text-white group-hover:text-[#A8B5D1] transition">
@@ -105,9 +105,9 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({ onNavigateTab, onOpe
 
             <button
               onClick={onOpenAddModal}
-              className="p-3.5 rounded-2xl bg-[#0D0D0D] border border-[#262626] hover:border-[#E5A97D]/50 text-left transition group cursor-pointer"
+              className="btn-liquid-glass p-3.5 rounded-2xl text-left transition group cursor-pointer"
             >
-              <div className="w-8 h-8 rounded-xl bg-[#E5A97D]/15 text-[#E5A97D] flex items-center justify-center text-xs font-bold mb-2">
+              <div className="w-8 h-8 rounded-xl bg-[#E5A97D]/15 text-[#E5A97D] flex items-center justify-center text-xs font-bold mb-2 group-hover:scale-105 transition-transform">
                 <Clock className="w-4 h-4" />
               </div>
               <div className="text-xs font-semibold text-white group-hover:text-[#E5A97D] transition">
@@ -120,9 +120,9 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({ onNavigateTab, onOpe
 
             <button
               onClick={() => onNavigateTab('budgets')}
-              className="p-3.5 rounded-2xl bg-[#0D0D0D] border border-[#262626] hover:border-[#E29578]/50 text-left transition group cursor-pointer"
+              className="btn-liquid-glass p-3.5 rounded-2xl text-left transition group cursor-pointer"
             >
-              <div className="w-8 h-8 rounded-xl bg-[#E29578]/15 text-[#E29578] flex items-center justify-center text-xs font-bold mb-2">
+              <div className="w-8 h-8 rounded-xl bg-[#E29578]/15 text-[#E29578] flex items-center justify-center text-xs font-bold mb-2 group-hover:scale-105 transition-transform">
                 <Layers className="w-4 h-4" />
               </div>
               <div className="text-xs font-semibold text-white group-hover:text-[#E29578] transition">
@@ -137,7 +137,7 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({ onNavigateTab, onOpe
       )}
       {/* 1. Alertas de Estouro / Vencimento (Compacto com expansão opcional) */}
       {(dangerBudgets.length > 0 || warningBudgets.length > 0 || pendingBillsCount > 0) && (
-        <div className="rounded-2xl bg-[#141414] border border-[#262626] overflow-hidden transition-all">
+        <div className="card-depth-3d rounded-2xl overflow-hidden transition-all">
           <div 
             onClick={() => setShowAlertsExpanded(!showAlertsExpanded)}
             className="p-3.5 flex items-center justify-between cursor-pointer hover:bg-[#1A1A1A] transition"
@@ -216,13 +216,15 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({ onNavigateTab, onOpe
         </div>
       )}
 
-      {/* 2. Hero Cards de Saldo e Entradas/Saídas */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      {/* 2. Hero Cards de Saldo e Entradas/Saídas (Diretriz 1: Profundidade 3D e Sombras Escalonadas) */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {/* Card Saldo Líquido */}
-        <div className="sm:col-span-1 p-5 rounded-3xl bg-[#141414] border border-[#262626] relative overflow-hidden">
-          <div className="flex items-center justify-between text-xs text-[#737373] mb-1">
-            <span>Sobra Líquida (Superávit)</span>
-            <Wallet className="w-4 h-4 text-[#A8B5D1]" />
+        <div className="card-depth-hero card-depth-3d-interactive sm:col-span-1 p-5 rounded-3xl relative overflow-hidden group">
+          <div className="flex items-center justify-between text-xs text-[#8C8C8C] mb-1">
+            <span className="font-medium">Sobra Líquida (Superávit)</span>
+            <div className="w-8 h-8 rounded-xl bg-[#A8B5D1]/15 text-[#A8B5D1] flex items-center justify-center transition-transform group-hover:scale-110">
+              <Wallet className="w-4 h-4" />
+            </div>
           </div>
           <div className="text-2xl font-bold tracking-tight text-white mt-1">
             {formatBRL(netSurplus)}
@@ -231,8 +233,8 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({ onNavigateTab, onOpe
             <span
               className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${
                 netSurplus >= 0
-                  ? 'bg-[#A3C9A8]/15 text-[#A3C9A8] border border-[#A3C9A8]/30'
-                  : 'bg-[#E29578]/15 text-[#E29578] border border-[#E29578]/30'
+                  ? 'bg-[#A3C9A8]/15 text-[#A3C9A8] border border-[#A3C9A8]/30 shadow-xs'
+                  : 'bg-[#E29578]/15 text-[#E29578] border border-[#E29578]/30 shadow-xs'
               }`}
             >
               {incomeTotal > 0 ? `${Math.round((netSurplus / incomeTotal) * 100)}% da renda` : '0%'}
@@ -244,11 +246,11 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({ onNavigateTab, onOpe
         </div>
 
         {/* Card Receitas */}
-        <div className="p-5 rounded-3xl bg-[#141414] border border-[#262626]">
-          <div className="flex items-center justify-between text-xs text-[#737373] mb-1">
-            <span>Receitas Totais</span>
-            <div className="w-6 h-6 rounded-lg bg-[#A3C9A8]/15 flex items-center justify-center text-[#A3C9A8]">
-              <ArrowUpRight className="w-3.5 h-3.5" />
+        <div className="card-depth-hero card-depth-3d-interactive p-5 rounded-3xl relative overflow-hidden group">
+          <div className="flex items-center justify-between text-xs text-[#8C8C8C] mb-1">
+            <span className="font-medium">Receitas Totais</span>
+            <div className="w-8 h-8 rounded-xl bg-[#A3C9A8]/15 flex items-center justify-center text-[#A3C9A8] transition-transform group-hover:scale-110">
+              <ArrowUpRight className="w-4 h-4" />
             </div>
           </div>
           <div className="text-2xl font-bold tracking-tight text-[#A3C9A8] mt-1">
@@ -260,11 +262,11 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({ onNavigateTab, onOpe
         </div>
 
         {/* Card Despesas */}
-        <div className="p-5 rounded-3xl bg-[#141414] border border-[#262626]">
-          <div className="flex items-center justify-between text-xs text-[#737373] mb-1">
-            <span>Despesas Totais</span>
-            <div className="w-6 h-6 rounded-lg bg-[#E29578]/15 flex items-center justify-center text-[#E29578]">
-              <ArrowDownRight className="w-3.5 h-3.5" />
+        <div className="card-depth-hero card-depth-3d-interactive p-5 rounded-3xl relative overflow-hidden group">
+          <div className="flex items-center justify-between text-xs text-[#8C8C8C] mb-1">
+            <span className="font-medium">Despesas Totais</span>
+            <div className="w-8 h-8 rounded-xl bg-[#E29578]/15 flex items-center justify-center text-[#E29578] transition-transform group-hover:scale-110">
+              <ArrowDownRight className="w-4 h-4" />
             </div>
           </div>
           <div className="text-2xl font-bold tracking-tight text-[#E29578] mt-1">
@@ -276,10 +278,10 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({ onNavigateTab, onOpe
         </div>
       </div>
 
-      {/* 3. Score de Saúde Financeira (Mini Banner Interativo) */}
+      {/* 3. Score de Saúde Financeira (Mini Banner Interativo 3D com Liquid Glass) */}
       <div 
         onClick={() => onNavigateTab('projections')}
-        className="p-5 rounded-3xl bg-linear-to-r from-[#171717] to-[#121212] border border-[#262626] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 cursor-pointer hover:border-[#383838] transition shadow-xs"
+        className="card-depth-3d-interactive p-5 rounded-3xl bg-linear-to-r from-[#171717] to-[#121212] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 cursor-pointer group"
       >
         <div className="flex items-center gap-4">
           {/* Circular Score Gauge */}
@@ -334,14 +336,14 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({ onNavigateTab, onOpe
           </div>
         </div>
 
-        <button className="flex items-center gap-1.5 text-xs font-semibold text-[#A8B5D1] hover:text-white shrink-0">
+        <button className="btn-liquid-glass flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold text-[#A8B5D1] group-hover:text-white shrink-0">
           <span>{healthScore.isEmpty ? 'Conhecer os 4 Pilares' : 'Ver Pilares & Projeções'}</span>
-          <ChevronRight className="w-4 h-4" />
+          <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
         </button>
       </div>
 
-      {/* 4. Estrutura de Gastos: Diários vs Fixos vs Parcelas */}
-      <div className="p-5 rounded-3xl bg-[#141414] border border-[#262626]">
+      {/* 4. Estrutura de Gastos: Diários vs Fixos vs Parcelas (Card 3D) */}
+      <div className="card-depth-3d p-5 rounded-3xl">
         <h3 className="text-xs font-semibold text-[#737373] uppercase tracking-wider mb-4">
           Composição dos Gastos
         </h3>
@@ -406,13 +408,13 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({ onNavigateTab, onOpe
         </div>
       </div>
 
-      {/* Atalho para Compromissos Recorrentes & Parcelamentos */}
+      {/* Atalho para Compromissos Recorrentes & Parcelamentos (Card Interativo 3D com Liquid Glass) */}
       <div 
         onClick={() => onNavigateTab('recurring')}
-        className="p-4 sm:p-5 rounded-3xl bg-linear-to-r from-[#171717] to-[#141414] border border-[#262626] hover:border-[#383838] transition cursor-pointer flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 group"
+        className="card-depth-3d-interactive p-4 sm:p-5 rounded-3xl bg-linear-to-r from-[#171717] to-[#141414] cursor-pointer flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 group"
       >
         <div className="flex items-center gap-3.5">
-          <div className="w-10 h-10 rounded-2xl bg-[#E5A97D]/15 text-[#E5A97D] border border-[#E5A97D]/25 flex items-center justify-center shrink-0">
+          <div className="w-10 h-10 rounded-2xl bg-[#E5A97D]/15 text-[#E5A97D] border border-[#E5A97D]/25 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
             <Repeat className="w-5 h-5" />
           </div>
           <div>
@@ -436,22 +438,22 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({ onNavigateTab, onOpe
             e.stopPropagation();
             onNavigateTab('recurring');
           }}
-          className="flex items-center gap-1.5 text-xs font-semibold text-[#E5A97D] group-hover:text-white transition shrink-0 cursor-pointer"
+          className="btn-liquid-glass flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold text-[#E5A97D] group-hover:text-white transition shrink-0 cursor-pointer"
         >
           <span>Gerenciar & Adiantar</span>
           <ChevronRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
         </button>
       </div>
 
-      {/* 5. Acesso Rápido a Limites Orçamentários */}
-      <div className="p-5 rounded-3xl bg-[#141414] border border-[#262626]">
+      {/* 5. Acesso Rápido a Limites Orçamentários (Card 3D) */}
+      <div className="card-depth-3d p-5 rounded-3xl">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-xs font-semibold text-[#737373] uppercase tracking-wider">
             Tetos Orçamentários em Tempo Real
           </h3>
           <button
             onClick={() => onNavigateTab('budgets')}
-            className="text-xs font-medium text-[#A8B5D1] hover:text-white flex items-center gap-1"
+            className="btn-liquid-glass px-2.5 py-1 rounded-lg text-xs font-medium text-[#A8B5D1] hover:text-white flex items-center gap-1"
           >
             <span>Gerenciar</span>
             <ChevronRight className="w-3.5 h-3.5" />
@@ -463,7 +465,7 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({ onNavigateTab, onOpe
             <p>Nenhum teto orçamentário configurado ainda.</p>
             <button
               onClick={() => onNavigateTab('budgets')}
-              className="mt-2 px-3 py-1.5 rounded-xl bg-[#1C1C1C] hover:bg-[#262626] border border-[#2B2B2B] text-white text-xs font-medium transition cursor-pointer"
+              className="btn-liquid-glass-primary mt-2 px-3 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer"
             >
               + Definir Primeiro Teto
             </button>
@@ -502,15 +504,15 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({ onNavigateTab, onOpe
         )}
       </div>
 
-      {/* 6. Extrato Recente */}
-      <div className="p-5 rounded-3xl bg-[#141414] border border-[#262626]">
+      {/* 6. Extrato Recente (Card 3D) */}
+      <div className="card-depth-3d p-5 rounded-3xl">
         <div className="flex items-center justify-between mb-3">
           <h3 className="text-xs font-semibold text-[#737373] uppercase tracking-wider">
             Últimos Lançamentos
           </h3>
           <button
             onClick={() => onNavigateTab('transactions')}
-            className="text-xs font-medium text-[#A8B5D1] hover:text-white flex items-center gap-1"
+            className="btn-liquid-glass px-2.5 py-1 rounded-lg text-xs font-medium text-[#A8B5D1] hover:text-white flex items-center gap-1"
           >
             <span>Ver Todos</span>
             <ChevronRight className="w-3.5 h-3.5" />
@@ -522,7 +524,7 @@ export const DashboardTab: React.FC<DashboardTabProps> = ({ onNavigateTab, onOpe
             <p>Nenhum lançamento registrado neste mês.</p>
             <button
               onClick={onOpenAddModal}
-              className="mt-2 px-4 py-2 rounded-xl bg-white hover:bg-neutral-200 text-black text-xs font-bold transition shadow-xs cursor-pointer"
+              className="btn-liquid-glass-primary mt-2 px-4 py-2 rounded-xl text-xs font-bold transition cursor-pointer"
             >
               + Fazer Primeiro Lançamento
             </button>

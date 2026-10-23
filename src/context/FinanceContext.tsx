@@ -98,6 +98,10 @@ interface FinanceContextType {
   clearAllData: () => void;
   annualInterestRate: number;
   setAnnualInterestRate: (rate: number) => void;
+  // Modo de Layout Desktop (Normal vs. Expandido)
+  layoutMode: 'normal' | 'expanded';
+  setLayoutMode: (mode: 'normal' | 'expanded') => void;
+  toggleLayoutMode: () => void;
 }
 
 const FinanceContext = createContext<FinanceContextType | undefined>(undefined);
@@ -122,6 +126,33 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   });
+
+  // Modo de Layout Desktop (Normal vs. Expandido 100% width)
+  const [layoutMode, setLayoutModeState] = useState<'normal' | 'expanded'>(() => {
+    try {
+      const saved = localStorage.getItem('finances_pro_desktop_layout');
+      return saved === 'expanded' ? 'expanded' : 'normal';
+    } catch {
+      return 'normal';
+    }
+  });
+
+  const setLayoutMode = (mode: 'normal' | 'expanded') => {
+    setLayoutModeState(mode);
+    try {
+      localStorage.setItem('finances_pro_desktop_layout', mode);
+    } catch {}
+  };
+
+  const toggleLayoutMode = () => {
+    setLayoutModeState(prev => {
+      const next = prev === 'normal' ? 'expanded' : 'normal';
+      try {
+        localStorage.setItem('finances_pro_desktop_layout', next);
+      } catch {}
+      return next;
+    });
+  };
 
   const setCurrentMonth = (m: string) => {
     setCurrentMonthState(m);
@@ -802,7 +833,10 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
         purgeAllUserData,
         clearAllData,
         annualInterestRate,
-        setAnnualInterestRate
+        setAnnualInterestRate,
+        layoutMode,
+        setLayoutMode,
+        toggleLayoutMode
       }}
     >
       {children}

@@ -36,9 +36,9 @@ export const BudgetsTab: React.FC = () => {
   const surplusUsedPercentage = availableSurplus > 0 ? Math.round((totalBudgeted / availableSurplus) * 100) : 0;
 
   return (
-    <div className="space-y-5 pb-24 max-w-5xl mx-auto">
-      {/* 1. Card de Capacidade Financeira e Sobra Líquida Real */}
-      <div className="p-5 rounded-3xl bg-linear-to-r from-[#171717] to-[#141414] border border-[#262626] shadow-xs space-y-4">
+    <div className="space-y-5 pb-24 w-full">
+      {/* 1. Card de Capacidade Financeira e Sobra Líquida Real (3D Depth) */}
+      <div className="card-depth-hero p-5 rounded-3xl bg-linear-to-r from-[#171717] to-[#141414] space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2">

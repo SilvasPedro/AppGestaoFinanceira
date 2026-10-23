@@ -7,6 +7,7 @@ import React, { useState } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { FinanceProvider, useFinance } from './context/FinanceContext';
 import { Header } from './components/common/Header';
+import { DesktopHeader } from './components/common/DesktopHeader';
 import { Sidebar } from './components/common/Sidebar';
 import { BottomNav, TabType } from './components/common/BottomNav';
 import { DashboardTab } from './components/dashboard/DashboardTab';
@@ -21,7 +22,15 @@ import { AuthScreen } from './components/auth/AuthScreen';
 import { WifiOff, Loader2 } from 'lucide-react';
 
 const MainContent: React.FC = () => {
-  const { currentMonth, addTransaction, pendingBillsCount, isOnline, activeFixedCount, activeInstallmentsCount } = useFinance();
+  const { 
+    currentMonth, 
+    addTransaction, 
+    pendingBillsCount, 
+    isOnline, 
+    activeFixedCount, 
+    activeInstallmentsCount,
+    layoutMode
+  } = useFinance();
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
   const [isAddModalOpen, setIsAddModalOpen] = useState<boolean>(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
@@ -39,6 +48,13 @@ const MainContent: React.FC = () => {
 
       {/* Main Content Body */}
       <div className="flex-1 flex flex-col min-w-0 min-h-screen">
+        {/* Desktop Top Header (hidden on mobile) */}
+        <DesktopHeader
+          activeTab={activeTab}
+          onOpenAddModal={() => setIsAddModalOpen(true)}
+          onOpenAuth={() => setIsAuthModalOpen(true)}
+        />
+
         {/* Mobile Header (hidden on md+) */}
         <Header 
           onOpenAuth={() => setIsAuthModalOpen(true)} 
@@ -46,8 +62,14 @@ const MainContent: React.FC = () => {
           activeTab={activeTab}
         />
 
-        {/* Main View Area */}
-        <main className="flex-1 w-full px-4 pt-4 md:px-8 md:pt-6 pb-32 md:pb-12 max-w-6xl mx-auto">
+        {/* Main View Area with Desktop Normal vs. Expanded Layout (Diretriz 4) */}
+        <main 
+          className={`flex-1 w-full pt-4 pb-32 md:pb-12 transition-all duration-300 ${
+            layoutMode === 'expanded'
+              ? 'px-4 md:px-8 lg:px-12 max-w-none'
+              : 'px-4 md:px-8 max-w-6xl mx-auto'
+          }`}
+        >
           {activeTab === 'dashboard' && (
             <DashboardTab
               onNavigateTab={setActiveTab}

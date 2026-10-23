@@ -82,10 +82,10 @@ export const TransactionsTab: React.FC<TransactionsTabProps> = ({ onOpenAddModal
     : null;
 
   return (
-    <div className="space-y-4 pb-24 max-w-5xl mx-auto">
+    <div className="space-y-4 pb-24 w-full">
       {/* 1. Módulo Unificado de Faturas de Cartão de Crédito */}
       {(creditCards.length > 0 || totalCreditCardInvoice > 0) && (
-        <div className="p-4 rounded-3xl bg-[#141414] border border-[#262626] space-y-3">
+        <div className="card-depth-3d p-4 rounded-3xl space-y-3">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-xl bg-[#A8B5D1]/15 text-[#A8B5D1] flex items-center justify-center">

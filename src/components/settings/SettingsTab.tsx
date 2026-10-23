@@ -85,7 +85,7 @@ export const SettingsTab: React.FC = () => {
   const userCustomIncomes = customCategories.filter(c => c.type === 'income');
 
   return (
-    <div className="space-y-6 pb-24 max-w-4xl mx-auto">
+    <div className="space-y-6 pb-24 w-full">
       {/* Header */}
       <div>
         <h2 className="text-xl font-bold text-white flex items-center gap-2">

@@ -10,15 +10,14 @@ import {
   ChevronRight, 
   Wifi, 
   WifiOff, 
-  LogIn, 
-  User as UserIcon,
   LogOut,
-  Settings
+  Settings,
+  Maximize2,
+  Minimize2
 } from 'lucide-react';
 import { TabType } from './BottomNav';
 import { useFinance } from '../../context/FinanceContext';
 import { useAuth } from '../../context/AuthContext';
-import { PWAInstallButton } from './PWAInstallButton';
 
 interface SidebarProps {
   activeTab: TabType;
@@ -35,7 +34,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onOpenAuth,
   pendingBillsCount
 }) => {
-  const { currentMonth, prevMonth, nextMonth, isOnline, activeFixedCount, activeInstallmentsCount } = useFinance();
+  const { 
+    currentMonth, 
+    prevMonth, 
+    nextMonth, 
+    isOnline, 
+    activeFixedCount, 
+    activeInstallmentsCount,
+    layoutMode,
+    setLayoutMode
+  } = useFinance();
   const { user, logout } = useAuth();
 
   const formatMonthTitle = (ym: string) => {
@@ -52,39 +60,45 @@ export const Sidebar: React.FC<SidebarProps> = ({
       id: 'dashboard' as TabType,
       label: 'Visão Geral',
       icon: LayoutDashboard,
-      activeColor: 'text-[#A3C9A8]'
+      colorHex: '#A3C9A8',
+      glowColor: 'rgba(163, 201, 168, 0.28)'
     },
     {
       id: 'transactions' as TabType,
       label: 'Extrato',
       icon: ReceiptText,
-      activeColor: 'text-[#A8B5D1]',
+      colorHex: '#A8B5D1',
+      glowColor: 'rgba(168, 181, 209, 0.28)',
       badge: pendingBillsCount > 0 ? pendingBillsCount : null
     },
     {
       id: 'recurring' as TabType,
       label: 'Recorrências & Parcelas',
       icon: Repeat,
-      activeColor: 'text-[#E5A97D]',
+      colorHex: '#E5A97D',
+      glowColor: 'rgba(229, 169, 125, 0.28)',
       badge: totalRecurringBadge > 0 ? totalRecurringBadge : null
     },
     {
       id: 'budgets' as TabType,
       label: 'Orçamentos & Tetos',
       icon: Target,
-      activeColor: 'text-[#E29578]'
+      colorHex: '#E29578',
+      glowColor: 'rgba(226, 149, 120, 0.28)'
     },
     {
       id: 'projections' as TabType,
       label: 'Score & Futuro',
       icon: TrendingUp,
-      activeColor: 'text-[#A3C9A8]'
+      colorHex: '#A3C9A8',
+      glowColor: 'rgba(163, 201, 168, 0.28)'
     },
     {
       id: 'settings' as TabType,
       label: 'Configurações',
       icon: Settings,
-      activeColor: 'text-[#A8B5D1]'
+      colorHex: '#A8B5D1',
+      glowColor: 'rgba(168, 181, 209, 0.28)'
     }
   ];
 
@@ -113,16 +127,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
         </div>
 
-        {/* Primary CTA: Novo Lançamento */}
+        {/* Primary CTA: Novo Lançamento com Apple Liquid Glass (Diretriz 3) */}
         <button
           onClick={onOpenAddModal}
-          className="w-full py-3 px-4 rounded-xl bg-white hover:bg-neutral-200 text-black text-xs font-bold flex items-center justify-center gap-2 transition active:scale-[0.98] shadow-md shadow-white/5"
+          className="btn-liquid-glass-primary w-full py-3 px-4 rounded-xl text-xs font-bold flex items-center justify-center gap-2 cursor-pointer shadow-lg active:scale-[0.98] transition-transform"
         >
           <Plus className="w-4 h-4 stroke-[2.5]" />
           <span>Novo Lançamento</span>
         </button>
 
-        {/* Navigation Menu */}
+        {/* Navigation Menu (Diretriz 2: Interação e Estado Ativo com Glow Neon) */}
         <div className="space-y-1">
           <span className="text-[10px] font-semibold text-[#525252] uppercase tracking-wider px-2 block mb-2">
             Navegação
@@ -134,18 +148,39 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <button
                 key={item.id}
                 onClick={() => setActiveTab(item.id)}
-                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-medium transition ${
+                style={{
+                  '--item-color': item.colorHex,
+                  '--item-glow': item.glowColor
+                } as React.CSSProperties}
+                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold sidebar-nav-item transition-all duration-200 cursor-pointer ${
                   isActive
-                    ? 'bg-[#171717] text-white border border-[#2B2B2B] shadow-xs'
-                    : 'text-[#858585] hover:text-white hover:bg-[#141414] border border-transparent'
+                    ? 'sidebar-nav-active text-white'
+                    : 'text-[#8C8C8C] hover:text-white'
                 }`}
               >
                 <div className="flex items-center gap-2.5">
-                  <Icon className={`w-4 h-4 ${isActive ? item.activeColor : 'text-[#737373]'}`} />
-                  <span>{item.label}</span>
+                  <div 
+                    className={`w-6 h-6 rounded-lg flex items-center justify-center transition-all ${
+                      isActive 
+                        ? 'bg-white/10' 
+                        : 'bg-transparent'
+                    }`}
+                  >
+                    <Icon 
+                      className="w-4 h-4 transition-all" 
+                      style={{ 
+                        color: isActive ? item.colorHex : 'currentColor',
+                        filter: isActive ? `drop-shadow(0 0 6px ${item.colorHex})` : 'none'
+                      }} 
+                    />
+                  </div>
+                  <span className="tracking-tight">{item.label}</span>
                 </div>
                 {item.badge && (
-                  <span className="w-4 h-4 rounded-full bg-[#E29578] text-[9px] font-bold text-black flex items-center justify-center">
+                  <span 
+                    className="px-1.5 py-0.5 rounded-full text-[9px] font-bold text-black flex items-center justify-center shadow-xs"
+                    style={{ backgroundColor: item.colorHex }}
+                  >
                     {item.badge}
                   </span>
                 )}
@@ -163,7 +198,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <button
               onClick={prevMonth}
               title="Mês anterior"
-              className="p-1.5 rounded-lg text-[#A3A3A3] hover:text-white hover:bg-[#262626] transition"
+              className="p-1.5 rounded-lg text-[#A3A3A3] hover:text-white hover:bg-[#262626] transition cursor-pointer"
             >
               <ChevronLeft className="w-3.5 h-3.5" />
             </button>
@@ -173,9 +208,39 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <button
               onClick={nextMonth}
               title="Próximo mês"
-              className="p-1.5 rounded-lg text-[#A3A3A3] hover:text-white hover:bg-[#262626] transition"
+              className="p-1.5 rounded-lg text-[#A3A3A3] hover:text-white hover:bg-[#262626] transition cursor-pointer"
             >
               <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+
+        {/* Desktop Layout Switcher Shortcut (Diretriz 4) */}
+        <div className="p-3 rounded-2xl bg-[#141414] border border-[#212121] space-y-2">
+          <div className="flex items-center justify-between text-[10px] uppercase tracking-wider font-semibold">
+            <span className="text-[#666666]">Modo de Tela</span>
+            <span className="font-mono text-[9px] text-[#A8B5D1]">
+              {layoutMode === 'expanded' ? '100% Full' : 'Contido'}
+            </span>
+          </div>
+          <div className="toggle-segmented-glass w-full">
+            <button
+              type="button"
+              onClick={() => setLayoutMode('normal')}
+              className={`toggle-segment-btn flex-1 justify-center ${layoutMode === 'normal' ? 'toggle-segment-active' : ''}`}
+              title="Modo Normal: Centralizado e contido (max-w-6xl)"
+            >
+              <Minimize2 className="w-3 h-3" />
+              <span>Normal</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setLayoutMode('expanded')}
+              className={`toggle-segment-btn flex-1 justify-center ${layoutMode === 'expanded' ? 'toggle-segment-active' : ''}`}
+              title="Modo Expandido: 100% da largura da tela"
+            >
+              <Maximize2 className="w-3 h-3" />
+              <span>Expandido</span>
             </button>
           </div>
         </div>

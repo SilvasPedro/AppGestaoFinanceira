@@ -69,7 +69,7 @@ export const ProjectionsTab: React.FC = () => {
   }, [recommendedSaving, annualInterestRate, essentialCost]);
 
   return (
-    <div className="space-y-5 pb-24 max-w-5xl mx-auto">
+    <div className="space-y-5 pb-24 w-full">
       {/* Sub Navigation Tabs */}
       <div className="flex items-center gap-1.5 p-1 bg-[#141414] border border-[#262626] rounded-2xl overflow-x-auto no-scrollbar">
         <button
