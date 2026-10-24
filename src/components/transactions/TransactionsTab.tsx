@@ -21,6 +21,7 @@ import { useFinance } from '../../context/FinanceContext';
 import { Transaction } from '../../types/finance';
 import { DeleteConfirmModal } from '../modals/DeleteConfirmModal';
 import { TransactionModal } from '../modals/TransactionModal';
+import { BANK_DEFAULT_COLORS } from '../modals/CreditCardModal';
 
 interface TransactionsTabProps {
   onOpenAddModal: () => void;
@@ -322,7 +323,8 @@ export const TransactionsTab: React.FC<TransactionsTabProps> = ({ onOpenAddModal
                 const summary = cardInvoices[card.id];
                 const isSelected = selectedCardFilter === card.id;
                 const totalAmount = summary ? summary.total : 0;
-                const baseColor = card.color || '#3B82F6';
+                const baseColor = card.color || (card.bankName && BANK_DEFAULT_COLORS[card.bankName]) || '#3B82F6';
+                const cardLogo = card.logoUrl || card.bankLogo;
 
                 return (
                   <div
@@ -348,25 +350,48 @@ export const TransactionsTab: React.FC<TransactionsTabProps> = ({ onOpenAddModal
                       }}
                     />
 
-                    {/* Top Row: Chip Metálico + Wifi + Nome do Cartão */}
-                    <div className="flex items-start justify-between relative z-10">
-                      <div className="flex items-center gap-2.5">
+                    {/* Top Row: Chip Metálico + Wifi + Nome do Banco + Logo */}
+                    <div className="flex items-start justify-between relative z-10 gap-2">
+                      <div className="flex items-center gap-2">
                         {/* Sim Chip Dourado */}
-                        <div className="w-8 h-6 rounded-md bg-linear-to-tr from-amber-400 via-amber-200 to-amber-500 border border-amber-600/50 p-0.5 shadow-sm relative overflow-hidden">
+                        <div className="w-8 h-6 rounded-md bg-linear-to-tr from-amber-400 via-amber-200 to-amber-500 border border-amber-600/50 p-0.5 shadow-sm relative overflow-hidden shrink-0">
                           <div className="w-full h-full border border-amber-800/30 rounded-xs flex flex-col justify-around">
                             <div className="h-[1px] bg-amber-800/40 w-full" />
                             <div className="h-[1px] bg-amber-800/40 w-full" />
                           </div>
                         </div>
-                        <Wifi className="w-3.5 h-3.5 text-white/70 rotate-90" />
+                        <Wifi className="w-3.5 h-3.5 text-white/70 rotate-90 shrink-0" />
+                        {card.bankName && (
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-white/95 px-2 py-0.5 rounded-md bg-black/45 backdrop-blur-xs border border-white/15 truncate max-w-[95px] sm:max-w-[110px]">
+                            {card.bankName}
+                          </span>
+                        )}
                       </div>
 
-                      <div className="text-right">
-                        <span className="text-xs font-bold text-white tracking-tight uppercase block drop-shadow-xs">
-                          {card.cardName}
-                        </span>
+                      <div className="flex flex-col items-end gap-0.5 shrink-0">
+                        {cardLogo ? (
+                          <div className="h-6 max-w-[70px] flex items-center justify-end">
+                            <img
+                              src={cardLogo}
+                              alt={card.bankName || card.cardName}
+                              className="max-h-6 max-w-[70px] object-contain drop-shadow"
+                              onError={(e) => {
+                                (e.target as HTMLElement).style.display = 'none';
+                              }}
+                            />
+                          </div>
+                        ) : (
+                          <span className="text-xs font-extrabold text-white tracking-tight uppercase block drop-shadow-xs">
+                            {card.cardName}
+                          </span>
+                        )}
+                        {cardLogo && (
+                          <span className="text-[10px] font-semibold text-white/90 tracking-tight uppercase block drop-shadow-xs">
+                            {card.cardName}
+                          </span>
+                        )}
                         {isSelected && (
-                          <span className="inline-flex items-center gap-0.5 text-[8.5px] font-bold px-1.5 py-0.2 rounded-full bg-white text-black mt-0.5 shadow-xs">
+                          <span className="inline-flex items-center gap-0.5 text-[8.5px] font-bold px-1.5 py-0.2 rounded-full bg-white text-black shadow-xs">
                             <Check className="w-2.5 h-2.5 stroke-[3]" /> Filtrado
                           </span>
                         )}
@@ -467,11 +492,11 @@ export const TransactionsTab: React.FC<TransactionsTabProps> = ({ onOpenAddModal
       {/* ======================================================================== */}
       {/* 4. ABAS DE VISUALIZAÇÃO: Todos vs Só Receitas vs Só Despesas (Diretriz 2)*/}
       {/* ======================================================================== */}
-      <div className="card-depth-3d p-1 rounded-2xl flex items-center gap-1">
+      <div className="card-depth-3d p-1 rounded-2xl flex items-center gap-1 overflow-hidden">
         <button
           type="button"
           onClick={() => setViewMode('all')}
-          className={`flex-1 py-2 px-3 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center justify-center gap-2 ${
+          className={`flex-1 py-2 px-3 rounded-l-xl rounded-r-lg text-xs font-semibold transition-all cursor-pointer flex items-center justify-center gap-2 ${
             viewMode === 'all'
               ? 'btn-liquid-glass text-white shadow-sm'
               : 'text-[#8C8C8C] hover:text-white'
@@ -486,7 +511,7 @@ export const TransactionsTab: React.FC<TransactionsTabProps> = ({ onOpenAddModal
         <button
           type="button"
           onClick={() => setViewMode('income')}
-          className={`flex-1 py-2 px-3 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center justify-center gap-2 ${
+          className={`flex-1 py-2 px-3 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center justify-center gap-2 ${
             viewMode === 'income'
               ? 'btn-liquid-glass text-[#A3C9A8] shadow-sm'
               : 'text-[#8C8C8C] hover:text-white'
@@ -502,7 +527,7 @@ export const TransactionsTab: React.FC<TransactionsTabProps> = ({ onOpenAddModal
         <button
           type="button"
           onClick={() => setViewMode('expense')}
-          className={`flex-1 py-2 px-3 rounded-xl text-xs font-semibold transition-all cursor-pointer flex items-center justify-center gap-2 ${
+          className={`flex-1 py-2 px-3 rounded-r-xl rounded-l-lg text-xs font-semibold transition-all cursor-pointer flex items-center justify-center gap-2 ${
             viewMode === 'expense'
               ? 'btn-liquid-glass text-[#E29578] shadow-sm'
               : 'text-[#8C8C8C] hover:text-white'

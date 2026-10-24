@@ -53,7 +53,9 @@ export interface CreditCard {
   cardName: string;         // ex: "Nubank Ultravioleta", "Inter Black"
   lastFourDigits: string;   // ex: "1234"
   bankName: string;         // ex: "Nubank", "Inter", "Itaú", "Bradesco"
-  color?: string;           // ex: "#A8B5D1" ou "#E29578"
+  color?: string;           // ex: "#A8B5D1" ou "#E29578" ou cores oficiais dos bancos
+  logoUrl?: string;         // URL opcional da imagem/logo do banco ou da bandeira
+  bankLogo?: string;        // Alias compatível para logo do banco
   limitAmount?: number;     // Limite total do cartão (R$)
   closingDay?: number;      // Dia de fechamento da fatura
   dueDay?: number;          // Dia de vencimento da fatura

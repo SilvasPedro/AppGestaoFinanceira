@@ -239,9 +239,13 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
    * 1. Contas/Receitas Fixas (nature === 'fixed') propagam para todos os meses >= startDate
    *    até endDate (caso descontinuadas), mantendo o histórico de meses anteriores intacto.
    * 2. O status isPaid é avaliado dinamicamente mês a mês via paidMonths.
+   * 3. Compras/Vendas Parceladas (nature === 'installment') ativas no mês são sincronizadas
+   *    automaticamente, garantindo que o saldo e o extrato do mês futuro reflitam a parcela
+   *    amortizada (ex: parcela 2/3 em Dezembro), alinhando a Visão Geral à Curva de Parcelas.
    */
   const monthTransactions = useMemo(() => {
-    return transactions
+    // 1. Transações com correspondência direta no mês ou itens fixos recorrentes
+    const directTransactions = transactions
       .filter(t => {
         if (t.nature === 'fixed') {
           const startMonth = t.startDate || (t.date ? t.date.slice(0, 7) : '');
@@ -265,6 +269,88 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
         }
         return t;
       });
+
+    // 2. Mapear grupos de parcelamento existentes
+    const installmentGroupsMap = new Map<string, Transaction[]>();
+    transactions
+      .filter(t => t.nature === 'installment' && t.installmentDetails)
+      .forEach(t => {
+        const gid = t.installmentDetails!.groupId || t.id;
+        const list = installmentGroupsMap.get(gid) || [];
+        list.push(t);
+        installmentGroupsMap.set(gid, list);
+      });
+
+    // Identificar grupos que já possuem lançamento registrado para este mês
+    const groupsWithDirectTx = new Set<string>();
+    directTransactions.forEach(t => {
+      if (t.nature === 'installment' && t.installmentDetails?.groupId) {
+        groupsWithDirectTx.add(t.installmentDetails.groupId);
+      }
+    });
+
+    const synthesizedInstallments: Transaction[] = [];
+
+    installmentGroupsMap.forEach((txList, gid) => {
+      if (groupsWithDirectTx.has(gid)) return;
+
+      txList.sort((a, b) => (a.installmentDetails?.currentInstallment || 0) - (b.installmentDetails?.currentInstallment || 0));
+      const first = txList[0];
+      const details = first.installmentDetails!;
+
+      const descMatch = first.description.match(/\((\d+)\/(\d+)\)/);
+      const parsedCurFromDesc = descMatch ? parseInt(descMatch[1], 10) : undefined;
+      const parsedTotalFromDesc = descMatch ? parseInt(descMatch[2], 10) : undefined;
+
+      const initialInstallmentNumber = details.initialInstallmentNumber 
+        || details.currentInstallment 
+        || parsedCurFromDesc 
+        || 1;
+
+      const totalInstallments = details.totalInstallments 
+        || parsedTotalFromDesc 
+        || (initialInstallmentNumber + txList.length - 1);
+
+      const startMonth = details.startMonth || first.date.slice(0, 7);
+      const monthlyAmount = details.monthlyAmount || first.amount;
+
+      // Calcular qual índice de parcela corresponde ao currentMonth
+      const [curYear, curMonthNum] = currentMonth.split('-').map(Number);
+      const [sYear, sMonthNum] = startMonth.split('-').map(Number);
+      const deltaMonths = (curYear - sYear) * 12 + (curMonthNum - sMonthNum);
+      const calculatedInstallment = initialInstallmentNumber + deltaMonths;
+
+      // Se o mês está dentro do ciclo e ainda restam parcelas a pagar
+      if (calculatedInstallment >= 1 && calculatedInstallment <= totalInstallments) {
+        const priorPaid = Math.max(0, initialInstallmentNumber - 1);
+        const inAppPaid = txList.filter(t => t.isPaid).length;
+        const totalPaid = priorPaid + inAppPaid;
+
+        if (calculatedInstallment > totalPaid) {
+          const cleanDesc = first.description.replace(/\s\(\d+\/\d+\).*$/, '').trim() || (first.type === 'income' ? 'Receita Parcelada' : 'Compra Parcelada');
+          const day = first.date ? first.date.slice(8, 10) : '01';
+
+          synthesizedInstallments.push({
+            ...first,
+            id: `synth_${gid}_${currentMonth}`,
+            date: `${currentMonth}-${day}`,
+            amount: monthlyAmount,
+            description: `${cleanDesc} (${calculatedInstallment}/${totalInstallments})`,
+            isPaid: false,
+            installmentDetails: {
+              ...details,
+              groupId: gid,
+              currentInstallment: calculatedInstallment,
+              totalInstallments,
+              monthlyAmount,
+              totalAmount: details.totalAmount || (totalInstallments * monthlyAmount)
+            }
+          });
+        }
+      }
+    });
+
+    return [...directTransactions, ...synthesizedInstallments];
   }, [transactions, currentMonth]);
 
   // Totais do mês selecionado
@@ -631,6 +717,14 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   const deleteTransaction = async (id: string) => {
+    if (id.startsWith('synth_')) {
+      const match = id.match(/^synth_(.+)_(\d{4}-\d{2})$/);
+      if (match) {
+        const [, groupId] = match;
+        await deleteInstallmentGroup(groupId);
+        return;
+      }
+    }
     setTransactions(prev => prev.filter(t => t.id !== id));
     const userId = user?.uid || 'guest';
     await FinanceService.deleteTransaction(userId, id, false);
@@ -643,8 +737,31 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   const togglePaidStatus = async (id: string, currentStatus: boolean) => {
-    const tx = transactions.find(t => t.id === id);
+    let tx = transactions.find(t => t.id === id);
     const userId = user?.uid || 'guest';
+
+    if (!tx && id.startsWith('synth_')) {
+      const match = id.match(/^synth_(.+)_(\d{4}-\d{2})$/);
+      if (match) {
+        const [, groupId, synthMonth] = match;
+        const originTx = transactions.find(t => (t.installmentDetails?.groupId || t.id) === groupId);
+        if (originTx) {
+          const day = originTx.date ? originTx.date.slice(8, 10) : '01';
+          const newDate = `${synthMonth}-${day}`;
+          await FinanceService.saveTransaction(
+            userId,
+            {
+              ...originTx,
+              date: newDate,
+              isPaid: !currentStatus
+            },
+            false
+          );
+          return;
+        }
+      }
+    }
+
     if (!tx) return;
 
     if (tx.nature === 'fixed') {
