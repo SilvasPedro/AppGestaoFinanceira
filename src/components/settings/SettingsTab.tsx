@@ -5,29 +5,31 @@ import {
   Trash2, 
   Tag, 
   CreditCard as CardIcon,
-  Database,
   CheckCircle2,
   LogOut,
   Calendar,
-  DollarSign
+  DollarSign,
+  Pencil,
+  Wifi
 } from 'lucide-react';
 import { useFinance } from '../../context/FinanceContext';
 import { useAuth } from '../../context/AuthContext';
 import { DeleteConfirmModal } from '../modals/DeleteConfirmModal';
-import { CreditCardModal } from '../modals/CreditCardModal';
+import { CreditCardModal, BANK_DEFAULT_COLORS } from '../modals/CreditCardModal';
 import { CustomCategoryItem, CreditCard } from '../../types/finance';
 
 export const SettingsTab: React.FC = () => {
   const { 
     customCategories, 
     creditCards,
+    cardInvoices,
     expenseCategories, 
     incomeCategories, 
     addCustomCategory, 
     deleteCustomCategory,
     addCreditCard,
-    deleteCreditCard,
-    purgeAllUserData 
+    updateCreditCard,
+    deleteCreditCard
   } = useFinance();
   const { user, logout } = useAuth();
 
@@ -39,8 +41,8 @@ export const SettingsTab: React.FC = () => {
   // Modais de exclusão e cartões
   const [catToDelete, setCatToDelete] = useState<CustomCategoryItem | null>(null);
   const [cardToDelete, setCardToDelete] = useState<CreditCard | null>(null);
+  const [cardToEdit, setCardToEdit] = useState<CreditCard | null>(null);
   const [isCardModalOpen, setIsCardModalOpen] = useState(false);
-  const [showPurgeModal, setShowPurgeModal] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   const handleAddCategory = async (e: React.FormEvent) => {
@@ -64,16 +66,6 @@ export const SettingsTab: React.FC = () => {
       console.error('Error adding category:', err);
     } finally {
       setSubmittingCat(false);
-    }
-  };
-
-  const handlePurgeAll = async () => {
-    try {
-      await purgeAllUserData();
-      setSuccessMsg('Todos os dados foram zerados com sucesso! O painel está 100% limpo.');
-      setTimeout(() => setSuccessMsg(null), 4000);
-    } catch (err) {
-      console.error('Error purging data:', err);
     }
   };
 
@@ -104,24 +96,27 @@ export const SettingsTab: React.FC = () => {
       )}
 
       {/* 1. Gestão de Cartões de Crédito */}
-      <div className="card-depth-3d p-5 rounded-3xl space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-[#A8B5D1]/15 text-[#A8B5D1] flex items-center justify-center">
-              <CardIcon className="w-4 h-4" />
+      <div className="card-depth-3d p-5 sm:p-6 rounded-3xl space-y-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-[#A8B5D1]/15 text-[#A8B5D1] flex items-center justify-center">
+              <CardIcon className="w-4.5 h-4.5" />
             </div>
             <div>
               <h3 className="text-sm font-semibold text-white">Meus Cartões de Crédito</h3>
               <p className="text-[11px] text-[#737373]">
-                Vincule despesas e faturas unificadas por cartão.
+                Gerencie limites, datas, cores, logos e faturas dos seus cartões com suporte a edição completa.
               </p>
             </div>
           </div>
 
           <button
             type="button"
-            onClick={() => setIsCardModalOpen(true)}
-            className="btn-liquid-glass-primary py-2 px-3.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition active:scale-95 cursor-pointer shadow-xs"
+            onClick={() => {
+              setCardToEdit(null);
+              setIsCardModalOpen(true);
+            }}
+            className="btn-liquid-glass-primary py-2 px-3.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition active:scale-95 cursor-pointer shadow-xs self-start sm:self-auto"
           >
             <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
             <span>Novo Cartão</span>
@@ -129,52 +124,138 @@ export const SettingsTab: React.FC = () => {
         </div>
 
         {creditCards.length === 0 ? (
-          <div className="p-4 rounded-2xl bg-[#0D0D0D] border border-[#1E1E1E] text-center text-xs text-[#737373]">
-            Nenhum cartão cadastrado. Adicione seu primeiro cartão para acompanhar faturas e parcelas.
+          <div className="p-8 rounded-2xl bg-[#0D0D0D] border border-[#1E1E1E] text-center space-y-2">
+            <div className="w-10 h-10 rounded-full bg-[#1A1A1A] text-[#737373] flex items-center justify-center mx-auto">
+              <CardIcon className="w-5 h-5" />
+            </div>
+            <p className="text-xs text-[#737373]">
+              Nenhum cartão cadastrado. Adicione seu primeiro cartão para acompanhar faturas e parcelas.
+            </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {creditCards.map(card => (
-              <div 
-                key={card.id}
-                className="p-3.5 rounded-2xl bg-[#0D0D0D] border border-[#262626] flex items-center justify-between transition hover:border-[#333333]"
-              >
-                <div className="flex items-center gap-3 overflow-hidden">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4.5">
+            {creditCards.map(card => {
+              const baseColor = card.color || (card.bankName && BANK_DEFAULT_COLORS[card.bankName]) || '#3B82F6';
+              const cardLogo = card.logoUrl || card.bankLogo;
+              const summary = cardInvoices[card.id];
+              const currentInvoice = summary ? summary.total : 0;
+
+              return (
+                <div 
+                  key={card.id}
+                  className="w-full h-48 sm:h-52 rounded-2xl p-4.5 flex flex-col justify-between relative overflow-hidden transition-all duration-300 card-depth-3d group hover:-translate-y-1"
+                  style={{
+                    background: `linear-gradient(135deg, ${baseColor} 0%, #0F0F0F 95%)`,
+                    boxShadow: `0 10px 24px -4px ${baseColor}35, 0 4px 12px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.35)`
+                  }}
+                >
+                  {/* Gloss Reflection Overlay */}
                   <div 
-                    className="w-10 h-10 rounded-xl flex items-center justify-center text-white shrink-0 font-mono text-xs font-bold"
-                    style={{ backgroundColor: `${card.color || '#A8B5D1'}22`, border: `1.5px solid ${card.color || '#A8B5D1'}` }}
-                  >
-                    ••••
-                  </div>
-                  <div className="overflow-hidden">
-                    <div className="text-xs font-semibold text-white truncate">
-                      {card.cardName}
-                    </div>
-                    <div className="text-[11px] text-[#737373] flex items-center gap-1.5 mt-0.5">
-                      <span>{card.bankName}</span>
-                      <span>•</span>
-                      <span>•••• {card.lastFourDigits}</span>
-                    </div>
-                    {(card.closingDay || card.dueDay || card.limitAmount) && (
-                      <div className="text-[10px] text-[#525252] mt-0.5">
-                        {card.closingDay && `Fecha dia ${card.closingDay} `}
-                        {card.dueDay && `• Vence dia ${card.dueDay} `}
-                        {card.limitAmount && `• Limite: ${formatBRL(card.limitAmount)}`}
+                    className="absolute inset-0 pointer-events-none opacity-40"
+                    style={{
+                      background: 'radial-gradient(ellipse at 85% 0%, rgba(255,255,255,0.4) 0%, transparent 65%)'
+                    }}
+                  />
+
+                  {/* Top Row: Chip Metálico + Wifi + Nome do Banco + Logo / Nome */}
+                  <div className="flex items-start justify-between relative z-10 gap-2">
+                    <div className="flex items-center gap-2">
+                      {/* Sim Chip Dourado */}
+                      <div className="w-8 h-6 rounded-md bg-linear-to-tr from-amber-400 via-amber-200 to-amber-500 border border-amber-600/50 p-0.5 shadow-sm relative overflow-hidden shrink-0">
+                        <div className="w-full h-full border border-amber-800/30 rounded-xs flex flex-col justify-around">
+                          <div className="h-[1px] bg-amber-800/40 w-full" />
+                          <div className="h-[1px] bg-amber-800/40 w-full" />
+                        </div>
                       </div>
+                      <Wifi className="w-3.5 h-3.5 text-white/70 rotate-90 shrink-0" />
+                      {card.bankName && (
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-white/95 px-2 py-0.5 rounded-md bg-black/45 backdrop-blur-xs border border-white/15 truncate max-w-[95px] sm:max-w-[110px]">
+                          {card.bankName}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex flex-col items-end gap-0.5 shrink-0">
+                      {cardLogo ? (
+                        <div className="h-6 max-w-[75px] flex items-center justify-end">
+                          <img
+                            src={cardLogo}
+                            alt={card.bankName || card.cardName}
+                            className="max-h-6 max-w-[75px] object-contain drop-shadow"
+                            onError={(e) => {
+                              (e.target as HTMLElement).style.display = 'none';
+                            }}
+                          />
+                        </div>
+                      ) : (
+                        <span className="text-xs font-extrabold text-white tracking-tight uppercase block drop-shadow-xs">
+                          {card.cardName}
+                        </span>
+                      )}
+                      {cardLogo && (
+                        <span className="text-[10px] font-semibold text-white/90 tracking-tight uppercase block drop-shadow-xs">
+                          {card.cardName}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Middle Row: Digits Monospaced */}
+                  <div className="flex items-center justify-between relative z-10">
+                    <div className="text-xs sm:text-sm font-mono tracking-widest text-white/90 drop-shadow-xs">
+                      •••• •••• •••• {card.lastFourDigits}
+                    </div>
+                    {card.limitAmount && card.limitAmount > 0 && (
+                      <span className="text-[10px] text-white/75 font-mono bg-black/35 px-2 py-0.5 rounded-md backdrop-blur-xs border border-white/10">
+                        Lim: {formatBRL(card.limitAmount)}
+                      </span>
                     )}
                   </div>
-                </div>
 
-                <button
-                  type="button"
-                  onClick={() => setCardToDelete(card)}
-                  title="Remover cartão"
-                  className="p-1.5 rounded-lg text-[#737373] hover:text-[#E29578] hover:bg-[#1A1A1A] transition cursor-pointer"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            ))}
+                  {/* Bottom Row: Informações de Vencimento/Fechamento + Ações (Editar e Excluir) */}
+                  <div className="flex items-end justify-between relative z-10 pt-2 border-t border-white/10">
+                    <div className="text-[10px] text-white/80 space-y-0.5">
+                      <div>
+                        <span>Vence dia <strong>{card.dueDay || '—'}</strong></span>
+                        {card.closingDay && (
+                          <span className="text-white/60 ml-2">Fecha dia <strong>{card.closingDay}</strong></span>
+                        )}
+                      </div>
+                      {currentInvoice > 0 && (
+                        <span className="block text-[9.5px] text-white/65 font-mono">
+                          Fatura Mês: <strong className="text-white">{formatBRL(currentInvoice)}</strong>
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Botões de Ação Liquid Glass */}
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCardToEdit(card);
+                          setIsCardModalOpen(true);
+                        }}
+                        title="Editar Cartão (nome, banco, cor, logo, limites)"
+                        className="btn-liquid-glass px-2.5 py-1.5 rounded-xl text-white hover:text-[#A8B5D1] text-[11px] font-semibold flex items-center gap-1.5 shadow-sm active:scale-95 transition cursor-pointer"
+                      >
+                        <Pencil className="w-3 h-3 stroke-[2.5]" />
+                        <span>Editar</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setCardToDelete(card)}
+                        title="Remover Cartão"
+                        className="btn-liquid-glass p-1.5 rounded-xl text-white/70 hover:text-[#E29578] shadow-sm active:scale-95 transition cursor-pointer"
+                      >
+                        <Trash2 className="w-3.5 h-3.5 stroke-[2]" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
@@ -299,35 +380,7 @@ export const SettingsTab: React.FC = () => {
         </div>
       </div>
 
-      {/* 3. Limpeza Completa de Dados do Firestore */}
-      <div className="card-depth-3d p-5 rounded-3xl border border-[#E29578]/40 space-y-3">
-        <div className="flex items-start gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-[#E29578]/15 border border-[#E29578]/30 flex items-center justify-center text-[#E29578] shrink-0">
-            <Database className="w-5 h-5 stroke-[2]" />
-          </div>
-          <div>
-            <h3 className="text-sm font-semibold text-white">
-              Limpar / Zerar Dados do Usuário
-            </h3>
-            <p className="text-xs text-[#A3A3A3] mt-1 leading-relaxed">
-              Deseja recomeçar do zero? Clique no botão abaixo para apagar todas as transações, limites e cartões da sua coleção do Cloud Firestore.
-            </p>
-          </div>
-        </div>
-
-        <div className="pt-2 flex justify-end">
-          <button
-            type="button"
-            onClick={() => setShowPurgeModal(true)}
-            className="btn-liquid-glass py-2.5 px-4 rounded-xl border border-[#E29578]/40 text-[#E29578] text-xs font-semibold flex items-center gap-2 transition active:scale-95 cursor-pointer"
-          >
-            <Trash2 className="w-4 h-4" />
-            <span>Zerar Todos os Lançamentos do Banco</span>
-          </button>
-        </div>
-      </div>
-
-      {/* 4. Informações da Conta & Sessão */}
+      {/* 3. Informações da Conta & Sessão */}
       <div className="card-depth-3d p-5 rounded-3xl space-y-3">
         <h3 className="text-xs font-semibold text-[#737373] uppercase tracking-wider">
           Informações da Conta & Nuvem
@@ -366,14 +419,25 @@ export const SettingsTab: React.FC = () => {
         </div>
       </div>
 
-      {/* Modal para adicionar novo cartão */}
+      {/* Modal para adicionar ou editar cartão */}
       <CreditCardModal
         isOpen={isCardModalOpen}
-        onClose={() => setIsCardModalOpen(false)}
+        cardToEdit={cardToEdit}
+        onClose={() => {
+          setIsCardModalOpen(false);
+          setCardToEdit(null);
+        }}
         onSave={async (card) => {
-          await addCreditCard(card);
-          setSuccessMsg(`Cartão "${card.cardName}" cadastrado com sucesso!`);
+          if (cardToEdit) {
+            await updateCreditCard(cardToEdit.id, card);
+            setSuccessMsg(`Cartão "${card.cardName}" atualizado com sucesso!`);
+          } else {
+            await addCreditCard(card);
+            setSuccessMsg(`Cartão "${card.cardName}" cadastrado com sucesso!`);
+          }
           setTimeout(() => setSuccessMsg(null), 3000);
+          setIsCardModalOpen(false);
+          setCardToEdit(null);
         }}
       />
 
@@ -407,18 +471,6 @@ export const SettingsTab: React.FC = () => {
         message="Deseja remover esta categoria personalizada? Ela não aparecerá mais nos seletores de novos lançamentos."
         itemDetail={catToDelete ? `Categoria: ${catToDelete.name}` : undefined}
         confirmLabel="Sim, Excluir"
-      />
-
-      {/* Modal de confirmação para Zerar Banco de Dados */}
-      <DeleteConfirmModal
-        isOpen={showPurgeModal}
-        onClose={() => setShowPurgeModal(false)}
-        onConfirm={handlePurgeAll}
-        title="Zerar Todos os Dados do Firestore?"
-        message="Atenção: Esta ação apagará permanentemente todos os lançamentos, contas fixas, parcelamentos, tetos orçamentários e cartões gravados na sua conta. O painel ficará completamente limpo."
-        itemDetail={user ? `Usuário: ${user.email} (UID: ${user.uid.slice(0, 8)}...)` : undefined}
-        confirmLabel="Sim, Apagar Tudo Definitivamente"
-        isDestructive={true}
       />
 
       {/* Modal de Confirmação de Logout */}
