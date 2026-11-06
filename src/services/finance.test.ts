@@ -345,6 +345,7 @@ test('calculateAvailableSurplus correctly calculates real uncommitted surplus an
       nature: 'fixed',
       amount: 5000,
       category: 'Salário',
+      description: 'Teste',
       date: '2026-11-05',
       paymentMethod: 'bank_transfer'
     },
@@ -355,6 +356,7 @@ test('calculateAvailableSurplus correctly calculates real uncommitted surplus an
       nature: 'fixed',
       amount: 1500,
       category: 'Moradia',
+      description: 'Teste',
       date: '2026-11-05',
       paymentMethod: 'pix'
     },
@@ -365,6 +367,7 @@ test('calculateAvailableSurplus correctly calculates real uncommitted surplus an
       nature: 'installment',
       amount: 500,
       category: 'Transporte',
+      description: 'Teste',
       date: '2026-11-10',
       paymentMethod: 'boleto'
     }
@@ -386,6 +389,7 @@ test('calculateAvailableSurplus correctly calculates real uncommitted surplus an
       nature: 'fixed',
       amount: 2000,
       category: 'Salário',
+      description: 'Teste',
       date: '2026-11-05',
       paymentMethod: 'bank_transfer'
     },
@@ -396,6 +400,7 @@ test('calculateAvailableSurplus correctly calculates real uncommitted surplus an
       nature: 'fixed',
       amount: 2200,
       category: 'Moradia',
+      description: 'Teste',
       date: '2026-11-05',
       paymentMethod: 'pix'
     }

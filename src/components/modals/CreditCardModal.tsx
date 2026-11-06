@@ -16,9 +16,9 @@ export const BANK_DEFAULT_COLORS: Record<string, string> = {
   'Santander': '#CC0000',
   'Bradesco': '#CC092F',
   'Banco do Brasil': '#003882',
-  'C6 Bank': '#1C1C1C',
+  'C6 Bank': '#1E2430',
   'BTG Pactual': '#001E62',
-  'XP Investimentos': '#121212',
+  'XP Investimentos': '#131720',
   'Caixa': '#005CA9',
   'Sicredi': '#007E33',
   'Sicoob': '#003641'
@@ -49,7 +49,7 @@ const CARD_COLORS = [
   { name: 'Azul Banco do Brasil', hex: '#003882' },
   { name: 'Azul Caixa', hex: '#005CA9' },
   { name: 'Verde Sicredi', hex: '#007E33' },
-  { name: 'Preto Black / C6', hex: '#1C1C1C' },
+  { name: 'Preto Black / C6', hex: '#1E2430' },
   { name: 'Lavanda Grafite', hex: '#A8B5D1' },
   { name: 'Dourado Suave', hex: '#E5A97D' },
   { name: 'Verde Sálvia', hex: '#A3C9A8' }
@@ -154,13 +154,15 @@ export const CreditCardModal: React.FC<CreditCardModalProps> = ({
   return (
     <div 
       onClick={onClose}
+      role="dialog"
+      aria-modal="true"
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-md p-0 sm:p-4 animate-in fade-in duration-200"
     >
       <div 
         onClick={(e) => e.stopPropagation()}
         className="w-full max-w-md card-depth-3d rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto no-scrollbar border border-white/12 border-t-white/25"
         style={{
-          background: 'linear-gradient(180deg, #181818 0%, #0F0F0F 100%)'
+          background: 'linear-gradient(180deg, #191E28 0%, #10141B 100%)'
         }}
       >
         {/* Header */}
@@ -173,7 +175,7 @@ export const CreditCardModal: React.FC<CreditCardModalProps> = ({
               <h3 className="text-sm sm:text-base font-bold text-white tracking-tight">
                 {cardToEdit ? 'Editar Cartão' : 'Cadastrar Cartão de Crédito'}
               </h3>
-              <span className="text-[10px] text-[#737373]">
+              <span className="text-[10px] text-[#9AA4B5]">
                 Defina o banco, cores e dados da fatura
               </span>
             </div>
@@ -190,7 +192,7 @@ export const CreditCardModal: React.FC<CreditCardModalProps> = ({
         <div 
           className="mt-4 p-4.5 rounded-2xl relative overflow-hidden transition-all duration-300 shadow-xl"
           style={{ 
-            background: `linear-gradient(135deg, ${color} 0%, #0F0F0F 95%)`,
+            background: `linear-gradient(135deg, ${color} 0%, #10141B 95%)`,
             boxShadow: `0 10px 24px -4px ${color}35, 0 4px 12px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255, 255, 255, 0.4)`
           }}
         >
@@ -238,7 +240,7 @@ export const CreditCardModal: React.FC<CreditCardModalProps> = ({
         {/* Form */}
         <form onSubmit={handleSubmit} className="mt-5 space-y-4">
           <div>
-            <label className="text-[10px] font-semibold text-[#8C8C8C] uppercase tracking-wider block mb-1">
+            <label className="text-[10px] font-semibold text-[#8E98A9] uppercase tracking-wider block mb-1">
               Nome do Cartão (Apelido)
             </label>
             <input
@@ -247,17 +249,17 @@ export const CreditCardModal: React.FC<CreditCardModalProps> = ({
               value={cardName}
               onChange={(e) => setCardName(e.target.value)}
               placeholder="Ex: Nubank Ultravioleta, Inter Black..."
-              className="w-full px-3.5 py-2.5 bg-[#121212] border border-white/10 hover:border-white/20 focus:border-white/40 rounded-xl text-xs text-white placeholder-[#525252] focus:outline-hidden transition shadow-xs"
+              className="w-full px-3.5 py-2.5 bg-[#131720] border border-white/10 hover:border-white/20 focus:border-white/40 rounded-xl text-xs text-white placeholder-[#5E6A7E] focus:outline-hidden transition shadow-xs"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-[10px] font-semibold text-[#8C8C8C] uppercase tracking-wider block mb-1">
+              <label className="text-[10px] font-semibold text-[#8E98A9] uppercase tracking-wider block mb-1">
                 Últimos 4 Dígitos
               </label>
               <div className="relative">
-                <Hash className="w-3.5 h-3.5 text-[#737373] absolute left-3 top-1/2 -translate-y-1/2" />
+                <Hash className="w-3.5 h-3.5 text-[#9AA4B5] absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
                   required
@@ -265,22 +267,22 @@ export const CreditCardModal: React.FC<CreditCardModalProps> = ({
                   value={lastFourDigits}
                   onChange={(e) => setLastFourDigits(e.target.value.replace(/\D/g, ''))}
                   placeholder="1234"
-                  className="w-full pl-8 pr-3 py-2.5 bg-[#121212] border border-white/10 hover:border-white/20 focus:border-white/40 rounded-xl text-xs font-mono font-bold text-white placeholder-[#525252] focus:outline-hidden transition shadow-xs"
+                  className="w-full pl-8 pr-3 py-2.5 bg-[#131720] border border-white/10 hover:border-white/20 focus:border-white/40 rounded-xl text-xs font-mono font-bold text-white placeholder-[#5E6A7E] focus:outline-hidden transition shadow-xs"
                 />
               </div>
             </div>
 
             <div>
-              <label className="text-[10px] font-semibold text-[#8C8C8C] uppercase tracking-wider block mb-1">
+              <label className="text-[10px] font-semibold text-[#8E98A9] uppercase tracking-wider block mb-1">
                 Banco Emissor
               </label>
               <select
                 value={bankName}
                 onChange={(e) => handleBankChange(e.target.value)}
-                className="w-full px-3 py-2.5 bg-[#121212] border border-white/10 hover:border-white/20 focus:border-white/40 rounded-xl text-xs text-white focus:outline-hidden transition shadow-xs"
+                className="w-full px-3 py-2.5 bg-[#131720] border border-white/10 hover:border-white/20 focus:border-white/40 rounded-xl text-xs text-white focus:outline-hidden transition shadow-xs"
               >
                 {COMMON_BANKS.map(b => (
-                  <option key={b} value={b} className="bg-[#171717] text-white">{b}</option>
+                  <option key={b} value={b} className="bg-[#181D27] text-white">{b}</option>
                 ))}
               </select>
             </div>
@@ -288,7 +290,7 @@ export const CreditCardModal: React.FC<CreditCardModalProps> = ({
 
           {bankName === 'Outro' && (
             <div>
-              <label className="text-[10px] font-semibold text-[#8C8C8C] uppercase tracking-wider block mb-1">
+              <label className="text-[10px] font-semibold text-[#8E98A9] uppercase tracking-wider block mb-1">
                 Nome do Banco
               </label>
               <input
@@ -297,7 +299,7 @@ export const CreditCardModal: React.FC<CreditCardModalProps> = ({
                 value={customBank}
                 onChange={(e) => setCustomBank(e.target.value)}
                 placeholder="Ex: Sicredi, Safra, Sicoob, etc."
-                className="w-full px-3.5 py-2 bg-[#121212] border border-white/10 rounded-xl text-xs text-white placeholder-[#525252] focus:outline-hidden"
+                className="w-full px-3.5 py-2 bg-[#131720] border border-white/10 rounded-xl text-xs text-white placeholder-[#5E6A7E] focus:outline-hidden"
               />
             </div>
           )}
@@ -305,20 +307,20 @@ export const CreditCardModal: React.FC<CreditCardModalProps> = ({
           {/* Logo do Banco (URL) */}
           <div>
             <div className="flex items-center justify-between mb-1">
-              <label className="text-[10px] font-semibold text-[#8C8C8C] uppercase tracking-wider block">
+              <label className="text-[10px] font-semibold text-[#8E98A9] uppercase tracking-wider block">
                 Logo do Banco (URL da Imagem - Opcional)
               </label>
-              <span className="text-[9.5px] text-[#737373]">PNG ou SVG com fundo transparente</span>
+              <span className="text-[9.5px] text-[#9AA4B5]">PNG ou SVG com fundo transparente</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="relative flex-1">
-                <ImageIcon className="w-3.5 h-3.5 text-[#737373] absolute left-3 top-1/2 -translate-y-1/2" />
+                <ImageIcon className="w-3.5 h-3.5 text-[#9AA4B5] absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="url"
                   value={logoUrl}
                   onChange={(e) => setLogoUrl(e.target.value)}
                   placeholder="https://exemplo.com/logo-nubank.png"
-                  className="w-full pl-9 pr-3 py-2 bg-[#121212] border border-white/10 hover:border-white/20 focus:border-white/40 rounded-xl text-xs text-white placeholder-[#525252] focus:outline-hidden transition shadow-xs"
+                  className="w-full pl-9 pr-3 py-2 bg-[#131720] border border-white/10 hover:border-white/20 focus:border-white/40 rounded-xl text-xs text-white placeholder-[#5E6A7E] focus:outline-hidden transition shadow-xs"
                 />
               </div>
               {logoUrl && (
@@ -336,7 +338,7 @@ export const CreditCardModal: React.FC<CreditCardModalProps> = ({
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-[10px] font-semibold text-[#8C8C8C] uppercase tracking-wider block mb-1">
+              <label className="text-[10px] font-semibold text-[#8E98A9] uppercase tracking-wider block mb-1">
                 Dia Fechamento
               </label>
               <input
@@ -346,12 +348,12 @@ export const CreditCardModal: React.FC<CreditCardModalProps> = ({
                 value={closingDay}
                 onChange={(e) => setClosingDay(e.target.value ? Number(e.target.value) : '')}
                 placeholder="Ex: 25"
-                className="w-full px-3 py-2 bg-[#121212] border border-white/10 rounded-xl text-xs text-white placeholder-[#525252] focus:outline-hidden"
+                className="w-full px-3 py-2 bg-[#131720] border border-white/10 rounded-xl text-xs text-white placeholder-[#5E6A7E] focus:outline-hidden"
               />
             </div>
 
             <div>
-              <label className="text-[10px] font-semibold text-[#8C8C8C] uppercase tracking-wider block mb-1">
+              <label className="text-[10px] font-semibold text-[#8E98A9] uppercase tracking-wider block mb-1">
                 Dia Vencimento
               </label>
               <input
@@ -361,24 +363,24 @@ export const CreditCardModal: React.FC<CreditCardModalProps> = ({
                 value={dueDay}
                 onChange={(e) => setDueDay(e.target.value ? Number(e.target.value) : '')}
                 placeholder="Ex: 5"
-                className="w-full px-3 py-2 bg-[#121212] border border-white/10 rounded-xl text-xs text-white placeholder-[#525252] focus:outline-hidden"
+                className="w-full px-3 py-2 bg-[#131720] border border-white/10 rounded-xl text-xs text-white placeholder-[#5E6A7E] focus:outline-hidden"
               />
             </div>
           </div>
 
           <div>
-            <label className="text-[10px] font-semibold text-[#8C8C8C] uppercase tracking-wider block mb-1">
+            <label className="text-[10px] font-semibold text-[#8E98A9] uppercase tracking-wider block mb-1">
               Limite do Cartão (Opcional)
             </label>
             <div className="relative">
-              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-semibold text-[#737373]">R$</span>
+              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-semibold text-[#9AA4B5]">R$</span>
               <input
                 type="number"
                 step="0.01"
                 value={limitStr}
                 onChange={(e) => setLimitStr(e.target.value)}
                 placeholder="5000,00"
-                className="w-full pl-9 pr-3.5 py-2 bg-[#121212] border border-white/10 rounded-xl text-xs text-white placeholder-[#525252] focus:outline-hidden"
+                className="w-full pl-9 pr-3.5 py-2 bg-[#131720] border border-white/10 rounded-xl text-xs text-white placeholder-[#5E6A7E] focus:outline-hidden"
               />
             </div>
           </div>
@@ -386,7 +388,7 @@ export const CreditCardModal: React.FC<CreditCardModalProps> = ({
           {/* Color tag selector */}
           <div>
             <div className="flex items-center justify-between mb-1.5">
-              <label className="text-[10px] font-semibold text-[#8C8C8C] uppercase tracking-wider block">
+              <label className="text-[10px] font-semibold text-[#8E98A9] uppercase tracking-wider block">
                 Cor Oficial / Destaque do Cartão
               </label>
               <span className="text-[10px] text-[#A8B5D1] font-mono">{color}</span>

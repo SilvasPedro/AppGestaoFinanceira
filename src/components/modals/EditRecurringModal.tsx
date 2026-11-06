@@ -110,26 +110,28 @@ export const EditRecurringModal: React.FC<EditRecurringModalProps> = ({
   return (
     <div
       onClick={onClose}
+      role="dialog"
+      aria-modal="true"
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-xs p-0 sm:p-4 animate-in fade-in duration-200"
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-md bg-[#141414] border border-[#262626] rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto no-scrollbar"
+        className="w-full max-w-md bg-[#151A23] border border-[#283040] rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto no-scrollbar"
       >
         {/* Header */}
-        <div className="flex items-center justify-between pb-3 border-b border-[#262626]">
+        <div className="flex items-center justify-between pb-3 border-b border-[#283040]">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-xl bg-white/10 text-white flex items-center justify-center">
               <Repeat className="w-4 h-4 text-[#A8B5D1]" />
             </div>
             <div>
               <h3 className="text-base font-semibold text-white">Editar Recorrência Fixa</h3>
-              <p className="text-[11px] text-[#737373]">Ajustar valor, vencimento ou categoria</p>
+              <p className="text-[11px] text-[#9AA4B5]">Ajustar valor, vencimento ou categoria</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded-xl text-[#737373] hover:text-white hover:bg-[#262626] transition cursor-pointer"
+            className="p-1 rounded-xl text-[#9AA4B5] hover:text-white hover:bg-[#283040] transition cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -137,14 +139,14 @@ export const EditRecurringModal: React.FC<EditRecurringModalProps> = ({
 
         <form onSubmit={handleSubmit} className="mt-4 space-y-4">
           {/* Tipo (Despesa / Receita) */}
-          <div className="grid grid-cols-2 gap-2 p-1 bg-[#0D0D0D] border border-[#262626] rounded-2xl">
+          <div className="grid grid-cols-2 gap-2 p-1 bg-[#0F1218] border border-[#283040] rounded-2xl">
             <button
               type="button"
               onClick={() => handleTypeChange('expense')}
               className={`py-2 px-3 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition cursor-pointer ${
                 type === 'expense'
                   ? 'bg-[#E29578] text-black shadow-xs font-bold'
-                  : 'text-[#737373] hover:text-white'
+                  : 'text-[#9AA4B5] hover:text-white'
               }`}
             >
               <ArrowDownRight className="w-3.5 h-3.5" />
@@ -156,7 +158,7 @@ export const EditRecurringModal: React.FC<EditRecurringModalProps> = ({
               className={`py-2 px-3 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition cursor-pointer ${
                 type === 'income'
                   ? 'bg-[#A3C9A8] text-black shadow-xs font-bold'
-                  : 'text-[#737373] hover:text-white'
+                  : 'text-[#9AA4B5] hover:text-white'
               }`}
             >
               <ArrowUpRight className="w-3.5 h-3.5" />
@@ -166,7 +168,7 @@ export const EditRecurringModal: React.FC<EditRecurringModalProps> = ({
 
           {/* Nome / Descrição */}
           <div>
-            <label className="block text-xs font-medium text-[#A3A3A3] mb-1.5">
+            <label className="block text-xs font-medium text-[#AEB6C4] mb-1.5">
               Nome do Compromisso
             </label>
             <input
@@ -175,14 +177,14 @@ export const EditRecurringModal: React.FC<EditRecurringModalProps> = ({
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Ex: Netflix, Aluguel, Salário, Internet"
-              className="w-full bg-[#0D0D0D] border border-[#262626] rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-[#525252] focus:border-[#737373] focus:outline-hidden transition"
+              className="w-full bg-[#0F1218] border border-[#283040] rounded-xl px-3.5 py-2.5 text-sm text-white placeholder-[#5E6A7E] focus:border-[#8892A4] focus:outline-hidden transition"
             />
           </div>
 
           {/* Valor Mensal e Dia de Vencimento */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-[#A3A3A3] mb-1.5 flex items-center gap-1">
+              <label className="block text-xs font-medium text-[#AEB6C4] mb-1.5 flex items-center gap-1">
                 <DollarSign className="w-3.5 h-3.5 text-[#A3C9A8]" />
                 Valor Mensal (R$)
               </label>
@@ -193,12 +195,12 @@ export const EditRecurringModal: React.FC<EditRecurringModalProps> = ({
                 value={amountStr}
                 onChange={(e) => setAmountStr(e.target.value)}
                 placeholder="0,00"
-                className="w-full bg-[#0D0D0D] border border-[#262626] rounded-xl px-3.5 py-2.5 text-sm font-semibold text-white placeholder-[#525252] focus:border-[#737373] focus:outline-hidden transition"
+                className="w-full bg-[#0F1218] border border-[#283040] rounded-xl px-3.5 py-2.5 text-sm font-semibold text-white placeholder-[#5E6A7E] focus:border-[#8892A4] focus:outline-hidden transition"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-[#A3A3A3] mb-1.5 flex items-center gap-1">
+              <label className="block text-xs font-medium text-[#AEB6C4] mb-1.5 flex items-center gap-1">
                 <Calendar className="w-3.5 h-3.5 text-[#A8B5D1]" />
                 Dia do Vencimento
               </label>
@@ -210,9 +212,9 @@ export const EditRecurringModal: React.FC<EditRecurringModalProps> = ({
                   required
                   value={dueDay}
                   onChange={(e) => setDueDay(Math.min(31, Math.max(1, parseInt(e.target.value) || 1)))}
-                  className="w-full bg-[#0D0D0D] border border-[#262626] rounded-xl px-3.5 py-2.5 text-sm font-semibold text-white placeholder-[#525252] focus:border-[#737373] focus:outline-hidden transition"
+                  className="w-full bg-[#0F1218] border border-[#283040] rounded-xl px-3.5 py-2.5 text-sm font-semibold text-white placeholder-[#5E6A7E] focus:border-[#8892A4] focus:outline-hidden transition"
                 />
-                <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs text-[#737373] pointer-events-none">
+                <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-xs text-[#9AA4B5] pointer-events-none">
                   Todo dia {String(dueDay).padStart(2, '0')}
                 </span>
               </div>
@@ -221,14 +223,14 @@ export const EditRecurringModal: React.FC<EditRecurringModalProps> = ({
 
           {/* Categoria */}
           <div>
-            <label className="block text-xs font-medium text-[#A3A3A3] mb-1.5 flex items-center gap-1">
+            <label className="block text-xs font-medium text-[#AEB6C4] mb-1.5 flex items-center gap-1">
               <Tag className="w-3.5 h-3.5 text-[#E5A97D]" />
               Categoria
             </label>
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className="w-full bg-[#0D0D0D] border border-[#262626] rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-[#737373] focus:outline-hidden transition"
+              className="w-full bg-[#0F1218] border border-[#283040] rounded-xl px-3.5 py-2.5 text-sm text-white focus:border-[#8892A4] focus:outline-hidden transition"
             >
               {categories.map(cat => (
                 <option key={cat} value={cat}>{cat}</option>
@@ -238,7 +240,7 @@ export const EditRecurringModal: React.FC<EditRecurringModalProps> = ({
 
           {/* Método de Pagamento */}
           <div>
-            <label className="block text-xs font-medium text-[#A3A3A3] mb-1.5">
+            <label className="block text-xs font-medium text-[#AEB6C4] mb-1.5">
               {type === 'income' ? 'Forma de Recebimento' : 'Método de Pagamento'}
             </label>
             <div className="grid grid-cols-3 gap-1.5">
@@ -250,7 +252,7 @@ export const EditRecurringModal: React.FC<EditRecurringModalProps> = ({
                   className={`py-2 px-2 text-xs rounded-xl font-medium border transition cursor-pointer text-center ${
                     paymentMethod === m.id
                       ? 'bg-white text-black border-white shadow-xs font-semibold'
-                      : 'bg-[#0D0D0D] text-[#A3A3A3] border-[#262626] hover:text-white hover:bg-[#1A1A1A]'
+                      : 'bg-[#0F1218] text-[#AEB6C4] border-[#283040] hover:text-white hover:bg-[#1C212C]'
                   }`}
                 >
                   {m.label}
@@ -261,9 +263,9 @@ export const EditRecurringModal: React.FC<EditRecurringModalProps> = ({
 
           {/* Cartão de Crédito Vinculado */}
           {paymentMethod === 'credit_card' && (
-            <div className="p-3 bg-[#0D0D0D] border border-[#262626] rounded-2xl space-y-2">
+            <div className="p-3 bg-[#0F1218] border border-[#283040] rounded-2xl space-y-2">
               <div className="flex items-center justify-between">
-                <label className="text-xs font-medium text-[#A3A3A3] flex items-center gap-1.5">
+                <label className="text-xs font-medium text-[#AEB6C4] flex items-center gap-1.5">
                   <CreditCardIcon className="w-3.5 h-3.5 text-[#A8B5D1]" />
                   Cartão Vinculado
                 </label>
@@ -287,8 +289,8 @@ export const EditRecurringModal: React.FC<EditRecurringModalProps> = ({
                         onClick={() => setSelectedCardId(c.id)}
                         className={`w-full p-2.5 rounded-xl border flex items-center justify-between text-left transition cursor-pointer ${
                           isSelected
-                            ? 'bg-[#1C1C1C] border-[#A8B5D1] text-white'
-                            : 'bg-[#141414] border-[#262626] text-[#A3A3A3] hover:text-white'
+                            ? 'bg-[#1E2430] border-[#A8B5D1] text-white'
+                            : 'bg-[#151A23] border-[#283040] text-[#AEB6C4] hover:text-white'
                         }`}
                       >
                         <div className="flex items-center gap-2">
@@ -297,7 +299,7 @@ export const EditRecurringModal: React.FC<EditRecurringModalProps> = ({
                             style={{ backgroundColor: c.color || '#A8B5D1' }} 
                           />
                           <span className="text-xs font-semibold text-white">{c.cardName}</span>
-                          <span className="text-[11px] text-[#737373]">•••• {c.lastFourDigits}</span>
+                          <span className="text-[11px] text-[#9AA4B5]">•••• {c.lastFourDigits}</span>
                         </div>
                         {isSelected && <Check className="w-4 h-4 text-[#A8B5D1]" />}
                       </button>
@@ -306,11 +308,11 @@ export const EditRecurringModal: React.FC<EditRecurringModalProps> = ({
                 </div>
               ) : (
                 <div className="text-center py-2">
-                  <p className="text-xs text-[#737373] mb-2">Nenhum cartão cadastrado</p>
+                  <p className="text-xs text-[#9AA4B5] mb-2">Nenhum cartão cadastrado</p>
                   <button
                     type="button"
                     onClick={() => setIsCardModalOpen(true)}
-                    className="text-xs px-3 py-1.5 rounded-lg bg-[#262626] text-white hover:bg-[#333333] transition cursor-pointer"
+                    className="text-xs px-3 py-1.5 rounded-lg bg-[#283040] text-white hover:bg-[#363F50] transition cursor-pointer"
                   >
                     Cadastrar Cartão
                   </button>
@@ -325,7 +327,7 @@ export const EditRecurringModal: React.FC<EditRecurringModalProps> = ({
               type="button"
               onClick={onClose}
               disabled={submitting}
-              className="flex-1 py-3 px-4 rounded-xl bg-[#262626] hover:bg-[#333333] text-xs font-semibold text-white transition cursor-pointer disabled:opacity-50"
+              className="flex-1 py-3 px-4 rounded-xl bg-[#283040] hover:bg-[#363F50] text-xs font-semibold text-white transition cursor-pointer disabled:opacity-50"
             >
               Cancelar
             </button>

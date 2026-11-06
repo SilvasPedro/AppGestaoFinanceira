@@ -11,6 +11,7 @@ import {
   TrendingDown
 } from 'lucide-react';
 import { BudgetSuggestionResult } from '../../services/budgetSuggester';
+import { formatBRL } from '../../lib/format';
 
 interface SmartBudgetModalProps {
   isOpen: boolean;
@@ -51,9 +52,6 @@ export const SmartBudgetModal: React.FC<SmartBudgetModalProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
-  const formatBRL = (val: number) => {
-    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
-  };
 
   const handleApplySmartSuggestion = () => {
     if (budgetSuggestion.isDeficit) return;
@@ -112,26 +110,28 @@ export const SmartBudgetModal: React.FC<SmartBudgetModalProps> = ({
   return (
     <div
       onClick={onClose}
+      role="dialog"
+      aria-modal="true"
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-xs p-0 sm:p-4 animate-in fade-in duration-200"
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-lg bg-[#141414] border border-[#262626] rounded-t-3xl sm:rounded-3xl p-5 sm:p-6 shadow-2xl relative max-h-[92vh] flex flex-col"
+        className="w-full max-w-lg bg-[#151A23] border border-[#283040] rounded-t-3xl sm:rounded-3xl p-5 sm:p-6 shadow-2xl relative max-h-[92vh] flex flex-col"
       >
         {/* Header */}
-        <div className="flex items-center justify-between pb-3 border-b border-[#262626] shrink-0">
+        <div className="flex items-center justify-between pb-3 border-b border-[#283040] shrink-0">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-xl bg-white/10 text-white flex items-center justify-center">
               <Target className="w-4 h-4 text-[#A8B5D1]" />
             </div>
             <div>
               <h3 className="text-base font-semibold text-white">Limites & Tetos Inteligentes</h3>
-              <p className="text-[11px] text-[#737373]">Configure tetos baseados na sua capacidade real</p>
+              <p className="text-[11px] text-[#9AA4B5]">Configure tetos baseados na sua capacidade real</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded-xl text-[#737373] hover:text-white hover:bg-[#262626] transition cursor-pointer"
+            className="p-1 rounded-xl text-[#9AA4B5] hover:text-white hover:bg-[#283040] transition cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -140,10 +140,10 @@ export const SmartBudgetModal: React.FC<SmartBudgetModalProps> = ({
         {/* Scrollable Form Content */}
         <div className="overflow-y-auto no-scrollbar py-4 space-y-4 flex-1">
           {/* Card de Sobra Líquida e Sugestão Inteligente */}
-          <div className="p-4 bg-[#0D0D0D] border border-[#262626] rounded-2xl space-y-3">
+          <div className="p-4 bg-[#0F1218] border border-[#283040] rounded-2xl space-y-3">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <span className="text-[10px] text-[#737373] uppercase tracking-wider font-semibold block">
+                <span className="text-[10px] text-[#9AA4B5] uppercase tracking-wider font-semibold block">
                   Sobra Líquida Mensal Disponível
                 </span>
                 <div className="flex items-baseline gap-2 mt-0.5">
@@ -152,11 +152,11 @@ export const SmartBudgetModal: React.FC<SmartBudgetModalProps> = ({
                   }`}>
                     {formatBRL(availableSurplus)}
                   </span>
-                  <span className="text-[11px] text-[#737373]">
+                  <span className="text-[11px] text-[#9AA4B5]">
                     {budgetSuggestion.isDeficit ? '(Déficit)' : 'livre para categorias'}
                   </span>
                 </div>
-                <p className="text-[11px] text-[#737373] mt-1">
+                <p className="text-[11px] text-[#9AA4B5] mt-1">
                   Renda ({formatBRL(budgetSuggestion.totalIncome)}) − Fixos ({formatBRL(budgetSuggestion.fixedExpenses)}) − Parcelas ({formatBRL(budgetSuggestion.installmentsTotal)})
                 </p>
               </div>
@@ -184,7 +184,7 @@ export const SmartBudgetModal: React.FC<SmartBudgetModalProps> = ({
             )}
 
             {!budgetSuggestion.isDeficit && budgetSuggestion.safetyReserve > 0 && (
-              <div className="pt-2 border-t border-[#1C1C1C] flex items-center justify-between text-[11px] text-[#A3A3A3]">
+              <div className="pt-2 border-t border-[#1E2430] flex items-center justify-between text-[11px] text-[#AEB6C4]">
                 <span className="flex items-center gap-1 text-[#A3C9A8]">
                   <ShieldCheck className="w-3.5 h-3.5" />
                   Margem de segurança (20%): {formatBRL(budgetSuggestion.safetyReserve)}
@@ -197,10 +197,10 @@ export const SmartBudgetModal: React.FC<SmartBudgetModalProps> = ({
           {/* Lista de Categorias com Inputs */}
           <div className="space-y-2.5">
             <div className="flex items-center justify-between px-1">
-              <span className="text-[11px] text-[#737373] uppercase tracking-wider font-semibold">
+              <span className="text-[11px] text-[#9AA4B5] uppercase tracking-wider font-semibold">
                 Categorias de Gastos Diários
               </span>
-              <span className="text-[10px] text-[#737373]">
+              <span className="text-[10px] text-[#9AA4B5]">
                 Valores mensais (R$)
               </span>
             </div>
@@ -213,7 +213,7 @@ export const SmartBudgetModal: React.FC<SmartBudgetModalProps> = ({
                 return (
                   <div
                     key={cat}
-                    className="p-3 bg-[#0D0D0D] border border-[#262626] rounded-2xl flex items-center justify-between gap-3 hover:border-[#383838] transition"
+                    className="p-3 bg-[#0F1218] border border-[#283040] rounded-2xl flex items-center justify-between gap-3 hover:border-[#3B4558] transition"
                   >
                     <div className="min-w-0">
                       <div className="text-xs font-semibold text-white truncate">
@@ -236,7 +236,7 @@ export const SmartBudgetModal: React.FC<SmartBudgetModalProps> = ({
                     </div>
 
                     <div className="relative w-32 shrink-0">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-[#737373]">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-[#9AA4B5]">
                         R$
                       </span>
                       <input
@@ -245,7 +245,7 @@ export const SmartBudgetModal: React.FC<SmartBudgetModalProps> = ({
                         value={currentVal}
                         onChange={(e) => handleInputChange(cat, e.target.value)}
                         placeholder="0,00"
-                        className="w-full pl-9 pr-3 py-2 bg-[#141414] border border-[#262626] rounded-xl text-xs font-semibold text-white text-right focus:border-[#737373] focus:outline-hidden transition"
+                        className="w-full pl-9 pr-3 py-2 bg-[#151A23] border border-[#283040] rounded-xl text-xs font-semibold text-white text-right focus:border-[#8892A4] focus:outline-hidden transition"
                       />
                     </div>
                   </div>
@@ -256,18 +256,18 @@ export const SmartBudgetModal: React.FC<SmartBudgetModalProps> = ({
         </div>
 
         {/* Footer com Barra de Somatório Dinâmico e Botões */}
-        <div className="pt-3 border-t border-[#262626] shrink-0 space-y-3">
+        <div className="pt-3 border-t border-[#283040] shrink-0 space-y-3">
           {/* Barra de Somatório Dinâmico */}
-          <div className="p-3 bg-[#0D0D0D] border border-[#262626] rounded-2xl space-y-2 text-xs">
+          <div className="p-3 bg-[#0F1218] border border-[#283040] rounded-2xl space-y-2 text-xs">
             <div className="flex items-center justify-between">
-              <span className="text-[#A3A3A3] font-medium">Soma de Todos os Tetos</span>
+              <span className="text-[#AEB6C4] font-medium">Soma de Todos os Tetos</span>
               <span className={`font-mono font-bold ${isOverSurplus ? 'text-[#E29578]' : 'text-white'}`}>
-                {formatBRL(totalAllocated)} <span className="text-[#737373] text-[11px]">/ {formatBRL(availableSurplus)}</span>
+                {formatBRL(totalAllocated)} <span className="text-[#9AA4B5] text-[11px]">/ {formatBRL(availableSurplus)}</span>
               </span>
             </div>
 
             {/* Barra Linear de Progresso */}
-            <div className="w-full h-2 rounded-full bg-[#1C1C1C] overflow-hidden">
+            <div className="w-full h-2 rounded-full bg-[#1E2430] overflow-hidden">
               <div
                 className={`h-full rounded-full transition-all duration-300 ${
                   isOverSurplus 
@@ -292,7 +292,7 @@ export const SmartBudgetModal: React.FC<SmartBudgetModalProps> = ({
                   Dentro da renda • Margem de {formatBRL(remainingMargin)} preservada
                 </span>
               )}
-              <span className="text-[#737373] font-mono">
+              <span className="text-[#9AA4B5] font-mono">
                 {Math.round(surplusPercentage)}% da sobra
               </span>
             </div>
@@ -304,7 +304,7 @@ export const SmartBudgetModal: React.FC<SmartBudgetModalProps> = ({
               type="button"
               onClick={onClose}
               disabled={submitting}
-              className="flex-1 py-3 px-4 rounded-xl bg-[#262626] hover:bg-[#333333] text-xs font-semibold text-white transition cursor-pointer disabled:opacity-50"
+              className="flex-1 py-3 px-4 rounded-xl bg-[#283040] hover:bg-[#363F50] text-xs font-semibold text-white transition cursor-pointer disabled:opacity-50"
             >
               Cancelar
             </button>

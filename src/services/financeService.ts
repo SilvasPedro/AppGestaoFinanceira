@@ -12,7 +12,8 @@ import {
   deleteField
 } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { Transaction, CategoryBudget, CustomCategoryItem, CreditCard } from '../types/finance';
+import { Transaction, CategoryBudget, CustomCategoryItem, CreditCard, PaymentMethod } from '../types/finance';
+import { purgeExtraCollections } from './userCollections';
 
 const GUEST_TX_KEY = 'finances_pro_clean_guest_txs';
 const GUEST_BUDGETS_KEY = 'finances_pro_clean_guest_budgets';
@@ -393,6 +394,29 @@ export class FinanceService {
   }
 
   /**
+   * Salva vários lançamentos de uma vez (importação de extratos), em lotes de até 400 documentos.
+   */
+  static async saveTransactionsBatch(
+    userId: string,
+    items: Array<Omit<Transaction, 'id' | 'userId'>>
+  ): Promise<number> {
+    const now = new Date().toISOString();
+    let saved = 0;
+    for (let i = 0; i < items.length; i += 400) {
+      const batch = writeBatch(db);
+      items.slice(i, i + 400).forEach((item, idx) => {
+        const id = `tx_${Date.now()}_${i + idx}_${Math.random().toString(36).slice(2, 7)}`;
+        const data: Record<string, unknown> = { ...item, id, userId, createdAt: now, updatedAt: now };
+        Object.keys(data).forEach(k => data[k] === undefined && delete data[k]);
+        batch.set(doc(db, 'users', userId, 'transactions', id), data);
+      });
+      await batch.commit();
+      saved += Math.min(400, items.length - i);
+    }
+    return saved;
+  }
+
+  /**
    * Remove uma transação do banco ou armazenamento local
    */
   static async deleteTransaction(userId: string, txId: string, isGuest: boolean): Promise<void> {
@@ -739,8 +763,14 @@ export class FinanceService {
       return;
     }
 
+    // O Firestore rejeita campos undefined (ex: rolloverFrom quando o acúmulo está desligado)
+    const sanitized: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(toSave)) {
+      if (v !== undefined) sanitized[k] = v;
+    }
+
     const docRef = doc(db, 'users', userId, 'budgets', budgetId);
-    await setDoc(docRef, toSave, { merge: true });
+    await setDoc(docRef, sanitized, { merge: true });
   }
 
   /**
@@ -806,6 +836,8 @@ export class FinanceService {
         cardsSnap.forEach(d => batch.delete(d.ref));
         await batch.commit();
       }
+
+      await purgeExtraCollections(userId);
     } catch (e) {
       console.error('Error clearing user firestore data:', e);
       throw e;

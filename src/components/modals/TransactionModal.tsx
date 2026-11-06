@@ -31,19 +31,24 @@ import {
 } from '../../types/finance';
 import { useFinance } from '../../context/FinanceContext';
 import { CreditCardModal } from './CreditCardModal';
+import { TransactionExtrasFields } from './TransactionExtrasFields';
+import { useExtras } from '../../context/ExtrasContext';
+import { useToast } from '../../context/ToastContext';
+import { compressImage } from '../../services/userCollections';
+import type { AttachmentInput } from '../../context/FinanceContext';
 
 interface TransactionModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (tx: Omit<Transaction, 'id' | 'userId'>) => Promise<void>;
+  onSave: (tx: Omit<Transaction, 'id' | 'userId'>, extras?: { attachment?: AttachmentInput | null }) => Promise<void>;
   defaultMonth: string; // 'YYYY-MM'
   transactionToEdit?: Transaction | null;
-  onUpdate?: (id: string, tx: Partial<Transaction>) => Promise<void>;
+  onUpdate?: (id: string, tx: Partial<Transaction>, extras?: { attachment?: AttachmentInput | null }) => Promise<void>;
   initialNature?: TransactionNature;
   initialType?: TransactionType;
 }
 
-const PAYMENT_METHODS: { id: PaymentMethod; label: string; icon: React.ComponentType<{ className?: string }>; color: string }[] = [
+const PAYMENT_METHODS: { id: PaymentMethod; label: string; icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>; color: string }[] = [
   { id: 'credit_card', label: 'Cartão de Crédito', icon: CreditCardIcon, color: '#A8B5D1' },
   { id: 'pix', label: 'PIX Instantâneo', icon: Zap, color: '#A3C9A8' },
   { id: 'debit_card', label: 'Cartão de Débito', icon: CreditCardIcon, color: '#E29578' },
@@ -60,6 +65,11 @@ const getCategoryColor = (cat: string) => {
   return palette[Math.abs(hash) % palette.length];
 };
 
+export interface AddPreset {
+  type?: TransactionType;
+  nature?: TransactionNature;
+}
+
 export const TransactionModal: React.FC<TransactionModalProps> = ({
   isOpen,
   onClose,
@@ -70,7 +80,19 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
   initialNature,
   initialType
 }) => {
-  const { expenseCategories, incomeCategories, creditCards, addCreditCard } = useFinance();
+  const { expenseCategories, incomeCategories, creditCards, addCreditCard, transactions } = useFinance();
+  const { accounts } = useExtras();
+  const { showToast } = useToast();
+  const [accountId, setAccountId] = useState<string>('');
+  const [tags, setTags] = useState<string[]>([]);
+  const [newAttachment, setNewAttachment] = useState<AttachmentInput | null>(null);
+  const [removeExistingAttachment, setRemoveExistingAttachment] = useState(false);
+
+  const tagSuggestions = useMemo(() => {
+    const counts = new Map<string, number>();
+    transactions.forEach(t => (t.tags || []).forEach(tag => counts.set(tag, (counts.get(tag) || 0) + 1)));
+    return Array.from(counts.entries()).sort((a, b) => b[1] - a[1]).map(([tag]) => tag).slice(0, 20);
+  }, [transactions]);
   const [type, setType] = useState<TransactionType>(initialType || 'expense');
   const [nature, setNature] = useState<TransactionNature>(initialNature || 'daily');
   const [amountStr, setAmountStr] = useState<string>('');
@@ -126,6 +148,10 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
       setIsPaid(transactionToEdit.isPaid ?? true);
       setDate(transactionToEdit.date);
       setSelectedCardId(transactionToEdit.cardId || '');
+      setAccountId(transactionToEdit.accountId || '');
+      setTags(transactionToEdit.tags || []);
+      setNewAttachment(null);
+      setRemoveExistingAttachment(false);
       if (transactionToEdit.installmentDetails) {
         setTotalInstallments(transactionToEdit.installmentDetails.totalInstallments || 1);
         setCurrentInstallment(transactionToEdit.installmentDetails.currentInstallment || 1);
@@ -148,6 +174,10 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
       const day = String(new Date().getDate()).padStart(2, '0');
       setDate(`${defaultMonth}-${day}`);
       setSelectedCardId(creditCards[0]?.id || '');
+      setAccountId('');
+      setTags([]);
+      setNewAttachment(null);
+      setRemoveExistingAttachment(false);
       setTotalInstallments(10);
       setCurrentInstallment(1);
       setInstallmentCalcMode('total');
@@ -200,6 +230,16 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
         cardLastFour: selectedCard.lastFourDigits
       } : {};
 
+      // Compras no cartão não saem direto de uma conta; '' limpa o vínculo ao editar.
+      const extraFields = {
+        accountId: paymentMethod === 'credit_card' ? '' : accountId,
+        tags
+      };
+
+      let attachmentExtras: { attachment?: AttachmentInput | null } | undefined;
+      if (newAttachment) attachmentExtras = { attachment: newAttachment };
+      else if (removeExistingAttachment) attachmentExtras = { attachment: null };
+
       if (nature === 'installment') {
         const totalAmount = installmentCalcMode === 'total' ? rawVal : rawVal * totalInstallments;
         const monthlyAmount = installmentCalcMode === 'monthly' ? rawVal : rawVal / totalInstallments;
@@ -217,6 +257,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
           paymentMethod,
           isPaid,
           ...cardFields,
+          ...extraFields,
           installmentDetails: {
             totalAmount: Math.round(totalAmount * 100) / 100,
             totalInstallments: Number(totalInstallments),
@@ -242,19 +283,21 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
           description: description.trim() || (type === 'income' ? 'Receita' : 'Despesa'),
           paymentMethod,
           isPaid: nature === 'fixed' ? isPaid : true,
-          ...cardFields
+          ...cardFields,
+          ...extraFields
         };
 
         if (transactionToEdit && onUpdate) {
-          await onUpdate(transactionToEdit.id, payload);
+          await onUpdate(transactionToEdit.id, payload, attachmentExtras);
         } else {
-          await onSave(payload);
+          await onSave(payload, attachmentExtras);
         }
       }
 
       onClose();
     } catch (err) {
       console.error('Error saving transaction:', err);
+      showToast('Não foi possível salvar o lançamento. Tente novamente.', { kind: 'error' });
     } finally {
       setSubmitting(false);
     }
@@ -271,6 +314,8 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
     <>
       <div 
         onClick={onClose}
+        role="dialog"
+        aria-modal="true"
         className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-md transition-opacity animate-in fade-in duration-200 p-0 sm:p-4"
       >
         <div 
@@ -278,8 +323,8 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
           onClick={(e) => e.stopPropagation()}
           className="w-full max-w-lg card-depth-3d rounded-t-3xl sm:rounded-3xl p-5 sm:p-6 shadow-2xl max-h-[92vh] overflow-y-auto no-scrollbar animate-in slide-in-from-bottom duration-300 border border-white/12 border-t-white/25"
           style={{
-            background: 'linear-gradient(180deg, #181818 0%, #0F0F0F 100%)',
-            boxShadow: '0 25px 60px -15px rgba(0, 0, 0, 0.95), 0 0 40px rgba(255, 255, 255, 0.03), inset 0 1px 0 rgba(255, 255, 255, 0.2)'
+            background: 'linear-gradient(180deg, #191E28 0%, #10141B 100%)',
+            boxShadow: '0 30px 70px -24px rgba(4, 6, 12, 0.85), inset 0 1px 0 rgba(255, 255, 255, 0.07)'
           }}
         >
           {/* Mobile pull grabber */}
@@ -305,7 +350,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                     </span>
                   )}
                 </h2>
-                <span className="text-[10px] text-[#737373] block">
+                <span className="text-[10px] text-[#9AA4B5] block">
                   Defina os valores, categoria e estrutura financeira
                 </span>
               </div>
@@ -323,7 +368,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
           <form onSubmit={handleSubmit} className="mt-4 space-y-4">
             {/* 1. SELETOR DE TIPO (DESPESA VS RECEITA) - Estilo Segmented Glass com Neon Glow */}
             <div>
-              <label className="text-[10px] font-semibold text-[#8C8C8C] uppercase tracking-wider block mb-1.5">
+              <label className="text-[10px] font-semibold text-[#8E98A9] uppercase tracking-wider block mb-1.5">
                 Tipo da Operação
               </label>
               <div className="toggle-segmented-glass p-1 grid grid-cols-2 gap-1.5">
@@ -333,7 +378,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                   className={`py-2 px-3 text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
                     type === 'expense'
                       ? 'border border-[#E29578]/50 text-white shadow-lg'
-                      : 'text-[#8C8C8C] hover:text-white hover:bg-white/5'
+                      : 'text-[#8E98A9] hover:text-white hover:bg-white/5'
                   }`}
                   style={type === 'expense' ? {
                     background: 'linear-gradient(135deg, rgba(226, 149, 120, 0.28) 0%, rgba(226, 149, 120, 0.1) 100%)',
@@ -350,7 +395,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                   className={`py-2 px-3 text-xs font-bold rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
                     type === 'income'
                       ? 'border border-[#A3C9A8]/50 text-white shadow-lg'
-                      : 'text-[#8C8C8C] hover:text-white hover:bg-white/5'
+                      : 'text-[#8E98A9] hover:text-white hover:bg-white/5'
                   }`}
                   style={type === 'income' ? {
                     background: 'linear-gradient(135deg, rgba(163, 201, 168, 0.28) 0%, rgba(163, 201, 168, 0.1) 100%)',
@@ -365,7 +410,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
 
             {/* 2. SELETOR DE NATUREZA / ESTRUTURA DO LANÇAMENTO */}
             <div>
-              <label className="text-[10px] font-semibold text-[#8C8C8C] uppercase tracking-wider block mb-1.5">
+              <label className="text-[10px] font-semibold text-[#8E98A9] uppercase tracking-wider block mb-1.5">
                 Estrutura do Lançamento
               </label>
               <div className="grid grid-cols-3 gap-1.5">
@@ -375,7 +420,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                   className={`py-2 px-2 text-xs font-semibold rounded-xl border transition-all cursor-pointer flex flex-col items-center justify-center gap-1 text-center ${
                     nature === 'daily'
                       ? 'btn-liquid-glass border-white/40 text-white shadow-md'
-                      : 'border-white/5 bg-[#121212] text-[#8C8C8C] hover:text-white hover:bg-white/5'
+                      : 'border-white/5 bg-[#131720] text-[#8E98A9] hover:text-white hover:bg-white/5'
                   }`}
                   style={nature === 'daily' ? {
                     background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.05) 100%)',
@@ -392,7 +437,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                   className={`py-2 px-2 text-xs font-semibold rounded-xl border transition-all cursor-pointer flex flex-col items-center justify-center gap-1 text-center ${
                     nature === 'fixed'
                       ? 'btn-liquid-glass border-white/40 text-white shadow-md'
-                      : 'border-white/5 bg-[#121212] text-[#8C8C8C] hover:text-white hover:bg-white/5'
+                      : 'border-white/5 bg-[#131720] text-[#8E98A9] hover:text-white hover:bg-white/5'
                   }`}
                   style={nature === 'fixed' ? {
                     background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.05) 100%)',
@@ -409,7 +454,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                   className={`py-2 px-2 text-xs font-semibold rounded-xl border transition-all cursor-pointer flex flex-col items-center justify-center gap-1 text-center ${
                     nature === 'installment'
                       ? 'btn-liquid-glass text-white shadow-md'
-                      : 'border-white/5 bg-[#121212] text-[#8C8C8C] hover:text-white hover:bg-white/5'
+                      : 'border-white/5 bg-[#131720] text-[#8E98A9] hover:text-white hover:bg-white/5'
                   }`}
                   style={nature === 'installment' ? {
                     borderColor: type === 'income' ? 'rgba(163, 201, 168, 0.6)' : 'rgba(226, 149, 120, 0.6)',
@@ -428,9 +473,9 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
             </div>
 
             {/* 3. CAMPO DE VALOR EM DESTAQUE 3D COM LIQUID GLASS */}
-            <div className="card-depth-3d p-4 rounded-2xl border border-white/10 focus-within:border-white/40 focus-within:ring-2 focus-within:ring-white/10 transition-all bg-[#121212]">
+            <div className="card-depth-3d p-4 rounded-2xl border border-white/10 focus-within:border-white/40 focus-within:ring-2 focus-within:ring-white/10 transition-all bg-[#131720]">
               <div className="flex items-center justify-between mb-1.5">
-                <label className="text-[10px] font-semibold text-[#8C8C8C] uppercase tracking-wider">
+                <label className="text-[10px] font-semibold text-[#8E98A9] uppercase tracking-wider">
                   {nature === 'installment'
                     ? installmentCalcMode === 'total' 
                       ? (type === 'income' ? 'Valor Total da Venda' : 'Valor Total da Compra')
@@ -441,7 +486,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                   <button
                     type="button"
                     onClick={() => setAmountStr('')}
-                    className="text-[10px] text-[#737373] hover:text-white flex items-center gap-0.5 cursor-pointer transition"
+                    className="text-[10px] text-[#9AA4B5] hover:text-white flex items-center gap-0.5 cursor-pointer transition"
                   >
                     <X className="w-3 h-3" /> Limpar
                   </button>
@@ -461,8 +506,11 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                 </div>
                 <input
                   type="number"
+                  inputMode="decimal"
                   step="0.01"
+                  min="0"
                   required
+                  aria-label="Valor do lançamento"
                   value={amountStr}
                   onChange={(e) => setAmountStr(e.target.value)}
                   placeholder="0,00"
@@ -473,7 +521,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
 
             {/* 4. MÓDULO DE PARCELAMENTO COM SETAS DE AUMENTAR/DIMINUIR PERSONALIZADAS */}
             {nature === 'installment' && (
-              <div className="card-depth-3d p-4 rounded-2xl border border-white/10 space-y-3.5 bg-[#121212]/90">
+              <div className="card-depth-3d p-4 rounded-2xl border border-white/10 space-y-3.5 bg-[#131720]/90">
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-[#A8B5D1] font-semibold flex items-center gap-1.5">
                     <Layers className="w-3.5 h-3.5" /> Configuração de Parcelas
@@ -486,7 +534,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                       className={`px-2 py-0.5 text-[10px] font-semibold rounded-md transition cursor-pointer ${
                         installmentCalcMode === 'total' 
                           ? 'toggle-segment-active text-white' 
-                          : 'text-[#8C8C8C] hover:text-white'
+                          : 'text-[#8E98A9] hover:text-white'
                       }`}
                     >
                       Valor Total
@@ -497,7 +545,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                       className={`px-2 py-0.5 text-[10px] font-semibold rounded-md transition cursor-pointer ${
                         installmentCalcMode === 'monthly' 
                           ? 'toggle-segment-active text-white' 
-                          : 'text-[#8C8C8C] hover:text-white'
+                          : 'text-[#8E98A9] hover:text-white'
                       }`}
                     >
                       Valor / Mês
@@ -507,9 +555,9 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {/* Total de Parcelas com Setas de Aumentar / Diminuir Estilizadas */}
-                  <div className="p-3 rounded-xl bg-[#171717] border border-white/8 space-y-2">
+                  <div className="p-3 rounded-xl bg-[#181D27] border border-white/8 space-y-2">
                     <div className="flex items-center justify-between">
-                      <label className="text-[10px] font-medium text-[#8C8C8C] uppercase tracking-wider">
+                      <label className="text-[10px] font-medium text-[#8E98A9] uppercase tracking-wider">
                         Total de Parcelas
                       </label>
                       <span className="text-[10px] font-mono font-bold text-white bg-white/10 px-1.5 py-0.5 rounded-md">
@@ -550,7 +598,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                               if (currentInstallment > clamped) setCurrentInstallment(clamped);
                             }
                           }}
-                          className="w-full bg-[#121212] border border-white/10 hover:border-white/20 focus:border-white/40 rounded-lg pl-2 pr-7 py-1.5 text-center text-xs font-mono font-bold text-white focus:outline-hidden custom-number-input transition"
+                          className="w-full bg-[#131720] border border-white/10 hover:border-white/20 focus:border-white/40 rounded-lg pl-2 pr-7 py-1.5 text-center text-xs font-mono font-bold text-white focus:outline-hidden custom-number-input transition"
                         />
                         {/* Setas Estilizadas Integradas ao Input */}
                         <div className="absolute right-1 flex flex-col gap-0.5">
@@ -608,7 +656,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                           className={`px-1.5 py-0.5 rounded-md text-[9px] font-mono transition cursor-pointer shrink-0 ${
                             totalInstallments === num
                               ? 'bg-white text-black font-bold shadow-xs'
-                              : 'bg-white/5 text-[#8C8C8C] hover:text-white hover:bg-white/10'
+                              : 'bg-white/5 text-[#8E98A9] hover:text-white hover:bg-white/10'
                           }`}
                         >
                           {num}x
@@ -618,9 +666,9 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                   </div>
 
                   {/* Parcela Atual com Setas de Aumentar / Diminuir Estilizadas */}
-                  <div className="p-3 rounded-xl bg-[#171717] border border-white/8 space-y-2">
+                  <div className="p-3 rounded-xl bg-[#181D27] border border-white/8 space-y-2">
                     <div className="flex items-center justify-between">
-                      <label className="text-[10px] font-medium text-[#8C8C8C] uppercase tracking-wider">
+                      <label className="text-[10px] font-medium text-[#8E98A9] uppercase tracking-wider">
                         Parcela Atual
                       </label>
                       <span className="text-[10px] font-mono font-bold text-white bg-white/10 px-1.5 py-0.5 rounded-md">
@@ -651,7 +699,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                             const val = parseInt(e.target.value, 10);
                             if (!isNaN(val)) setCurrentInstallment(Math.max(1, Math.min(totalInstallments, val)));
                           }}
-                          className="w-full bg-[#121212] border border-white/10 hover:border-white/20 focus:border-white/40 rounded-lg pl-2 pr-7 py-1.5 text-center text-xs font-mono font-bold text-white focus:outline-hidden custom-number-input transition"
+                          className="w-full bg-[#131720] border border-white/10 hover:border-white/20 focus:border-white/40 rounded-lg pl-2 pr-7 py-1.5 text-center text-xs font-mono font-bold text-white focus:outline-hidden custom-number-input transition"
                         />
                         {/* Setas Estilizadas Integradas ao Input */}
                         <div className="absolute right-1 flex flex-col gap-0.5">
@@ -690,7 +738,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                       </button>
                     </div>
 
-                    <div className="text-[10px] text-[#737373] text-center pt-0.5">
+                    <div className="text-[10px] text-[#9AA4B5] text-center pt-0.5">
                       Progresso: {Math.round((currentInstallment / totalInstallments) * 100)}% concluído
                     </div>
                   </div>
@@ -699,7 +747,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                 {/* Resumo do Cálculo da Parcela */}
                 {amountStr && !isNaN(parseFloat(amountStr)) && (
                   <div className="p-2.5 rounded-xl bg-white/5 border border-white/8 flex items-center justify-between text-xs">
-                    <span className="text-[#A3A3A3]">
+                    <span className="text-[#AEB6C4]">
                       {type === 'income' ? 'Receita mensal estimada:' : 'Impacto mensal previsto:'}
                     </span>
                     <span className={`font-mono font-bold ${type === 'income' ? 'text-[#A3C9A8]' : 'text-[#E29578]'}`}>
@@ -714,12 +762,12 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
 
             {/* 5. TOGGLE DE STATUS PAGO / RECEBIDO (Para Fixo ou Parcelado) */}
             {(nature === 'fixed' || nature === 'installment') && (
-              <div className="card-depth-3d p-3.5 rounded-2xl border border-white/10 flex items-center justify-between bg-[#121212]">
+              <div className="card-depth-3d p-3.5 rounded-2xl border border-white/10 flex items-center justify-between bg-[#131720]">
                 <div>
                   <span className="text-xs font-semibold text-white block">
                     {type === 'income' ? 'Já foi recebido este mês?' : 'Já foi pago este mês?'}
                   </span>
-                  <span className="text-[10px] text-[#8C8C8C]">
+                  <span className="text-[10px] text-[#8E98A9]">
                     Controle manual de {type === 'income' ? 'recebimento' : 'pagamento'}
                   </span>
                 </div>
@@ -752,7 +800,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
 
             {/* 6. DESCRIÇÃO COM LIQUID GLASS */}
             <div>
-              <label className="text-[10px] font-semibold text-[#8C8C8C] uppercase tracking-wider block mb-1">
+              <label className="text-[10px] font-semibold text-[#8E98A9] uppercase tracking-wider block mb-1">
                 Descrição
               </label>
               <div className="relative flex items-center">
@@ -761,14 +809,14 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Ex: Supermercado, Aluguel, Salário, Internet..."
-                  className="w-full px-3.5 py-2.5 bg-[#121212] border border-white/10 hover:border-white/20 focus:border-white/40 rounded-xl text-xs text-white placeholder-[#525252] focus:outline-hidden transition shadow-xs"
+                  className="w-full px-3.5 py-2.5 bg-[#131720] border border-white/10 hover:border-white/20 focus:border-white/40 rounded-xl text-xs text-white placeholder-[#5E6A7E] focus:outline-hidden transition shadow-xs"
                 />
               </div>
             </div>
 
             {/* 7. CATEGORIA - LISTA SUSPENSA CUSTOMIZADA (CUSTOM DROPDOWN) */}
             <div className="custom-dropdown-container relative">
-              <label className="text-[10px] font-semibold text-[#8C8C8C] uppercase tracking-wider block mb-1">
+              <label className="text-[10px] font-semibold text-[#8E98A9] uppercase tracking-wider block mb-1">
                 Categoria
               </label>
               <button
@@ -792,7 +840,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
 
               {/* Menu da Lista Suspensa de Categorias */}
               {openDropdown === 'category' && (
-                <div className="absolute z-50 left-0 right-0 mt-1.5 p-1.5 rounded-2xl bg-[#141414]/98 border border-white/15 backdrop-blur-2xl shadow-2xl max-h-56 overflow-y-auto no-scrollbar space-y-0.5 animate-in fade-in duration-150">
+                <div className="absolute z-50 left-0 right-0 mt-1.5 p-1.5 rounded-2xl bg-[#151A23]/98 border border-white/15 backdrop-blur-2xl shadow-2xl max-h-56 overflow-y-auto no-scrollbar space-y-0.5 animate-in fade-in duration-150">
                   {currentCategoryList.map((cat) => {
                     const isSelected = cat === category;
                     const catColor = getCategoryColor(cat);
@@ -807,7 +855,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                         className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs transition cursor-pointer ${
                           isSelected
                             ? 'bg-white/15 text-white font-semibold shadow-xs'
-                            : 'text-[#A3A3A3] hover:text-white hover:bg-white/5'
+                            : 'text-[#AEB6C4] hover:text-white hover:bg-white/5'
                         }`}
                       >
                         <div className="flex items-center gap-2.5 truncate">
@@ -831,7 +879,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {/* Campo Data */}
               <div>
-                <label className="text-[10px] font-semibold text-[#8C8C8C] uppercase tracking-wider block mb-1">
+                <label className="text-[10px] font-semibold text-[#8E98A9] uppercase tracking-wider block mb-1">
                   Data
                 </label>
                 <div className="relative flex items-center">
@@ -840,14 +888,14 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                     type="date"
                     value={date}
                     onChange={(e) => setDate(e.target.value)}
-                    className="w-full pl-9 pr-3 py-2 bg-[#121212] border border-white/10 hover:border-white/20 focus:border-white/40 rounded-xl text-xs font-medium text-white focus:outline-hidden transition shadow-xs"
+                    className="w-full pl-9 pr-3 py-2 bg-[#131720] border border-white/10 hover:border-white/20 focus:border-white/40 rounded-xl text-xs font-medium text-white focus:outline-hidden transition shadow-xs"
                   />
                 </div>
               </div>
 
               {/* Forma de Pagamento - LISTA SUSPENSA CUSTOMIZADA */}
               <div className="custom-dropdown-container relative">
-                <label className="text-[10px] font-semibold text-[#8C8C8C] uppercase tracking-wider block mb-1">
+                <label className="text-[10px] font-semibold text-[#8E98A9] uppercase tracking-wider block mb-1">
                   Forma de Pagamento
                 </label>
                 <button
@@ -868,7 +916,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
 
                 {/* Menu da Lista Suspensa de Formas de Pagamento */}
                 {openDropdown === 'paymentMethod' && (
-                  <div className="absolute z-50 left-0 right-0 mt-1.5 p-1.5 rounded-2xl bg-[#141414]/98 border border-white/15 backdrop-blur-2xl shadow-2xl max-h-56 overflow-y-auto no-scrollbar space-y-0.5 animate-in fade-in duration-150">
+                  <div className="absolute z-50 left-0 right-0 mt-1.5 p-1.5 rounded-2xl bg-[#151A23]/98 border border-white/15 backdrop-blur-2xl shadow-2xl max-h-56 overflow-y-auto no-scrollbar space-y-0.5 animate-in fade-in duration-150">
                     {PAYMENT_METHODS.map((pm) => {
                       const isSelected = pm.id === paymentMethod;
                       const Icon = pm.icon;
@@ -883,7 +931,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                           className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs transition cursor-pointer ${
                             isSelected
                               ? 'bg-white/15 text-white font-semibold shadow-xs'
-                              : 'text-[#A3A3A3] hover:text-white hover:bg-white/5'
+                              : 'text-[#AEB6C4] hover:text-white hover:bg-white/5'
                           }`}
                         >
                           <div className="flex items-center gap-2.5 truncate">
@@ -903,7 +951,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
 
             {/* 9. SELETOR DE CARTÃO DE CRÉDITO - LISTA SUSPENSA CUSTOMIZADA */}
             {paymentMethod === 'credit_card' && (
-              <div className="card-depth-3d p-3.5 rounded-2xl border border-white/10 space-y-2 bg-[#121212]/90 animate-in fade-in duration-200">
+              <div className="card-depth-3d p-3.5 rounded-2xl border border-white/10 space-y-2 bg-[#131720]/90 animate-in fade-in duration-200">
                 <div className="flex items-center justify-between">
                   <label className="text-[10px] font-semibold text-[#A8B5D1] uppercase tracking-wider flex items-center gap-1.5">
                     <CreditCardIcon className="w-3.5 h-3.5 text-[#A8B5D1]" />
@@ -932,10 +980,10 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                             style={{ background: selectedCard.color || '#3B82F6' }} 
                           />
                           <span className="font-semibold text-white truncate">{selectedCard.cardName}</span>
-                          <span className="font-mono text-[11px] text-[#8C8C8C] truncate">•••• {selectedCard.lastFourDigits}</span>
+                          <span className="font-mono text-[11px] text-[#8E98A9] truncate">•••• {selectedCard.lastFourDigits}</span>
                         </div>
                       ) : (
-                        <span className="text-[#737373] text-xs">Selecione o cartão de crédito (opcional)...</span>
+                        <span className="text-[#9AA4B5] text-xs">Selecione o cartão de crédito (opcional)...</span>
                       )}
                       <ChevronDown 
                         className={`w-4 h-4 text-white/60 transition-transform duration-200 ${
@@ -946,7 +994,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
 
                     {/* Menu da Lista Suspensa de Cartões */}
                     {openDropdown === 'card' && (
-                      <div className="absolute z-50 left-0 right-0 mt-1.5 p-1.5 rounded-2xl bg-[#141414]/98 border border-white/15 backdrop-blur-2xl shadow-2xl max-h-56 overflow-y-auto no-scrollbar space-y-0.5 animate-in fade-in duration-150">
+                      <div className="absolute z-50 left-0 right-0 mt-1.5 p-1.5 rounded-2xl bg-[#151A23]/98 border border-white/15 backdrop-blur-2xl shadow-2xl max-h-56 overflow-y-auto no-scrollbar space-y-0.5 animate-in fade-in duration-150">
                         <button
                           type="button"
                           onClick={() => {
@@ -956,10 +1004,10 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                           className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs transition cursor-pointer ${
                             selectedCardId === ''
                               ? 'bg-white/15 text-white font-semibold'
-                              : 'text-[#A3A3A3] hover:text-white hover:bg-white/5'
+                              : 'text-[#AEB6C4] hover:text-white hover:bg-white/5'
                           }`}
                         >
-                          <span className="text-[#8C8C8C]">Nenhum cartão específico</span>
+                          <span className="text-[#8E98A9]">Nenhum cartão específico</span>
                           {selectedCardId === '' && <Check className="w-3.5 h-3.5 text-white stroke-[2.5]" />}
                         </button>
 
@@ -976,7 +1024,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                               className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs transition cursor-pointer ${
                                 isSelected
                                   ? 'bg-white/15 text-white font-semibold shadow-xs'
-                                  : 'text-[#A3A3A3] hover:text-white hover:bg-white/5'
+                                  : 'text-[#AEB6C4] hover:text-white hover:bg-white/5'
                               }`}
                             >
                               <div className="flex items-center gap-2.5 truncate">
@@ -986,7 +1034,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                                 />
                                 <div className="text-left truncate">
                                   <div className="font-semibold text-white truncate">{card.cardName}</div>
-                                  <div className="text-[10px] text-[#737373] font-mono">
+                                  <div className="text-[10px] text-[#9AA4B5] font-mono">
                                     •••• {card.lastFourDigits} {card.bankName ? `(${card.bankName})` : ''}
                                   </div>
                                 </div>
@@ -1001,7 +1049,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                     )}
                   </div>
                 ) : (
-                  <div className="flex items-center justify-between text-xs text-[#737373] py-1">
+                  <div className="flex items-center justify-between text-xs text-[#9AA4B5] py-1">
                     <span>Nenhum cartão cadastrado ainda</span>
                     <button
                       type="button"
@@ -1014,6 +1062,31 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                 )}
               </div>
             )}
+
+            {/* 9.5 Conta, etiquetas e comprovante */}
+            <TransactionExtrasFields
+              accounts={accounts}
+              accountId={accountId}
+              onAccountChange={setAccountId}
+              showAccount={paymentMethod !== 'credit_card'}
+              tags={tags}
+              onTagsChange={setTags}
+              tagSuggestions={tagSuggestions}
+              allowAttachment={nature === 'daily'}
+              hasExistingAttachment={!!transactionToEdit?.hasAttachment}
+              removeExisting={removeExistingAttachment}
+              onToggleRemoveExisting={() => setRemoveExistingAttachment(v => !v)}
+              newAttachmentPreview={newAttachment?.dataUrl || null}
+              onPickFile={async file => {
+                try {
+                  const dataUrl = await compressImage(file);
+                  setNewAttachment({ dataUrl, fileName: file.name.slice(0, 200) });
+                } catch (err) {
+                  showToast(err instanceof Error ? err.message : 'Não foi possível ler a imagem.', { kind: 'error' });
+                }
+              }}
+              onClearNewAttachment={() => setNewAttachment(null)}
+            />
 
             {/* 10. BOTÃO DE CONFIRMAÇÃO (SUBMIT) - Apple Liquid Glass Primary */}
             <div className="pt-2">

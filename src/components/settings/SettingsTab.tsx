@@ -14,9 +14,12 @@ import {
 } from 'lucide-react';
 import { useFinance } from '../../context/FinanceContext';
 import { useAuth } from '../../context/AuthContext';
+import { useToast } from '../../context/ToastContext';
+import { NotificationsSettings } from './NotificationsSettings';
 import { DeleteConfirmModal } from '../modals/DeleteConfirmModal';
 import { CreditCardModal, BANK_DEFAULT_COLORS } from '../modals/CreditCardModal';
 import { CustomCategoryItem, CreditCard } from '../../types/finance';
+import { formatBRL } from '../../lib/format';
 
 export const SettingsTab: React.FC = () => {
   const { 
@@ -32,11 +35,11 @@ export const SettingsTab: React.FC = () => {
     deleteCreditCard
   } = useFinance();
   const { user, logout } = useAuth();
+  const { showToast } = useToast();
 
   const [categoryType, setCategoryType] = useState<'expense' | 'income'>('expense');
   const [newCategoryName, setNewCategoryName] = useState('');
   const [submittingCat, setSubmittingCat] = useState(false);
-  const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
   // Modais de exclusão e cartões
   const [catToDelete, setCatToDelete] = useState<CustomCategoryItem | null>(null);
@@ -52,7 +55,7 @@ export const SettingsTab: React.FC = () => {
 
     const allExisting = categoryType === 'expense' ? expenseCategories : incomeCategories;
     if (allExisting.some(c => c.toLowerCase() === trimmed.toLowerCase())) {
-      alert('Esta categoria já existe!');
+      showToast('Esta categoria já existe.', { kind: 'error' });
       return;
     }
 
@@ -60,18 +63,15 @@ export const SettingsTab: React.FC = () => {
     try {
       await addCustomCategory(trimmed, categoryType);
       setNewCategoryName('');
-      setSuccessMsg(`Categoria "${trimmed}" adicionada com sucesso!`);
-      setTimeout(() => setSuccessMsg(null), 3000);
+      showToast(`Categoria "${trimmed}" adicionada.`);
     } catch (err) {
       console.error('Error adding category:', err);
+      showToast('Não foi possível adicionar a categoria. Tente novamente.', { kind: 'error' });
     } finally {
       setSubmittingCat(false);
     }
   };
 
-  const formatBRL = (val: number) => {
-    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
-  };
 
   const userCustomExpenses = customCategories.filter(c => c.type === 'expense');
   const userCustomIncomes = customCategories.filter(c => c.type === 'income');
@@ -83,17 +83,13 @@ export const SettingsTab: React.FC = () => {
         <h2 className="text-xl font-bold text-white flex items-center gap-2">
           <Settings className="w-5 h-5 text-[#A8B5D1]" /> Configurações & Personalização
         </h2>
-        <p className="text-xs text-[#737373] mt-1">
+        <p className="text-xs text-[#9AA4B5] mt-1">
           Gerencie cartões de crédito, categorias personalizadas e preferências da sua conta.
         </p>
       </div>
 
-      {successMsg && (
-        <div className="p-3.5 bg-[#A3C9A8]/15 border border-[#A3C9A8]/30 rounded-2xl flex items-center gap-2.5 text-xs text-[#A3C9A8] animate-in fade-in">
-          <CheckCircle2 className="w-4 h-4 shrink-0" />
-          <span>{successMsg}</span>
-        </div>
-      )}
+
+      <NotificationsSettings />
 
       {/* 1. Gestão de Cartões de Crédito */}
       <div className="card-depth-3d p-5 sm:p-6 rounded-3xl space-y-5">
@@ -104,7 +100,7 @@ export const SettingsTab: React.FC = () => {
             </div>
             <div>
               <h3 className="text-sm font-semibold text-white">Meus Cartões de Crédito</h3>
-              <p className="text-[11px] text-[#737373]">
+              <p className="text-[11px] text-[#9AA4B5]">
                 Gerencie limites, datas, cores, logos e faturas dos seus cartões com suporte a edição completa.
               </p>
             </div>
@@ -124,11 +120,11 @@ export const SettingsTab: React.FC = () => {
         </div>
 
         {creditCards.length === 0 ? (
-          <div className="p-8 rounded-2xl bg-[#0D0D0D] border border-[#1E1E1E] text-center space-y-2">
-            <div className="w-10 h-10 rounded-full bg-[#1A1A1A] text-[#737373] flex items-center justify-center mx-auto">
+          <div className="p-8 rounded-2xl bg-[#0F1218] border border-[#1F2531] text-center space-y-2">
+            <div className="w-10 h-10 rounded-full bg-[#1C212C] text-[#9AA4B5] flex items-center justify-center mx-auto">
               <CardIcon className="w-5 h-5" />
             </div>
-            <p className="text-xs text-[#737373]">
+            <p className="text-xs text-[#9AA4B5]">
               Nenhum cartão cadastrado. Adicione seu primeiro cartão para acompanhar faturas e parcelas.
             </p>
           </div>
@@ -145,7 +141,7 @@ export const SettingsTab: React.FC = () => {
                   key={card.id}
                   className="w-full h-48 sm:h-52 rounded-2xl p-4.5 flex flex-col justify-between relative overflow-hidden transition-all duration-300 card-depth-3d group hover:-translate-y-1"
                   style={{
-                    background: `linear-gradient(135deg, ${baseColor} 0%, #0F0F0F 95%)`,
+                    background: `linear-gradient(135deg, ${baseColor} 0%, #10141B 95%)`,
                     boxShadow: `0 10px 24px -4px ${baseColor}35, 0 4px 12px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.35)`
                   }}
                 >
@@ -266,7 +262,7 @@ export const SettingsTab: React.FC = () => {
           <h3 className="text-sm font-semibold text-white flex items-center gap-2">
             <Tag className="w-4 h-4 text-[#A8B5D1]" /> Categorias Personalizadas
           </h3>
-          <p className="text-xs text-[#737373] mt-0.5">
+          <p className="text-xs text-[#9AA4B5] mt-0.5">
             Adicione novas categorias além das padrões do sistema para organizar seus lançamentos.
           </p>
         </div>
@@ -274,14 +270,14 @@ export const SettingsTab: React.FC = () => {
         {/* Formulário de Adicionar Categoria */}
         <form onSubmit={handleAddCategory} className="space-y-3">
           <div className="flex gap-2">
-            <div className="grid grid-cols-2 gap-1 p-1 bg-[#0D0D0D] rounded-xl border border-[#262626] w-52 shrink-0">
+            <div className="grid grid-cols-2 gap-1 p-1 bg-[#0F1218] rounded-xl border border-[#283040] w-52 shrink-0">
               <button
                 type="button"
                 onClick={() => setCategoryType('expense')}
                 className={`py-1.5 text-xs font-semibold rounded-lg transition cursor-pointer ${
                   categoryType === 'expense'
                     ? 'bg-[#E29578] text-black shadow-xs'
-                    : 'text-[#A3A3A3] hover:text-white'
+                    : 'text-[#AEB6C4] hover:text-white'
                 }`}
               >
                 Despesa
@@ -292,7 +288,7 @@ export const SettingsTab: React.FC = () => {
                 className={`py-1.5 text-xs font-semibold rounded-lg transition cursor-pointer ${
                   categoryType === 'income'
                     ? 'bg-[#A3C9A8] text-black shadow-xs'
-                    : 'text-[#A3A3A3] hover:text-white'
+                    : 'text-[#AEB6C4] hover:text-white'
                 }`}
               >
                 Receita
@@ -306,7 +302,7 @@ export const SettingsTab: React.FC = () => {
                 value={newCategoryName}
                 onChange={(e) => setNewCategoryName(e.target.value)}
                 placeholder={categoryType === 'expense' ? 'Ex: Assinatura de Software, Pet Shop...' : 'Ex: Consultoria, Dividendos...'}
-                className="flex-1 px-3.5 py-2 bg-[#0D0D0D] border border-[#262626] rounded-xl text-xs text-white placeholder-[#525252] focus:outline-hidden focus:border-white transition"
+                className="flex-1 px-3.5 py-2 bg-[#0F1218] border border-[#283040] rounded-xl text-xs text-white placeholder-[#5E6A7E] focus:outline-hidden focus:border-white transition"
               />
               <button
                 type="submit"
@@ -321,26 +317,26 @@ export const SettingsTab: React.FC = () => {
         </form>
 
         {/* Lista de Categorias Criadas */}
-        <div className="pt-2 border-t border-[#1E1E1E] space-y-3">
+        <div className="pt-2 border-t border-[#1F2531] space-y-3">
           <div>
-            <span className="text-[11px] font-medium text-[#737373] uppercase tracking-wider block mb-2">
+            <span className="text-[11px] font-medium text-[#9AA4B5] uppercase tracking-wider block mb-2">
               Suas Categorias de Despesas Personalizadas ({userCustomExpenses.length})
             </span>
             {userCustomExpenses.length === 0 ? (
-              <span className="text-xs text-[#525252] italic">Nenhuma categoria personalizada criada.</span>
+              <span className="text-xs text-[#5E6A7E] italic">Nenhuma categoria personalizada criada.</span>
             ) : (
               <div className="flex flex-wrap gap-2">
                 {userCustomExpenses.map((cat) => (
                   <div
                     key={cat.id}
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#0D0D0D] border border-[#262626] text-xs text-white"
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#0F1218] border border-[#283040] text-xs text-white"
                   >
                     <span>{cat.name}</span>
                     <button
                       type="button"
                       onClick={() => setCatToDelete(cat)}
                       title="Excluir categoria"
-                      className="text-[#737373] hover:text-[#E29578] transition cursor-pointer"
+                      className="text-[#9AA4B5] hover:text-[#E29578] transition cursor-pointer"
                     >
                       <Trash2 className="w-3 h-3" />
                     </button>
@@ -351,24 +347,24 @@ export const SettingsTab: React.FC = () => {
           </div>
 
           <div>
-            <span className="text-[11px] font-medium text-[#737373] uppercase tracking-wider block mb-2">
+            <span className="text-[11px] font-medium text-[#9AA4B5] uppercase tracking-wider block mb-2">
               Suas Categorias de Receitas Personalizadas ({userCustomIncomes.length})
             </span>
             {userCustomIncomes.length === 0 ? (
-              <span className="text-xs text-[#525252] italic">Nenhuma categoria personalizada criada.</span>
+              <span className="text-xs text-[#5E6A7E] italic">Nenhuma categoria personalizada criada.</span>
             ) : (
               <div className="flex flex-wrap gap-2">
                 {userCustomIncomes.map((cat) => (
                   <div
                     key={cat.id}
-                    className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#0D0D0D] border border-[#262626] text-xs text-white"
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#0F1218] border border-[#283040] text-xs text-white"
                   >
                     <span>{cat.name}</span>
                     <button
                       type="button"
                       onClick={() => setCatToDelete(cat)}
                       title="Excluir categoria"
-                      className="text-[#737373] hover:text-[#E29578] transition cursor-pointer"
+                      className="text-[#9AA4B5] hover:text-[#E29578] transition cursor-pointer"
                     >
                       <Trash2 className="w-3 h-3" />
                     </button>
@@ -382,24 +378,24 @@ export const SettingsTab: React.FC = () => {
 
       {/* 3. Informações da Conta & Sessão */}
       <div className="card-depth-3d p-5 rounded-3xl space-y-3">
-        <h3 className="text-xs font-semibold text-[#737373] uppercase tracking-wider">
+        <h3 className="text-xs font-semibold text-[#9AA4B5] uppercase tracking-wider">
           Informações da Conta & Nuvem
         </h3>
         <div className="space-y-2 text-xs">
-          <div className="p-3 bg-[#0D0D0D] border border-[#1E1E1E] rounded-xl flex items-center justify-between">
-            <span className="text-[#737373]">Usuário Conectado:</span>
+          <div className="p-3 bg-[#0F1218] border border-[#1F2531] rounded-xl flex items-center justify-between">
+            <span className="text-[#9AA4B5]">Usuário Conectado:</span>
             <span className="font-medium text-white">{user?.displayName || user?.email}</span>
           </div>
 
           {user && (
-            <div className="p-3 bg-[#0D0D0D] border border-[#1E1E1E] rounded-xl flex items-center justify-between">
-              <span className="text-[#737373]">UID Firebase:</span>
+            <div className="p-3 bg-[#0F1218] border border-[#1F2531] rounded-xl flex items-center justify-between">
+              <span className="text-[#9AA4B5]">UID Firebase:</span>
               <span className="font-mono text-[11px] text-[#A8B5D1]">{user.uid}</span>
             </div>
           )}
 
-          <div className="p-3 bg-[#0D0D0D] border border-[#1E1E1E] rounded-xl flex items-center justify-between">
-            <span className="text-[#737373]">Sincronização Nuvem:</span>
+          <div className="p-3 bg-[#0F1218] border border-[#1F2531] rounded-xl flex items-center justify-between">
+            <span className="text-[#9AA4B5]">Sincronização Nuvem:</span>
             <span className="text-[#A3C9A8] font-medium flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-[#A3C9A8] animate-pulse" />
               Cloud Firestore Ativo
@@ -411,7 +407,7 @@ export const SettingsTab: React.FC = () => {
           <button
             type="button"
             onClick={() => setShowLogoutModal(true)}
-            className="w-full py-3 rounded-2xl bg-[#1A1A1A] hover:bg-[#262626] text-[#E29578] border border-[#262626] text-xs font-semibold flex items-center justify-center gap-2 transition cursor-pointer"
+            className="w-full py-3 rounded-2xl bg-[#1C212C] hover:bg-[#283040] text-[#E29578] border border-[#283040] text-xs font-semibold flex items-center justify-center gap-2 transition cursor-pointer"
           >
             <LogOut className="w-4 h-4" />
             <span>Sair da Conta (Logout)</span>
@@ -430,12 +426,11 @@ export const SettingsTab: React.FC = () => {
         onSave={async (card) => {
           if (cardToEdit) {
             await updateCreditCard(cardToEdit.id, card);
-            setSuccessMsg(`Cartão "${card.cardName}" atualizado com sucesso!`);
+            showToast(`Cartão "${card.cardName}" atualizado.`);
           } else {
             await addCreditCard(card);
-            setSuccessMsg(`Cartão "${card.cardName}" cadastrado com sucesso!`);
+            showToast(`Cartão "${card.cardName}" cadastrado.`);
           }
-          setTimeout(() => setSuccessMsg(null), 3000);
           setIsCardModalOpen(false);
           setCardToEdit(null);
         }}

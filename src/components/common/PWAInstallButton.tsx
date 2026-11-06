@@ -57,7 +57,7 @@ export const PWAInstallButton: React.FC = () => {
 
   if (isInstalled) {
     return (
-      <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-[#171717] text-[#A3C9A8] border border-[#262626]">
+      <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-[#181D27] text-[#A3C9A8] border border-[#283040]">
         <Check className="w-3.5 h-3.5" /> PWA Ativo
       </span>
     );
@@ -68,7 +68,7 @@ export const PWAInstallButton: React.FC = () => {
       <button
         onClick={handleInstallClick}
         title="Instalar App no celular ou desktop"
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[#171717] hover:bg-[#262626] text-[#A8B5D1] hover:text-white border border-[#262626] transition active:scale-95"
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[#181D27] hover:bg-[#283040] text-[#A8B5D1] hover:text-white border border-[#283040] transition active:scale-95"
       >
         <Download className="w-3.5 h-3.5 text-[#A8B5D1]" />
         <span className="hidden xs:inline">Instalar App</span>
@@ -77,19 +77,19 @@ export const PWAInstallButton: React.FC = () => {
       {/* Guia para iOS Safari */}
       {showIOSModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-xs">
-          <div className="w-full max-w-sm rounded-2xl bg-[#171717] border border-[#262626] p-6 shadow-2xl">
-            <div className="flex items-center justify-between pb-3 border-b border-[#262626]">
+          <div className="w-full max-w-sm rounded-2xl bg-[#181D27] border border-[#283040] p-6 shadow-2xl">
+            <div className="flex items-center justify-between pb-3 border-b border-[#283040]">
               <h3 className="text-base font-semibold text-white flex items-center gap-2">
                 <Share2 className="w-4 h-4 text-[#A8B5D1]" /> Instalar no iPhone / iPad
               </h3>
               <button
                 onClick={() => setShowIOSModal(false)}
-                className="p-1 rounded-lg text-[#737373] hover:text-white hover:bg-[#262626]"
+                className="p-1 rounded-lg text-[#9AA4B5] hover:text-white hover:bg-[#283040]"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
-            <div className="mt-4 space-y-3 text-xs text-[#A3A3A3] leading-relaxed">
+            <div className="mt-4 space-y-3 text-xs text-[#AEB6C4] leading-relaxed">
               <p>
                 1. Toque no botão <strong className="text-white">Compartilhar</strong> na barra inferior do Safari.
               </p>
@@ -102,7 +102,7 @@ export const PWAInstallButton: React.FC = () => {
             </div>
             <button
               onClick={() => setShowIOSModal(false)}
-              className="mt-5 w-full rounded-xl bg-[#262626] hover:bg-[#333333] py-2.5 text-xs font-semibold text-white transition"
+              className="mt-5 w-full rounded-xl bg-[#283040] hover:bg-[#363F50] py-2.5 text-xs font-semibold text-white transition"
             >
               Entendido
             </button>

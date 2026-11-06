@@ -59,22 +59,24 @@ export const BudgetModal: React.FC<BudgetModalProps> = ({
   return (
     <div 
       onClick={onClose}
+      role="dialog"
+      aria-modal="true"
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-xs transition-opacity"
     >
       <div 
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-md bg-[#141414] border border-[#262626] rounded-t-3xl sm:rounded-2xl p-5 sm:p-6 shadow-2xl animate-in slide-in-from-bottom duration-300"
+        className="w-full max-w-md bg-[#151A23] border border-[#283040] rounded-t-3xl sm:rounded-2xl p-5 sm:p-6 shadow-2xl animate-in slide-in-from-bottom duration-300"
       >
-        <div className="w-12 h-1.5 bg-[#2B2B2B] rounded-full mx-auto mb-4 sm:hidden" />
+        <div className="w-12 h-1.5 bg-[#2D3544] rounded-full mx-auto mb-4 sm:hidden" />
 
-        <div className="flex items-center justify-between pb-3 border-b border-[#262626]">
+        <div className="flex items-center justify-between pb-3 border-b border-[#283040]">
           <div className="flex items-center gap-2">
             <Target className="w-4 h-4 text-[#A8B5D1]" />
             <h2 className="text-base font-semibold text-white">Definir Teto de Gastos</h2>
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded-xl text-[#737373] hover:text-white hover:bg-[#262626] transition"
+            className="p-1 rounded-xl text-[#9AA4B5] hover:text-white hover:bg-[#283040] transition"
           >
             <X className="w-5 h-5" />
           </button>
@@ -82,7 +84,7 @@ export const BudgetModal: React.FC<BudgetModalProps> = ({
 
         <form onSubmit={handleSubmit} className="mt-4 space-y-4">
           <div>
-            <label className="text-[11px] font-medium text-[#737373] uppercase tracking-wider block mb-1.5">
+            <label className="text-[11px] font-medium text-[#9AA4B5] uppercase tracking-wider block mb-1.5">
               Selecione a Categoria
             </label>
             <div className="grid grid-cols-2 gap-1.5 max-h-40 overflow-y-auto no-scrollbar pr-1">
@@ -96,8 +98,8 @@ export const BudgetModal: React.FC<BudgetModalProps> = ({
                     onClick={() => handleCategorySelect(cat)}
                     className={`px-3 py-2 text-left rounded-xl border text-xs font-medium transition ${
                       isSelected
-                        ? 'border-white bg-[#262626] text-white shadow-xs'
-                        : 'border-[#262626] bg-[#0D0D0D] text-[#A3A3A3] hover:text-white'
+                        ? 'border-white bg-[#283040] text-white shadow-xs'
+                        : 'border-[#283040] bg-[#0F1218] text-[#AEB6C4] hover:text-white'
                     }`}
                   >
                     <div className="truncate">{cat}</div>
@@ -113,11 +115,11 @@ export const BudgetModal: React.FC<BudgetModalProps> = ({
           </div>
 
           <div>
-            <label className="text-[11px] font-medium text-[#737373] uppercase tracking-wider block mb-1">
+            <label className="text-[11px] font-medium text-[#9AA4B5] uppercase tracking-wider block mb-1">
               Limite Mensal Estipulado (R$)
             </label>
             <div className="relative">
-              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-semibold text-[#737373]">
+              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-semibold text-[#9AA4B5]">
                 R$
               </span>
               <input
@@ -128,10 +130,10 @@ export const BudgetModal: React.FC<BudgetModalProps> = ({
                 value={limitStr}
                 onChange={(e) => setLimitStr(e.target.value)}
                 placeholder="Ex: 1500"
-                className="w-full pl-11 pr-4 py-3 bg-[#0D0D0D] border border-[#262626] rounded-xl text-lg font-semibold text-white focus:outline-hidden focus:border-white transition"
+                className="w-full pl-11 pr-4 py-3 bg-[#0F1218] border border-[#283040] rounded-xl text-lg font-semibold text-white focus:outline-hidden focus:border-white transition"
               />
             </div>
-            <p className="mt-1 text-[11px] text-[#737373]">
+            <p className="mt-1 text-[11px] text-[#9AA4B5]">
               Você receberá avisos sutis ao atingir 80% e 100% deste limite.
             </p>
           </div>

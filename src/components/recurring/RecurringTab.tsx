@@ -25,6 +25,7 @@ import { EditInstallmentModal } from '../modals/EditInstallmentModal';
 import { EditRecurringModal } from '../modals/EditRecurringModal';
 import { DeleteConfirmModal } from '../modals/DeleteConfirmModal';
 import { TransactionModal } from '../modals/TransactionModal';
+import { formatBRL } from '../../lib/format';
 
 export const RecurringTab: React.FC = () => {
   const { 
@@ -57,9 +58,6 @@ export const RecurringTab: React.FC = () => {
   const [initialNature, setInitialNature] = useState<'fixed' | 'installment'>('fixed');
   const [initialType, setInitialType] = useState<'expense' | 'income'>('expense');
 
-  const formatBRL = (val: number) => {
-    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
-  };
 
   const formatMonthDisplay = (ym: string) => {
     if (!ym) return '';
@@ -171,11 +169,11 @@ export const RecurringTab: React.FC = () => {
             <h1 className="text-xl md:text-2xl font-bold tracking-tight text-white">
               Recorrências & Parcelas
             </h1>
-            <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-[#1C1C1C] border border-[#2E2E2E] text-[#A3A3A3]">
+            <span className="text-[11px] font-medium px-2 py-0.5 rounded-full bg-[#1E2430] border border-[#2E2E2E] text-[#AEB6C4]">
               {activeRecurring.length + activeInstallments.length} ativos
             </span>
           </div>
-          <p className="text-xs text-[#737373] mt-0.5">
+          <p className="text-xs text-[#9AA4B5] mt-0.5">
             Controle centralizado de pagamentos fixos, assinaturas e compras parceladas
           </p>
         </div>
@@ -204,13 +202,13 @@ export const RecurringTab: React.FC = () => {
           onClick={() => setActiveSubTab('recurring')}
           className={`flex-1 min-w-[130px] py-2.5 px-3 rounded-xl text-xs font-semibold transition cursor-pointer flex items-center justify-center gap-2 ${
             activeSubTab === 'recurring'
-              ? 'bg-[#222222] text-white shadow-xs border border-white/10'
-              : 'text-[#737373] hover:text-white'
+              ? 'bg-[#232A36] text-white shadow-xs border border-white/10'
+              : 'text-[#9AA4B5] hover:text-white'
           }`}
         >
           <Repeat className={`w-3.5 h-3.5 ${activeSubTab === 'recurring' ? 'text-[#E5A97D]' : ''}`} />
           <span>Gastos Fixos</span>
-          <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-[#171717] border border-[#333333] text-[#A3A3A3]">
+          <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-[#181D27] border border-[#363F50] text-[#AEB6C4]">
             {activeRecurring.length}
           </span>
         </button>
@@ -219,13 +217,13 @@ export const RecurringTab: React.FC = () => {
           onClick={() => setActiveSubTab('installments')}
           className={`flex-1 min-w-[140px] py-2.5 px-3 rounded-xl text-xs font-semibold transition cursor-pointer flex items-center justify-center gap-2 ${
             activeSubTab === 'installments'
-              ? 'bg-[#222222] text-white shadow-xs border border-white/10'
-              : 'text-[#737373] hover:text-white'
+              ? 'bg-[#232A36] text-white shadow-xs border border-white/10'
+              : 'text-[#9AA4B5] hover:text-white'
           }`}
         >
           <Layers className={`w-3.5 h-3.5 ${activeSubTab === 'installments' ? 'text-[#A8B5D1]' : ''}`} />
           <span>Parcelamentos</span>
-          <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-[#171717] border border-[#333333] text-[#A3A3A3]">
+          <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-[#181D27] border border-[#363F50] text-[#AEB6C4]">
             {activeInstallments.length}
           </span>
         </button>
@@ -234,13 +232,13 @@ export const RecurringTab: React.FC = () => {
           onClick={() => setActiveSubTab('history')}
           className={`flex-1 min-w-[110px] py-2.5 px-3 rounded-xl text-xs font-semibold transition cursor-pointer flex items-center justify-center gap-2 ${
             activeSubTab === 'history'
-              ? 'bg-[#222222] text-white shadow-xs border border-white/10'
-              : 'text-[#737373] hover:text-white'
+              ? 'bg-[#232A36] text-white shadow-xs border border-white/10'
+              : 'text-[#9AA4B5] hover:text-white'
           }`}
         >
           <History className={`w-3.5 h-3.5 ${activeSubTab === 'history' ? 'text-[#A3C9A8]' : ''}`} />
           <span>Finalizados</span>
-          <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-[#171717] border border-[#333333] text-[#A3A3A3]">
+          <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-[#181D27] border border-[#363F50] text-[#AEB6C4]">
             {finishedInstallments.length + discontinuedRecurring.length}
           </span>
         </button>
@@ -254,7 +252,7 @@ export const RecurringTab: React.FC = () => {
           {/* Métricas dos Gastos Fixos (3D Depth) */}
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             <div className="card-depth-hero p-4 rounded-2xl space-y-1">
-              <span className="text-[10px] text-[#737373] uppercase tracking-wider font-semibold block">
+              <span className="text-[10px] text-[#9AA4B5] uppercase tracking-wider font-semibold block">
                 Despesas Fixas / Mês
               </span>
               <p className="text-lg md:text-xl font-bold text-[#E29578]">
@@ -263,7 +261,7 @@ export const RecurringTab: React.FC = () => {
             </div>
 
             <div className="card-depth-hero p-4 rounded-2xl space-y-1">
-              <span className="text-[10px] text-[#737373] uppercase tracking-wider font-semibold block">
+              <span className="text-[10px] text-[#9AA4B5] uppercase tracking-wider font-semibold block">
                 Receitas Fixas / Mês
               </span>
               <p className="text-lg md:text-xl font-bold text-[#A3C9A8]">
@@ -272,7 +270,7 @@ export const RecurringTab: React.FC = () => {
             </div>
 
             <div className="col-span-2 md:col-span-1 card-depth-hero p-4 rounded-2xl space-y-1">
-              <span className="text-[10px] text-[#737373] uppercase tracking-wider font-semibold block">
+              <span className="text-[10px] text-[#9AA4B5] uppercase tracking-wider font-semibold block">
                 Saldo Fixo Líquido
               </span>
               <p className={`text-lg md:text-xl font-bold ${fixedTotals.netTotal >= 0 ? 'text-white' : 'text-[#E29578]'}`}>
@@ -289,7 +287,7 @@ export const RecurringTab: React.FC = () => {
                 className={`px-3 py-1.5 rounded-xl text-xs font-medium transition cursor-pointer ${
                   fixedFilter === 'all'
                     ? 'bg-white text-black font-semibold'
-                    : 'bg-[#141414] border border-[#262626] text-[#A3A3A3] hover:text-white'
+                    : 'bg-[#151A23] border border-[#283040] text-[#AEB6C4] hover:text-white'
                 }`}
               >
                 Todos ({activeRecurring.length})
@@ -299,7 +297,7 @@ export const RecurringTab: React.FC = () => {
                 className={`px-3 py-1.5 rounded-xl text-xs font-medium transition cursor-pointer ${
                   fixedFilter === 'expense'
                     ? 'bg-[#E29578] text-black font-semibold'
-                    : 'bg-[#141414] border border-[#262626] text-[#A3A3A3] hover:text-white'
+                    : 'bg-[#151A23] border border-[#283040] text-[#AEB6C4] hover:text-white'
                 }`}
               >
                 Despesas Fixas
@@ -309,7 +307,7 @@ export const RecurringTab: React.FC = () => {
                 className={`px-3 py-1.5 rounded-xl text-xs font-medium transition cursor-pointer ${
                   fixedFilter === 'income'
                     ? 'bg-[#A3C9A8] text-black font-semibold'
-                    : 'bg-[#141414] border border-[#262626] text-[#A3A3A3] hover:text-white'
+                    : 'bg-[#151A23] border border-[#283040] text-[#AEB6C4] hover:text-white'
                 }`}
               >
                 Receitas Fixas
@@ -320,11 +318,11 @@ export const RecurringTab: React.FC = () => {
           {/* Lista de Recorrências */}
           {filteredRecurring.length === 0 ? (
             <div className="card-depth-3d p-8 md:p-12 text-center rounded-3xl space-y-3">
-              <div className="w-12 h-12 rounded-2xl bg-[#262626] text-[#737373] mx-auto flex items-center justify-center">
+              <div className="w-12 h-12 rounded-2xl bg-[#283040] text-[#9AA4B5] mx-auto flex items-center justify-center">
                 <Repeat className="w-6 h-6 stroke-[1.5]" />
               </div>
               <h3 className="text-sm font-semibold text-white">Nenhum compromisso fixo cadastrado</h3>
-              <p className="text-xs text-[#737373] max-w-sm mx-auto">
+              <p className="text-xs text-[#9AA4B5] max-w-sm mx-auto">
                 Cadastre seus custos recorrentes como aluguel, luz, internet, assinaturas ou seu salário mensal para projeções automáticas.
               </p>
               <div className="pt-2 flex items-center justify-center gap-2">
@@ -370,8 +368,8 @@ export const RecurringTab: React.FC = () => {
                           <h4 className="text-sm font-semibold text-white truncate">
                             {item.description}
                           </h4>
-                          <div className="flex items-center gap-1.5 text-[11px] text-[#737373] mt-0.5">
-                            <span className="text-[#A3A3A3]">{item.category}</span>
+                          <div className="flex items-center gap-1.5 text-[11px] text-[#9AA4B5] mt-0.5">
+                            <span className="text-[#AEB6C4]">{item.category}</span>
                             <span>•</span>
                             <span className="flex items-center gap-1">
                               <Calendar className="w-3 h-3 text-[#A8B5D1]" />
@@ -387,26 +385,26 @@ export const RecurringTab: React.FC = () => {
                         }`}>
                           {isIncome ? '+' : '-'}{formatBRL(item.amount)}
                         </span>
-                        <span className="text-[10px] text-[#737373] block">/mês</span>
+                        <span className="text-[10px] text-[#9AA4B5] block">/mês</span>
                       </div>
                     </div>
 
                     {/* Middle Row: Badges & Vigência */}
                     <div className="flex flex-wrap items-center gap-1.5 pt-1 text-[11px]">
                       {item.paymentMethod === 'credit_card' && item.cardName ? (
-                        <span className="px-2 py-0.5 rounded-lg bg-[#1F1F1F] text-[#A8B5D1] border border-[#2B2B2B] flex items-center gap-1">
+                        <span className="px-2 py-0.5 rounded-lg bg-[#202733] text-[#A8B5D1] border border-[#2D3544] flex items-center gap-1">
                           <CreditCardIcon className="w-3 h-3" />
                           {item.cardName} •••• {item.cardLastFour}
                         </span>
                       ) : (
-                        <span className="px-2 py-0.5 rounded-lg bg-[#1F1F1F] text-[#737373] border border-[#2B2B2B]">
+                        <span className="px-2 py-0.5 rounded-lg bg-[#202733] text-[#9AA4B5] border border-[#2D3544]">
                           {item.paymentMethod === 'pix' ? 'PIX' : 
                            item.paymentMethod === 'boleto' ? 'Boleto' : 
                            item.paymentMethod === 'debit_card' ? 'Débito' : 'Outro'}
                         </span>
                       )}
 
-                      <span className="px-2 py-0.5 rounded-lg bg-[#171717] text-[#737373] border border-[#262626]">
+                      <span className="px-2 py-0.5 rounded-lg bg-[#181D27] text-[#9AA4B5] border border-[#283040]">
                         Ativo desde {startMonthFormatted}
                       </span>
 
@@ -416,7 +414,7 @@ export const RecurringTab: React.FC = () => {
                         className={`ml-auto px-2 py-0.5 rounded-lg text-[11px] font-medium flex items-center gap-1 transition cursor-pointer ${
                           isPaidInMonth
                             ? 'bg-[#A3C9A8]/15 text-[#A3C9A8] border border-[#A3C9A8]/30 hover:bg-[#A3C9A8]/25'
-                            : 'bg-[#262626] text-[#A3A3A3] hover:text-white border border-[#333333]'
+                            : 'bg-[#283040] text-[#AEB6C4] hover:text-white border border-[#363F50]'
                         }`}
                         title="Clique para alternar o status deste mês"
                       >
@@ -435,10 +433,10 @@ export const RecurringTab: React.FC = () => {
                     </div>
 
                     {/* Bottom Row: Actions com Liquid Glass */}
-                    <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#1C1C1C]">
+                    <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#1E2430]">
                       <button
                         onClick={() => setEditRecurring(item)}
-                        className="btn-liquid-glass py-1.5 px-3 rounded-xl text-xs text-[#A3A3A3] hover:text-white flex items-center gap-1 cursor-pointer"
+                        className="btn-liquid-glass py-1.5 px-3 rounded-xl text-xs text-[#AEB6C4] hover:text-white flex items-center gap-1 cursor-pointer"
                       >
                         <Pencil className="w-3.5 h-3.5" />
                         <span>Editar</span>
@@ -468,7 +466,7 @@ export const RecurringTab: React.FC = () => {
           {/* Métricas dos Parcelamentos (3D Depth) */}
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             <div className="card-depth-hero p-4 rounded-2xl space-y-1">
-              <span className="text-[10px] text-[#737373] uppercase tracking-wider font-semibold block">
+              <span className="text-[10px] text-[#9AA4B5] uppercase tracking-wider font-semibold block">
                 Saldo Devedor Total
               </span>
               <p className="text-lg md:text-xl font-bold text-[#E29578]">
@@ -477,17 +475,17 @@ export const RecurringTab: React.FC = () => {
             </div>
 
             <div className="card-depth-hero p-4 rounded-2xl space-y-1">
-              <span className="text-[10px] text-[#737373] uppercase tracking-wider font-semibold block">
+              <span className="text-[10px] text-[#9AA4B5] uppercase tracking-wider font-semibold block">
                 Comprometimento Mensal
               </span>
               <p className="text-lg md:text-xl font-bold text-white">
                 {formatBRL(installmentTotals.monthlyCommitment)}
-                <span className="text-xs text-[#737373] font-normal">/mês</span>
+                <span className="text-xs text-[#9AA4B5] font-normal">/mês</span>
               </p>
             </div>
 
             <div className="col-span-2 md:col-span-1 card-depth-hero p-4 rounded-2xl space-y-1">
-              <span className="text-[10px] text-[#737373] uppercase tracking-wider font-semibold block">
+              <span className="text-[10px] text-[#9AA4B5] uppercase tracking-wider font-semibold block">
                 Compras Parceladas Ativas
               </span>
               <p className="text-lg md:text-xl font-bold text-[#A8B5D1]">
@@ -499,11 +497,11 @@ export const RecurringTab: React.FC = () => {
           {/* Lista de Parcelamentos Ativos */}
           {activeInstallments.length === 0 ? (
             <div className="card-depth-3d p-8 md:p-12 text-center rounded-3xl space-y-3">
-              <div className="w-12 h-12 rounded-2xl bg-[#262626] text-[#737373] mx-auto flex items-center justify-center">
+              <div className="w-12 h-12 rounded-2xl bg-[#283040] text-[#9AA4B5] mx-auto flex items-center justify-center">
                 <Layers className="w-6 h-6 stroke-[1.5]" />
               </div>
               <h3 className="text-sm font-semibold text-white">Nenhum parcelamento ativo</h3>
-              <p className="text-xs text-[#737373] max-w-sm mx-auto">
+              <p className="text-xs text-[#9AA4B5] max-w-sm mx-auto">
                 Suas compras a prazo no cartão de crédito ou carnês aparecerão aqui com acompanhamento automático de amortizações.
               </p>
               <div className="pt-2">
@@ -545,7 +543,7 @@ export const RecurringTab: React.FC = () => {
                             </span>
                           )}
                         </div>
-                        <div className="flex items-center gap-1.5 text-[11px] text-[#737373] mt-0.5">
+                        <div className="flex items-center gap-1.5 text-[11px] text-[#9AA4B5] mt-0.5">
                           <span>{group.category}</span>
                           {group.cardName && (
                             <>
@@ -563,7 +561,7 @@ export const RecurringTab: React.FC = () => {
                         <span className="text-base font-bold text-white">
                           {formatBRL(group.monthlyAmount)}
                         </span>
-                        <span className="text-[10px] text-[#737373] block">/parcela</span>
+                        <span className="text-[10px] text-[#9AA4B5] block">/parcela</span>
                       </div>
                     </div>
 
@@ -574,7 +572,7 @@ export const RecurringTab: React.FC = () => {
                           <span className="text-[#E29578] font-bold">
                             Parcela {currentNum} de {group.totalInstallments}
                           </span>
-                          <span className="text-[11px] text-[#737373]">
+                          <span className="text-[11px] text-[#9AA4B5]">
                             • Faltam {remainingToFinish} parcelas
                           </span>
                         </div>
@@ -582,22 +580,22 @@ export const RecurringTab: React.FC = () => {
                           {exactProgress}% concluído
                         </span>
                       </div>
-                      <div className="w-full h-2 rounded-full bg-[#262626] overflow-hidden">
+                      <div className="w-full h-2 rounded-full bg-[#283040] overflow-hidden">
                         <div
                           className="h-full bg-linear-to-r from-[#E29578] to-[#E5A97D] rounded-full transition-all duration-300"
                           style={{ width: `${exactProgress}%` }}
                         />
                       </div>
-                      <div className="flex items-center justify-between text-[10px] text-[#737373] pt-0.5">
+                      <div className="flex items-center justify-between text-[10px] text-[#9AA4B5] pt-0.5">
                         <span>{group.paidCount} de {group.totalInstallments} parcelas quitadas</span>
                         <span>Fim previsto: {endMonthDisplay || 'Em breve'}</span>
                       </div>
                     </div>
 
                     {/* Grade de Detalhes Financeiros */}
-                    <div className="grid grid-cols-3 gap-2 p-3 bg-[#0D0D0D] border border-[#262626] rounded-2xl text-xs">
+                    <div className="grid grid-cols-3 gap-2 p-3 bg-[#0F1218] border border-[#283040] rounded-2xl text-xs">
                       <div>
-                        <span className="text-[10px] text-[#737373] block uppercase tracking-wider">
+                        <span className="text-[10px] text-[#9AA4B5] block uppercase tracking-wider">
                           Valor Total
                         </span>
                         <span className="font-semibold text-white">
@@ -605,7 +603,7 @@ export const RecurringTab: React.FC = () => {
                         </span>
                       </div>
                       <div>
-                        <span className="text-[10px] text-[#737373] block uppercase tracking-wider">
+                        <span className="text-[10px] text-[#9AA4B5] block uppercase tracking-wider">
                           Saldo Restante
                         </span>
                         <span className="font-semibold text-[#E29578]">
@@ -613,7 +611,7 @@ export const RecurringTab: React.FC = () => {
                         </span>
                       </div>
                       <div>
-                        <span className="text-[10px] text-[#737373] block uppercase tracking-wider">
+                        <span className="text-[10px] text-[#9AA4B5] block uppercase tracking-wider">
                           Fim Previsto
                         </span>
                         <span className="font-semibold text-[#A8B5D1]">
@@ -635,7 +633,7 @@ export const RecurringTab: React.FC = () => {
                       <button
                         onClick={() => setEditGroup(group)}
                         title="Editar Parcelamento"
-                        className="btn-liquid-glass p-2.5 rounded-xl text-[#A3A3A3] hover:text-white transition cursor-pointer"
+                        className="btn-liquid-glass p-2.5 rounded-xl text-[#AEB6C4] hover:text-white transition cursor-pointer"
                       >
                         <Pencil className="w-4 h-4" />
                       </button>
@@ -662,12 +660,12 @@ export const RecurringTab: React.FC = () => {
       {activeSubTab === 'history' && (
         <div className="space-y-4">
           {finishedInstallments.length === 0 && discontinuedRecurring.length === 0 ? (
-            <div className="p-8 md:p-12 text-center bg-[#141414] border border-[#262626] rounded-3xl space-y-3">
-              <div className="w-12 h-12 rounded-2xl bg-[#262626] text-[#737373] mx-auto flex items-center justify-center">
+            <div className="p-8 md:p-12 text-center bg-[#151A23] border border-[#283040] rounded-3xl space-y-3">
+              <div className="w-12 h-12 rounded-2xl bg-[#283040] text-[#9AA4B5] mx-auto flex items-center justify-center">
                 <History className="w-6 h-6 stroke-[1.5]" />
               </div>
               <h3 className="text-sm font-semibold text-white">Histórico Limpo</h3>
-              <p className="text-xs text-[#737373] max-w-sm mx-auto">
+              <p className="text-xs text-[#9AA4B5] max-w-sm mx-auto">
                 Quando compras parceladas forem 100% quitadas ou gastos fixos forem cancelados, eles ficarão arquivados aqui para consulta histórica.
               </p>
             </div>
@@ -676,7 +674,7 @@ export const RecurringTab: React.FC = () => {
               {/* Parcelamentos Quitados */}
               {finishedInstallments.length > 0 && (
                 <div className="space-y-2">
-                  <h3 className="text-xs font-semibold text-[#A3A3A3] uppercase tracking-wider px-1">
+                  <h3 className="text-xs font-semibold text-[#AEB6C4] uppercase tracking-wider px-1">
                     Parcelamentos Quitados ({finishedInstallments.length})
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -696,7 +694,7 @@ export const RecurringTab: React.FC = () => {
                                 Quitado 100%
                               </span>
                             </div>
-                            <p className="text-[11px] text-[#737373] mt-0.5">
+                            <p className="text-[11px] text-[#9AA4B5] mt-0.5">
                               {group.totalInstallments} de {group.totalInstallments} parcelas pagas • Total: {formatBRL(group.totalAmount)}
                             </p>
                           </div>
@@ -704,7 +702,7 @@ export const RecurringTab: React.FC = () => {
                           <button
                             onClick={() => setDeleteGroupTarget(group)}
                             title="Remover do Histórico"
-                            className="p-1.5 rounded-xl text-[#737373] hover:text-[#E29578] hover:bg-[#262626] transition cursor-pointer"
+                            className="p-1.5 rounded-xl text-[#9AA4B5] hover:text-[#E29578] hover:bg-[#283040] transition cursor-pointer"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
@@ -718,7 +716,7 @@ export const RecurringTab: React.FC = () => {
               {/* Recorrências Encerradas */}
               {discontinuedRecurring.length > 0 && (
                 <div className="space-y-2 pt-2">
-                  <h3 className="text-xs font-semibold text-[#A3A3A3] uppercase tracking-wider px-1">
+                  <h3 className="text-xs font-semibold text-[#AEB6C4] uppercase tracking-wider px-1">
                     Recorrências Encerradas ({discontinuedRecurring.length})
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -733,12 +731,12 @@ export const RecurringTab: React.FC = () => {
                               <h4 className="text-sm font-semibold text-white">
                                 {item.description}
                               </h4>
-                              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#737373]/15 text-[#A3A3A3] border border-[#737373]/30 flex items-center gap-1">
+                              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#8892A4]/15 text-[#AEB6C4] border border-[#8892A4]/30 flex items-center gap-1">
                                 <CalendarOff className="w-3 h-3" />
                                 Encerrado em {formatMonthDisplay(item.endDate || '')}
                               </span>
                             </div>
-                            <p className="text-[11px] text-[#737373] mt-0.5">
+                            <p className="text-[11px] text-[#9AA4B5] mt-0.5">
                               {item.category} • {formatBRL(item.amount)}/mês
                             </p>
                           </div>
@@ -747,7 +745,7 @@ export const RecurringTab: React.FC = () => {
                             <button
                               onClick={() => handleReactivateRecurring(item)}
                               title="Reativar Recorrência"
-                              className="p-1.5 rounded-xl text-[#A3C9A8] hover:bg-[#262626] transition cursor-pointer flex items-center gap-1 text-xs"
+                              className="p-1.5 rounded-xl text-[#A3C9A8] hover:bg-[#283040] transition cursor-pointer flex items-center gap-1 text-xs"
                             >
                               <RotateCcw className="w-3.5 h-3.5" />
                               <span className="hidden sm:inline">Reativar</span>
@@ -755,7 +753,7 @@ export const RecurringTab: React.FC = () => {
                             <button
                               onClick={() => setDeleteRecurringTarget(item)}
                               title="Excluir Definitivo"
-                              className="p-1.5 rounded-xl text-[#737373] hover:text-[#E29578] hover:bg-[#262626] transition cursor-pointer"
+                              className="p-1.5 rounded-xl text-[#9AA4B5] hover:text-[#E29578] hover:bg-[#283040] transition cursor-pointer"
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>

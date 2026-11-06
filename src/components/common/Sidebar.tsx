@@ -9,7 +9,11 @@ import {
   Wifi, 
   WifiOff, 
   LogOut,
-  Settings
+  Settings,
+  Wallet,
+  CreditCard,
+  BarChart3,
+  Users
 } from 'lucide-react';
 import { TabType } from './BottomNav';
 import { useFinance } from '../../context/FinanceContext';
@@ -78,6 +82,34 @@ export const Sidebar: React.FC<SidebarProps> = ({
       glowColor: 'rgba(163, 201, 168, 0.28)'
     },
     {
+      id: 'accounts' as TabType,
+      label: 'Contas & Metas',
+      icon: Wallet,
+      colorHex: '#A3C9A8',
+      glowColor: 'rgba(163, 201, 168, 0.28)'
+    },
+    {
+      id: 'cards' as TabType,
+      label: 'Cartões & Faturas',
+      icon: CreditCard,
+      colorHex: '#A8B5D1',
+      glowColor: 'rgba(168, 181, 209, 0.28)'
+    },
+    {
+      id: 'reports' as TabType,
+      label: 'Relatórios',
+      icon: BarChart3,
+      colorHex: '#E9C46A',
+      glowColor: 'rgba(233, 196, 106, 0.28)'
+    },
+    {
+      id: 'shared' as TabType,
+      label: 'Compartilhado',
+      icon: Users,
+      colorHex: '#38BDF8',
+      glowColor: 'rgba(56, 189, 248, 0.28)'
+    },
+    {
       id: 'settings' as TabType,
       label: 'Configurações',
       icon: Settings,
@@ -87,14 +119,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
   ];
 
   return (
-    <aside className="hidden md:flex flex-col w-64 shrink-0 bg-[#0D0D0D] border-r border-[#1E1E1E] h-screen sticky top-0 p-4 justify-between z-30 select-none">
-      {/* Top Section */}
-      <div className="space-y-6">
+    <aside className="hidden md:flex flex-col w-64 shrink-0 bg-[#0F1218] border-r border-[#1F2531] h-screen sticky top-0 p-4 justify-between gap-4 z-30 select-none">
+      {/* Top Section (rola quando a janela é baixa) */}
+      <div className="space-y-6 min-h-0 overflow-y-auto no-scrollbar">
         {/* Brand */}
         <div className="flex items-center gap-2.5 px-2 pt-1">
-          <div className="w-9 h-9 rounded-xl bg-[#171717] border border-[#262626] flex items-center justify-center p-2 shadow-xs">
+          <div className="w-9 h-9 rounded-xl bg-[#181D27] border border-[#283040] flex items-center justify-center p-2 shadow-xs">
             <svg viewBox="0 0 24 24" fill="none" className="w-full h-full">
-              <circle cx="12" cy="12" r="10" stroke="#262626" strokeWidth="2" />
+              <circle cx="12" cy="12" r="10" stroke="#283040" strokeWidth="2" />
               <path d="M 12 2 A 10 10 0 0 1 22 12" stroke="#A3C9A8" strokeWidth="2.5" strokeLinecap="round" />
               <path d="M 2 12 A 10 10 0 0 1 12 2" stroke="#E29578" strokeWidth="2.5" strokeLinecap="round" />
               <path d="M 9 13 L 12 9 L 15 13" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -107,7 +139,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 PRO
               </span>
             </div>
-            <p className="text-[10px] text-[#737373]">Gestão Inteligente</p>
+            <p className="text-[10px] text-[#9AA4B5]">Gestão Inteligente</p>
           </div>
         </div>
 
@@ -122,7 +154,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         {/* Navigation Menu (Diretriz 2: Interação e Estado Ativo com Glow Neon) */}
         <div className="space-y-1">
-          <span className="text-[10px] font-semibold text-[#525252] uppercase tracking-wider px-2 block mb-2">
+          <span className="text-[10px] font-semibold text-[#5E6A7E] uppercase tracking-wider px-2 block mb-2">
             Navegação
           </span>
           {navItems.map((item) => {
@@ -139,7 +171,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-semibold sidebar-nav-item transition-all duration-200 cursor-pointer ${
                   isActive
                     ? 'sidebar-nav-active text-white'
-                    : 'text-[#8C8C8C] hover:text-white'
+                    : 'text-[#8E98A9] hover:text-white'
                 }`}
               >
                 <div className="flex items-center gap-2.5">
@@ -175,10 +207,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* Bottom Section: Status & User */}
-      <div className="space-y-3 pt-4 border-t border-[#1C1C1C]">
+      <div className="space-y-3 pt-4 border-t border-[#1E2430]">
         {/* Connection status */}
         <div className="flex items-center justify-between px-2 text-[11px]">
-          <span className="text-[#737373]">Servidor Firestore:</span>
+          <span className="text-[#9AA4B5]">Servidor Firestore:</span>
           {isOnline ? (
             <span className="flex items-center gap-1 text-[#A3C9A8]">
               <Wifi className="w-3 h-3" /> Online
@@ -191,7 +223,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         {/* User Card */}
-        <div className="p-2.5 rounded-2xl bg-[#141414] border border-[#212121] flex items-center justify-between">
+        <div className="p-2.5 rounded-2xl bg-[#151A23] border border-[#212121] flex items-center justify-between">
           <div 
             onClick={onOpenAuth}
             className="flex items-center gap-2.5 overflow-hidden flex-1 cursor-pointer hover:opacity-80 transition"
@@ -207,7 +239,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <div className="text-xs font-semibold text-white truncate">
                 {user?.displayName || user?.email?.split('@')[0]}
               </div>
-              <div className="text-[10px] text-[#737373] truncate">
+              <div className="text-[10px] text-[#9AA4B5] truncate">
                 {user?.email}
               </div>
             </div>
@@ -215,7 +247,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <button 
             onClick={logout}
             title="Sair da Conta"
-            className="text-[#737373] hover:text-[#E29578] hover:bg-[#262626] p-1.5 rounded-lg transition cursor-pointer ml-1"
+            className="text-[#9AA4B5] hover:text-[#E29578] hover:bg-[#283040] p-1.5 rounded-lg transition cursor-pointer ml-1"
           >
             <LogOut className="w-4 h-4" />
           </button>

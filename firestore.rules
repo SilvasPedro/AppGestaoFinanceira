@@ -1,32 +1,184 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Isolamento estrito por usuário: cada usuário só lê e escreve em seus próprios registros
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+
+    function isShortString(v, max) {
+      return v is string && v.size() <= max;
+    }
+
+    // Lançamentos: valida tipo e tamanho dos campos principais na escrita.
+    function validTransaction() {
+      let d = request.resource.data;
+      return d.type in ['expense', 'income']
+        && d.nature in ['daily', 'fixed', 'installment']
+        && d.amount is number && d.amount >= 0 && d.amount < 1000000000
+        && isShortString(d.category, 100)
+        && isShortString(d.description, 300)
+        && d.date is string && d.date.size() <= 10
+        && d.paymentMethod in ['credit_card', 'debit_card', 'pix', 'cash', 'bank_transfer', 'boleto']
+        && (!('tags' in d) || (d.tags is list && d.tags.size() <= 20));
+    }
+
+    function validBudget() {
+      let d = request.resource.data;
+      return isShortString(d.category, 100)
+        && d.limitAmount is number && d.limitAmount >= 0 && d.limitAmount < 1000000000;
+    }
+
+    function validAccount() {
+      let d = request.resource.data;
+      return isShortString(d.name, 80)
+        && d.type in ['checking', 'savings', 'wallet', 'investment']
+        && d.initialBalance is number && d.initialBalance > -1000000000 && d.initialBalance < 1000000000;
+    }
+
+    function validTransfer() {
+      let d = request.resource.data;
+      return d.amount is number && d.amount > 0 && d.amount < 1000000000
+        && isShortString(d.fromAccountId, 100)
+        && isShortString(d.toAccountId, 100)
+        && d.fromAccountId != d.toAccountId
+        && d.date is string && d.date.size() <= 10;
+    }
+
+    function validGoal() {
+      let d = request.resource.data;
+      return isShortString(d.name, 80)
+        && d.targetAmount is number && d.targetAmount > 0 && d.targetAmount < 1000000000
+        && d.savedAmount is number && d.savedAmount > -1000000000 && d.savedAmount < 1000000000
+        && d.contributions is list && d.contributions.size() <= 500;
+    }
+
+    // Comprovantes: imagem comprimida em data URL (o documento do Firestore tem limite de 1 MiB).
+    function validAttachment() {
+      let d = request.resource.data;
+      return d.dataUrl is string && d.dataUrl.size() <= 700000
+        && d.dataUrl.matches('^data:image/(jpeg|png|webp);base64,.*')
+        && isShortString(d.fileName, 200);
+    }
+
+    // Isolamento estrito por usuário: cada usuário só acessa seus próprios registros.
     match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read, write: if isOwner(userId);
 
-      match /transactions/{transactionId} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
+      match /transactions/{id} {
+        allow read, delete: if isOwner(userId);
+        allow create, update: if isOwner(userId) && validTransaction();
       }
 
-      match /budgets/{budgetId} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
+      match /budgets/{id} {
+        allow read, delete: if isOwner(userId);
+        allow create, update: if isOwner(userId) && validBudget();
       }
 
-      match /metrics/{metricId} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
+      match /categories/{id} {
+        allow read, write: if isOwner(userId);
       }
 
-      match /recurring/{recurringId} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
+      match /creditCards/{id} {
+        allow read, write: if isOwner(userId);
       }
 
-      match /{document=**} {
-        allow read, write: if request.auth != null && request.auth.uid == userId;
+      match /accounts/{id} {
+        allow read, delete: if isOwner(userId);
+        allow create, update: if isOwner(userId) && validAccount();
+      }
+
+      match /transfers/{id} {
+        allow read, delete: if isOwner(userId);
+        allow create, update: if isOwner(userId) && validTransfer();
+      }
+
+      match /goals/{id} {
+        allow read, delete: if isOwner(userId);
+        allow create, update: if isOwner(userId) && validGoal();
+      }
+
+      match /attachments/{id} {
+        allow read, delete: if isOwner(userId);
+        allow create, update: if isOwner(userId) && validAttachment();
       }
     }
 
-    // Nega acesso a qualquer outro caminho raiz não autorizado
+    // -----------------------------------------------------------------------
+    // Despesas compartilhadas (casal/família)
+    // -----------------------------------------------------------------------
+    function householdMembers(hid) {
+      return get(/databases/$(database)/documents/households/$(hid)).data.members;
+    }
+
+    function isHouseholdMember(hid) {
+      return request.auth != null && request.auth.uid in householdMembers(hid);
+    }
+
+    // O convite vale só para e-mail verificado, para ninguém "reivindicar" um e-mail alheio.
+    function isInvited() {
+      return request.auth != null
+        && request.auth.token.email_verified == true
+        && request.auth.token.email.lower() in resource.data.invitedEmails;
+    }
+
+    function validHousehold() {
+      let d = request.resource.data;
+      return isShortString(d.name, 80)
+        && d.members is list && d.members.size() <= 20
+        && d.invitedEmails is list && d.invitedEmails.size() <= 20;
+    }
+
+    match /households/{hid} {
+      allow create: if request.auth != null
+        && request.resource.data.ownerId == request.auth.uid
+        && request.resource.data.members == [request.auth.uid]
+        && validHousehold();
+
+      allow read: if request.auth != null
+        && (request.auth.uid in resource.data.members || isInvited());
+
+      // Membro: convida, ajusta nomes e pode sair (o dono pode remover qualquer um).
+      // Convidado: entra adicionando apenas a si mesmo.
+      allow update: if request.auth != null
+        && request.resource.data.ownerId == resource.data.ownerId
+        && request.resource.data.name == resource.data.name
+        && validHousehold()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['members', 'invitedEmails', 'memberNames'])
+        && (
+          (
+            request.auth.uid in resource.data.members
+            && request.resource.data.members.toSet().difference(resource.data.members.toSet()).size() == 0
+            && (
+              request.auth.uid == resource.data.ownerId
+              || resource.data.members.toSet().difference(request.resource.data.members.toSet()).size() == 0
+              || resource.data.members.toSet().difference(request.resource.data.members.toSet()) == [request.auth.uid].toSet()
+            )
+          )
+          || (
+            isInvited()
+            && request.resource.data.members.toSet().difference(resource.data.members.toSet()) == [request.auth.uid].toSet()
+            && resource.data.members.toSet().difference(request.resource.data.members.toSet()).size() == 0
+          )
+        );
+
+      allow delete: if request.auth != null && request.auth.uid == resource.data.ownerId;
+
+      match /expenses/{eid} {
+        allow read: if isHouseholdMember(hid);
+        allow delete: if isHouseholdMember(hid);
+        allow create, update: if isHouseholdMember(hid)
+          && request.resource.data.amount is number
+          && request.resource.data.amount > 0
+          && request.resource.data.amount < 1000000000
+          && isShortString(request.resource.data.description, 200)
+          && request.resource.data.paidBy in householdMembers(hid)
+          && request.resource.data.splitWith is list
+          && request.resource.data.splitWith.size() > 0
+          && request.resource.data.splitWith.toSet().difference(householdMembers(hid).toSet()).size() == 0;
+      }
+    }
+
+    // Nega acesso a qualquer outro caminho.
     match /{document=**} {
       allow read, write: if false;
     }

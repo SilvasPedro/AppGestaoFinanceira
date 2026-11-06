@@ -11,6 +11,9 @@ import {
   DEFAULT_EXPENSE_CATEGORIES,
   DEFAULT_INCOME_CATEGORIES
 } from '../types/finance';
+import { buildMonthTransactions } from '../services/monthView';
+import { computeBudgetStatuses } from '../services/budgetRollover';
+import { saveAttachment, deleteAttachment } from '../services/userCollections';
 import { FinanceService } from '../services/financeService';
 import { calculateHealthScore } from '../services/scoreCalculator';
 import { calculateCashFlowProjections, calculateFreedomSimulation } from '../services/projections';
@@ -18,11 +21,27 @@ import { calculateAvailableSurplus, calculateSuggestedBudgets, BudgetSuggestionR
 import { useAuth } from './AuthContext';
 
 export interface BudgetStatus {
+  id?: string;
   category: string;
-  limit: number;
+  limit: number; // teto efetivo do mês (inclui sobra acumulada)
+  baseLimit?: number;
+  carry?: number;
+  rollover?: boolean;
+  isMonthOverride?: boolean;
   spent: number;
   percentage: number;
   status: 'safe' | 'warning' | 'danger';
+}
+
+export interface AttachmentInput {
+  dataUrl: string;
+  fileName: string;
+}
+
+export interface SaveBudgetOptions {
+  /** 'YYYY-MM': cria um teto válido só nesse mês. Sem isso, altera o teto padrão. */
+  monthYear?: string | null;
+  rollover?: boolean;
 }
 
 export interface CardInvoiceSummary {
@@ -69,8 +88,9 @@ interface FinanceContextType {
   installmentGroups: InstallmentGroupSummary[];
   activeInstallmentsCount: number;
   // Actions
-  addTransaction: (tx: Omit<Transaction, 'id' | 'userId'>) => Promise<void>;
-  updateTransaction: (id: string, tx: Partial<Transaction>) => Promise<void>;
+  addTransaction: (tx: Omit<Transaction, 'id' | 'userId'>, extras?: { attachment?: AttachmentInput | null }) => Promise<void>;
+  updateTransaction: (id: string, tx: Partial<Transaction>, extras?: { attachment?: AttachmentInput | null }) => Promise<void>;
+  importTransactions: (items: Omit<Transaction, 'id' | 'userId'>[]) => Promise<number>;
   deleteTransaction: (id: string) => Promise<void>;
   discontinueRecurringTransaction: (id: string, fromMonth: string) => Promise<void>;
   togglePaidStatus: (id: string, currentStatus: boolean) => Promise<void>;
@@ -87,7 +107,7 @@ interface FinanceContextType {
     totalInstallments?: number;
     currentInstallment?: number;
   }) => Promise<void>;
-  saveBudget: (category: string, limitAmount: number) => Promise<void>;
+  saveBudget: (category: string, limitAmount: number, options?: SaveBudgetOptions) => Promise<void>;
   deleteBudget: (budgetId: string) => Promise<void>;
   addCustomCategory: (name: string, type: 'expense' | 'income') => Promise<void>;
   deleteCustomCategory: (id: string) => Promise<void>;
@@ -243,115 +263,10 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
    *    automaticamente, garantindo que o saldo e o extrato do mês futuro reflitam a parcela
    *    amortizada (ex: parcela 2/3 em Dezembro), alinhando a Visão Geral à Curva de Parcelas.
    */
-  const monthTransactions = useMemo(() => {
-    // 1. Transações com correspondência direta no mês ou itens fixos recorrentes
-    const directTransactions = transactions
-      .filter(t => {
-        if (t.nature === 'fixed') {
-          const startMonth = t.startDate || (t.date ? t.date.slice(0, 7) : '');
-          const endMonth = t.endDate || null;
-          if (!startMonth) return false;
-          return currentMonth >= startMonth && (!endMonth || currentMonth < endMonth);
-        }
-        return t.date ? t.date.startsWith(currentMonth) : false;
-      })
-      .map(t => {
-        if (t.nature === 'fixed') {
-          const day = t.date ? t.date.slice(8, 10) : '01';
-          const isPaidThisMonth = t.paidMonths
-            ? t.paidMonths.includes(currentMonth)
-            : (t.date && t.date.startsWith(currentMonth) ? !!t.isPaid : false);
-          return {
-            ...t,
-            date: `${currentMonth}-${day || '01'}`,
-            isPaid: isPaidThisMonth
-          };
-        }
-        return t;
-      });
-
-    // 2. Mapear grupos de parcelamento existentes
-    const installmentGroupsMap = new Map<string, Transaction[]>();
-    transactions
-      .filter(t => t.nature === 'installment' && t.installmentDetails)
-      .forEach(t => {
-        const gid = t.installmentDetails!.groupId || t.id;
-        const list = installmentGroupsMap.get(gid) || [];
-        list.push(t);
-        installmentGroupsMap.set(gid, list);
-      });
-
-    // Identificar grupos que já possuem lançamento registrado para este mês
-    const groupsWithDirectTx = new Set<string>();
-    directTransactions.forEach(t => {
-      if (t.nature === 'installment' && t.installmentDetails?.groupId) {
-        groupsWithDirectTx.add(t.installmentDetails.groupId);
-      }
-    });
-
-    const synthesizedInstallments: Transaction[] = [];
-
-    installmentGroupsMap.forEach((txList, gid) => {
-      if (groupsWithDirectTx.has(gid)) return;
-
-      txList.sort((a, b) => (a.installmentDetails?.currentInstallment || 0) - (b.installmentDetails?.currentInstallment || 0));
-      const first = txList[0];
-      const details = first.installmentDetails!;
-
-      const descMatch = first.description.match(/\((\d+)\/(\d+)\)/);
-      const parsedCurFromDesc = descMatch ? parseInt(descMatch[1], 10) : undefined;
-      const parsedTotalFromDesc = descMatch ? parseInt(descMatch[2], 10) : undefined;
-
-      const initialInstallmentNumber = details.initialInstallmentNumber 
-        || details.currentInstallment 
-        || parsedCurFromDesc 
-        || 1;
-
-      const totalInstallments = details.totalInstallments 
-        || parsedTotalFromDesc 
-        || (initialInstallmentNumber + txList.length - 1);
-
-      const startMonth = details.startMonth || first.date.slice(0, 7);
-      const monthlyAmount = details.monthlyAmount || first.amount;
-
-      // Calcular qual índice de parcela corresponde ao currentMonth
-      const [curYear, curMonthNum] = currentMonth.split('-').map(Number);
-      const [sYear, sMonthNum] = startMonth.split('-').map(Number);
-      const deltaMonths = (curYear - sYear) * 12 + (curMonthNum - sMonthNum);
-      const calculatedInstallment = initialInstallmentNumber + deltaMonths;
-
-      // Se o mês está dentro do ciclo e ainda restam parcelas a pagar
-      if (calculatedInstallment >= 1 && calculatedInstallment <= totalInstallments) {
-        const priorPaid = Math.max(0, initialInstallmentNumber - 1);
-        const inAppPaid = txList.filter(t => t.isPaid).length;
-        const totalPaid = priorPaid + inAppPaid;
-
-        if (calculatedInstallment > totalPaid) {
-          const cleanDesc = first.description.replace(/\s\(\d+\/\d+\).*$/, '').trim() || (first.type === 'income' ? 'Receita Parcelada' : 'Compra Parcelada');
-          const day = first.date ? first.date.slice(8, 10) : '01';
-
-          synthesizedInstallments.push({
-            ...first,
-            id: `synth_${gid}_${currentMonth}`,
-            date: `${currentMonth}-${day}`,
-            amount: monthlyAmount,
-            description: `${cleanDesc} (${calculatedInstallment}/${totalInstallments})`,
-            isPaid: false,
-            installmentDetails: {
-              ...details,
-              groupId: gid,
-              currentInstallment: calculatedInstallment,
-              totalInstallments,
-              monthlyAmount,
-              totalAmount: details.totalAmount || (totalInstallments * monthlyAmount)
-            }
-          });
-        }
-      }
-    });
-
-    return [...directTransactions, ...synthesizedInstallments];
-  }, [transactions, currentMonth]);
+  const monthTransactions = useMemo(
+    () => buildMonthTransactions(transactions, currentMonth),
+    [transactions, currentMonth]
+  );
 
   // Totais do mês selecionado
   const incomeTotal = useMemo(() => {
@@ -568,33 +483,11 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     return calculateHealthScore(transactions, budgets, currentMonth);
   }, [transactions, budgets, currentMonth]);
 
-  // Limites por categoria com indicador visual de status
-  const budgetsStatus = useMemo<BudgetStatus[]>(() => {
-    const expenseMap: Record<string, number> = {};
-    monthTransactions
-      .filter(t => t.type === 'expense')
-      .forEach(t => {
-        expenseMap[t.category] = (expenseMap[t.category] || 0) + t.amount;
-      });
-
-    return budgets.map(b => {
-      const spent = expenseMap[b.category] || 0;
-      const percentage = b.limitAmount > 0 ? (spent / b.limitAmount) * 100 : 0;
-      let status: 'safe' | 'warning' | 'danger' = 'safe';
-      if (percentage >= 100) {
-        status = 'danger';
-      } else if (percentage >= 80) {
-        status = 'warning';
-      }
-      return {
-        category: b.category,
-        limit: b.limitAmount,
-        spent,
-        percentage,
-        status
-      };
-    });
-  }, [budgets, monthTransactions]);
+  // Limites por categoria: teto padrão ou específico do mês, com acúmulo de sobras (rollover)
+  const budgetsStatus = useMemo<BudgetStatus[]>(
+    () => computeBudgetStatuses(budgets, transactions, currentMonth),
+    [budgets, transactions, currentMonth]
+  );
 
   // Projeção futura de fluxo de caixa (6 meses)
   const cashFlowProjections = useMemo(() => {
@@ -630,8 +523,23 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   // Ações de persistência
-  const addTransaction = async (tx: Omit<Transaction, 'id' | 'userId'>) => {
+  const addTransaction = async (
+    tx: Omit<Transaction, 'id' | 'userId'>,
+    extras?: { attachment?: AttachmentInput | null }
+  ) => {
     const userId = user?.uid || 'guest';
+    const attachment = tx.nature === 'daily' ? extras?.attachment : null;
+    if (attachment) {
+      // O lançamento é salvo já marcado; se o upload falhar, a marca é desfeita abaixo.
+      const id = await FinanceService.saveTransaction(userId, { ...tx, hasAttachment: true }, false);
+      try {
+        await saveAttachment(userId, id, attachment.dataUrl, attachment.fileName);
+      } catch (err) {
+        await FinanceService.saveTransaction(userId, { ...tx, id, hasAttachment: false }, false);
+        throw err;
+      }
+      return;
+    }
     
     // Tratamento de recorrência inteligente para contas fixas (receita ou despesa)
     if (tx.nature === 'fixed') {
@@ -704,11 +612,24 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   };
 
-  const updateTransaction = async (id: string, tx: Partial<Transaction>) => {
+  const updateTransaction = async (
+    id: string,
+    tx: Partial<Transaction>,
+    extras?: { attachment?: AttachmentInput | null }
+  ) => {
     const userId = user?.uid || 'guest';
     const existing = transactions.find(t => t.id === id);
     if (!existing) return;
     const merged: Transaction = { ...existing, ...tx };
+    if (extras && 'attachment' in extras && merged.nature === 'daily') {
+      if (extras.attachment) {
+        await saveAttachment(userId, id, extras.attachment.dataUrl, extras.attachment.fileName);
+        merged.hasAttachment = true;
+      } else if (existing.hasAttachment) {
+        await deleteAttachment(userId, id).catch(() => undefined);
+        merged.hasAttachment = false;
+      }
+    }
     if (merged.nature !== 'installment') {
       delete merged.installmentDetails;
     }
@@ -725,9 +646,16 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
         return;
       }
     }
+    const removed = transactions.find(t => t.id === id);
     setTransactions(prev => prev.filter(t => t.id !== id));
     const userId = user?.uid || 'guest';
     await FinanceService.deleteTransaction(userId, id, false);
+    if (removed?.hasAttachment) await deleteAttachment(userId, id).catch(() => undefined);
+  };
+
+  const importTransactions = async (items: Omit<Transaction, 'id' | 'userId'>[]) => {
+    const userId = user?.uid || 'guest';
+    return FinanceService.saveTransactionsBatch(userId, items);
   };
 
   const discontinueRecurringTransaction = async (id: string, fromMonth: string) => {
@@ -829,17 +757,32 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     await FinanceService.saveBudgetsBatch(userId, toSave, false);
   };
 
-  const saveBudget = async (category: string, limitAmount: number) => {
+  const saveBudget = async (category: string, limitAmount: number, options: SaveBudgetOptions = {}) => {
     const userId = user?.uid || 'guest';
-    const existing = budgets.find(b => b.category === category);
+    const slug = category.toLowerCase().replace(/\s+/g, '_');
+    const base = budgets.find(b => b.category === category && !b.monthYear);
+
+    if (options.monthYear) {
+      const existing = budgets.find(b => b.category === category && b.monthYear === options.monthYear);
+      await FinanceService.saveBudget(
+        userId,
+        {
+          id: existing?.id || `budget_${slug}__${options.monthYear}`,
+          category,
+          limitAmount,
+          monthYear: options.monthYear,
+          userId
+        },
+        false
+      );
+      return;
+    }
+
+    const rollover = options.rollover ?? base?.rollover ?? false;
+    const rolloverFrom = rollover ? (base?.rollover ? base.rolloverFrom || currentMonth : currentMonth) : base?.rolloverFrom;
     await FinanceService.saveBudget(
       userId,
-      {
-        id: existing?.id,
-        category,
-        limitAmount,
-        userId
-      },
+      { id: base?.id, category, limitAmount, userId, rollover, rolloverFrom },
       false
     );
   };
@@ -934,6 +877,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
         activeInstallmentsCount,
         addTransaction,
         updateTransaction,
+        importTransactions,
         deleteTransaction,
         discontinueRecurringTransaction,
         togglePaidStatus,

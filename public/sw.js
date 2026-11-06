@@ -1,4 +1,4 @@
-const CACHE_NAME = 'finances-pro-cache-v1';
+const CACHE_NAME = 'finances-pro-cache-v2';
 const PRECACHE_URLS = [
   '/',
   '/index.html',
@@ -73,6 +73,19 @@ self.addEventListener('fetch', (event) => {
             return caches.match('/');
           }
         });
+    })
+  );
+});
+
+// Toque em uma notificação de vencimento: foca o app aberto ou abre uma nova janela.
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
+      for (const client of clients) {
+        if ('focus' in client) return client.focus();
+      }
+      return self.clients.openWindow('/');
     })
   );
 });

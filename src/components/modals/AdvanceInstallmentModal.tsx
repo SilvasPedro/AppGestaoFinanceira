@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, FastForward, CheckCircle2, DollarSign, Percent, AlertCircle } from 'lucide-react';
 import { InstallmentGroupSummary } from '../../types/finance';
+import { formatBRL } from '../../lib/format';
 
 interface AdvanceInstallmentModalProps {
   isOpen: boolean;
@@ -45,9 +46,6 @@ export const AdvanceInstallmentModal: React.FC<AdvanceInstallmentModalProps> = (
 
   if (!isOpen || !installmentGroup) return null;
 
-  const formatBRL = (val: number) => {
-    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
-  };
 
   const remainingCount = installmentGroup.remainingCount;
   const monthlyAmount = installmentGroup.monthlyAmount;
@@ -76,26 +74,28 @@ export const AdvanceInstallmentModal: React.FC<AdvanceInstallmentModalProps> = (
   return (
     <div 
       onClick={onClose}
+      role="dialog"
+      aria-modal="true"
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/80 backdrop-blur-xs p-0 sm:p-4 animate-in fade-in duration-200"
     >
       <div 
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-md bg-[#141414] border border-[#262626] rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto no-scrollbar"
+        className="w-full max-w-md bg-[#151A23] border border-[#283040] rounded-t-3xl sm:rounded-3xl p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto no-scrollbar"
       >
         {/* Header */}
-        <div className="flex items-center justify-between pb-3 border-b border-[#262626]">
+        <div className="flex items-center justify-between pb-3 border-b border-[#283040]">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-xl bg-[#E5A97D]/15 text-[#E5A97D] flex items-center justify-center">
               <FastForward className="w-4 h-4" />
             </div>
             <div>
               <h3 className="text-base font-semibold text-white">Adiantar Parcelas</h3>
-              <p className="text-[11px] text-[#737373]">{installmentGroup.description}</p>
+              <p className="text-[11px] text-[#9AA4B5]">{installmentGroup.description}</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded-xl text-[#737373] hover:text-white hover:bg-[#262626] transition cursor-pointer"
+            className="p-1 rounded-xl text-[#9AA4B5] hover:text-white hover:bg-[#283040] transition cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -103,15 +103,15 @@ export const AdvanceInstallmentModal: React.FC<AdvanceInstallmentModalProps> = (
 
         <form onSubmit={handleSubmit} className="mt-4 space-y-4">
           {/* Card Resumo do Parcelamento */}
-          <div className="p-3.5 bg-[#0D0D0D] border border-[#262626] rounded-2xl flex items-center justify-between text-xs">
+          <div className="p-3.5 bg-[#0F1218] border border-[#283040] rounded-2xl flex items-center justify-between text-xs">
             <div>
-              <span className="text-[#737373] block text-[10px] uppercase tracking-wider">Parcelas Pendentes</span>
+              <span className="text-[#9AA4B5] block text-[10px] uppercase tracking-wider">Parcelas Pendentes</span>
               <span className="font-bold text-white text-sm">
                 {remainingCount} de {installmentGroup.totalInstallments}
               </span>
             </div>
             <div className="text-right">
-              <span className="text-[#737373] block text-[10px] uppercase tracking-wider">Valor por Parcela</span>
+              <span className="text-[#9AA4B5] block text-[10px] uppercase tracking-wider">Valor por Parcela</span>
               <span className="font-mono font-bold text-white text-sm">
                 {formatBRL(monthlyAmount)}
               </span>
@@ -121,7 +121,7 @@ export const AdvanceInstallmentModal: React.FC<AdvanceInstallmentModalProps> = (
           {/* Quantidade a Adiantar */}
           <div>
             <div className="flex justify-between items-center mb-1.5">
-              <label className="text-[11px] font-medium text-[#737373] uppercase tracking-wider">
+              <label className="text-[11px] font-medium text-[#9AA4B5] uppercase tracking-wider">
                 Quantas parcelas deseja antecipar?
               </label>
               <button
@@ -142,7 +142,7 @@ export const AdvanceInstallmentModal: React.FC<AdvanceInstallmentModalProps> = (
                   className={`py-2 text-xs font-semibold rounded-xl border transition cursor-pointer ${
                     countToAdvance === num
                       ? 'bg-white text-black border-white shadow-xs'
-                      : 'bg-[#0D0D0D] text-[#A3A3A3] border-[#262626] hover:text-white'
+                      : 'bg-[#0F1218] text-[#AEB6C4] border-[#283040] hover:text-white'
                   }`}
                 >
                   {num === remainingCount && remainingCount > 3 ? `Todas (${num}x)` : `${num}x`}
@@ -158,9 +158,9 @@ export const AdvanceInstallmentModal: React.FC<AdvanceInstallmentModalProps> = (
                   max={remainingCount}
                   value={countToAdvance}
                   onChange={(e) => setCountToAdvance(Number(e.target.value))}
-                  className="w-full accent-white cursor-pointer h-2 bg-[#262626] rounded-lg"
+                  className="w-full accent-white cursor-pointer h-2 bg-[#283040] rounded-lg"
                 />
-                <div className="flex justify-between text-[10px] text-[#525252] mt-1">
+                <div className="flex justify-between text-[10px] text-[#5E6A7E] mt-1">
                   <span>1 parcela</span>
                   <span className="text-white font-bold">{countToAdvance} selecionadas</span>
                   <span>{remainingCount} parcelas</span>
@@ -171,11 +171,11 @@ export const AdvanceInstallmentModal: React.FC<AdvanceInstallmentModalProps> = (
 
           {/* Desconto de Antecipação (Opcional - Estilo Nubank) */}
           <div>
-            <label className="text-[11px] font-medium text-[#737373] uppercase tracking-wider block mb-1">
+            <label className="text-[11px] font-medium text-[#9AA4B5] uppercase tracking-wider block mb-1">
               Desconto Recebido pela Antecipação (R$)
             </label>
             <div className="relative">
-              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-semibold text-[#737373]">
+              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-semibold text-[#9AA4B5]">
                 R$
               </span>
               <input
@@ -186,17 +186,17 @@ export const AdvanceInstallmentModal: React.FC<AdvanceInstallmentModalProps> = (
                 value={discountStr}
                 onChange={(e) => setDiscountStr(e.target.value)}
                 placeholder="0,00"
-                className="w-full pl-9 pr-3.5 py-2.5 bg-[#0D0D0D] border border-[#262626] rounded-xl text-xs text-white placeholder-[#525252] focus:outline-hidden focus:border-white transition"
+                className="w-full pl-9 pr-3.5 py-2.5 bg-[#0F1218] border border-[#283040] rounded-xl text-xs text-white placeholder-[#5E6A7E] focus:outline-hidden focus:border-white transition"
               />
             </div>
-            <span className="text-[10px] text-[#525252] mt-1 block">
+            <span className="text-[10px] text-[#5E6A7E] mt-1 block">
               Caso seu banco/cartão aplique desconto por antecipar parcelas, informe o valor acima.
             </span>
           </div>
 
           {/* Data do Lançamento no Mês Atual */}
           <div>
-            <label className="text-[11px] font-medium text-[#737373] uppercase tracking-wider block mb-1">
+            <label className="text-[11px] font-medium text-[#9AA4B5] uppercase tracking-wider block mb-1">
               Data da Cobrança Adiantada
             </label>
             <input
@@ -204,13 +204,13 @@ export const AdvanceInstallmentModal: React.FC<AdvanceInstallmentModalProps> = (
               required
               value={targetDate}
               onChange={(e) => setTargetDate(e.target.value)}
-              className="w-full px-3 py-2 bg-[#0D0D0D] border border-[#262626] rounded-xl text-xs text-white focus:outline-hidden"
+              className="w-full px-3 py-2 bg-[#0F1218] border border-[#283040] rounded-xl text-xs text-white focus:outline-hidden"
             />
           </div>
 
           {/* Extrato do Impacto Financeiro */}
-          <div className="p-4 bg-[#0D0D0D] border border-[#1E1E1E] rounded-2xl space-y-2 text-xs">
-            <div className="flex justify-between text-[#A3A3A3]">
+          <div className="p-4 bg-[#0F1218] border border-[#1F2531] rounded-2xl space-y-2 text-xs">
+            <div className="flex justify-between text-[#AEB6C4]">
               <span>Valor original ({countToAdvance}x parcelas):</span>
               <span className="font-mono">{formatBRL(subtotal)}</span>
             </div>
@@ -220,11 +220,11 @@ export const AdvanceInstallmentModal: React.FC<AdvanceInstallmentModalProps> = (
                 <span className="font-mono">-{formatBRL(finalDiscount)}</span>
               </div>
             )}
-            <div className="flex justify-between font-bold text-white pt-1 border-t border-[#1F1F1F]">
+            <div className="flex justify-between font-bold text-white pt-1 border-t border-[#202733]">
               <span>Cobrado na fatura deste mês:</span>
               <span className="font-mono text-sm text-[#E29578]">{formatBRL(totalToPayNow)}</span>
             </div>
-            <div className="flex justify-between text-[11px] text-[#737373] pt-1">
+            <div className="flex justify-between text-[11px] text-[#9AA4B5] pt-1">
               <span>Saldo devedor restante pós-adiantamento:</span>
               <span className="font-mono text-white">{formatBRL(newRemainingBalance)} ({newRemainingCount}x restantes)</span>
             </div>

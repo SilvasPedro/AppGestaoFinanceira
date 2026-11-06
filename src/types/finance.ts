@@ -86,6 +86,15 @@ export interface Transaction {
   cardName?: string;
   cardLastFour?: string;
 
+  // Conta/carteira onde o valor entra ou sai (não se aplica a cartão de crédito)
+  accountId?: string;
+  // Etiquetas livres (ex: "viagem", "reembolsável")
+  tags?: string[];
+  // Comprovante guardado em users/{uid}/attachments/{id}
+  hasAttachment?: boolean;
+  // Conciliado com o extrato bancário
+  reconciled?: boolean;
+
   createdAt?: string;
   updatedAt?: string;
 }
@@ -121,7 +130,9 @@ export interface CategoryBudget {
   userId: string;
   category: string;
   limitAmount: number;
-  monthYear?: string; // opcional: 'YYYY-MM'
+  monthYear?: string; // opcional: 'YYYY-MM' (sobrescreve o teto padrão naquele mês)
+  rollover?: boolean; // a sobra do mês anterior soma ao teto do mês seguinte
+  rolloverFrom?: string; // 'YYYY-MM' em que o acúmulo começou
 }
 
 export interface HealthScoreResult {
@@ -186,4 +197,71 @@ export interface CustomCategoryItem {
   id: string;
   name: string;
   type: TransactionType;
+}
+
+// ---------------------------------------------------------------------------
+// Contas, metas, compartilhamento
+// ---------------------------------------------------------------------------
+
+export type AccountType = 'checking' | 'savings' | 'wallet' | 'investment';
+
+export interface Account {
+  id: string;
+  userId: string;
+  name: string;
+  type: AccountType;
+  initialBalance: number;
+  color?: string;
+  createdAt?: string;
+}
+
+export interface Transfer {
+  id: string;
+  userId: string;
+  fromAccountId: string;
+  toAccountId: string;
+  amount: number;
+  date: string; // 'YYYY-MM-DD'
+  description?: string;
+  createdAt?: string;
+}
+
+export interface GoalContribution {
+  date: string; // 'YYYY-MM-DD'
+  amount: number; // positivo = depósito, negativo = retirada
+}
+
+export interface SavingsGoal {
+  id: string;
+  userId: string;
+  name: string;
+  targetAmount: number;
+  savedAmount: number;
+  deadline?: string | null; // 'YYYY-MM-DD'
+  color?: string;
+  contributions: GoalContribution[];
+  createdAt?: string;
+}
+
+export interface Household {
+  id: string;
+  name: string;
+  ownerId: string;
+  members: string[]; // uids
+  memberNames: Record<string, string>;
+  invitedEmails: string[]; // em minúsculas
+  createdAt?: string;
+}
+
+export interface SharedExpense {
+  id: string;
+  householdId: string;
+  description: string;
+  amount: number;
+  date: string; // 'YYYY-MM-DD'
+  category: string;
+  paidBy: string; // uid
+  splitWith: string[]; // uids que dividem o valor igualmente
+  isSettlement?: boolean; // acerto de contas entre membros
+  createdAt?: string;
 }

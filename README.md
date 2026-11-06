@@ -1,19 +1,46 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# Finances PRO
 
-# Run and deploy your AI Studio app
+App de gestão financeira pessoal (PWA) em React + Firebase: lançamentos, contas fixas e parceladas, cartões de crédito, orçamentos por categoria, projeções de fluxo de caixa e score de saúde financeira.
 
-This contains everything you need to run your app locally.
-https://ai.studio/apps/4bff5f3a-8992-4958-b9ec-2935f2ec482c
+## Stack
 
-## Run Locally
+React 19 · Vite · Tailwind CSS 4 · Firebase (Auth + Firestore) · TypeScript
 
-**Prerequisites:**  Node.js
+## Rodando localmente
 
+Pré-requisito: Node.js 20+.
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+```bash
+npm install
+npm run dev      # http://localhost:3000
+```
+
+Configure o Firebase em `src/lib/firebase.ts`.
+
+## Scripts
+
+| Comando | O que faz |
+| --- | --- |
+| `npm run dev` | Servidor de desenvolvimento |
+| `npm run build` | Build de produção em `dist/` |
+| `npm run preview` | Serve o build localmente |
+| `npm run lint` | Checagem de tipos (`tsc --noEmit`) |
+| `npm test` | Testes dos serviços financeiros |
+
+## Regras do Firestore
+
+As regras estão em `firestore.rules`: cada usuário acessa apenas `users/{uid}/...`, e lançamentos e orçamentos têm validação de tipo e tamanho. Publique com `firebase deploy --only firestore:rules`.
+
+## Funcionalidades
+
+- **Lançamentos:** diários, fixos e parcelados, com etiquetas e comprovante (foto reduzida e salva junto ao lançamento).
+- **Importar/exportar:** extratos OFX e CSV (com detecção de duplicados) e exportação CSV/PDF.
+- **Filtros avançados:** texto, valor, período, categoria, cartão, conta, etiquetas e situação, com filtros salvos no aparelho.
+- **Contas e metas:** saldo por conta, transferências, conciliação com o extrato do banco e metas de economia.
+- **Cartões:** faturas por ciclo de fechamento e vencimento, e limite comprometido.
+- **Orçamentos:** teto padrão ou específico de um mês, com acúmulo opcional da sobra.
+- **Relatórios:** comparativo entre meses, evolução de 12 meses e relatório anual.
+- **Lembretes:** avisos de vencimento dentro do app e notificações do navegador (sem envio com o app fechado).
+- **Compartilhado:** grupos para dividir despesas, saldos entre membros e acertos.
+
+As regras novas do Firestore (contas, metas, transferências, anexos e grupos) precisam ser publicadas para essas telas gravarem dados.

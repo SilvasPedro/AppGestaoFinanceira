@@ -31,13 +31,13 @@ export const Header: React.FC<HeaderProps> = ({ onOpenAuth, onNavigateTab, activ
   };
 
   return (
-    <header className="sticky top-0 z-30 w-full bg-[#0D0D0D]/90 backdrop-blur-md border-b border-[#1E1E1E] px-4 py-3 md:hidden">
+    <header className="sticky top-0 z-30 w-full bg-[#0F1218]/90 backdrop-blur-md border-b border-[#1F2531] px-4 py-3 md:hidden">
       <div className="max-w-6xl mx-auto flex items-center justify-between gap-2">
         {/* Brand */}
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-[#171717] border border-[#262626] flex items-center justify-center p-1.5 shadow-xs">
+          <div className="w-8 h-8 rounded-lg bg-[#181D27] border border-[#283040] flex items-center justify-center p-1.5 shadow-xs">
             <svg viewBox="0 0 24 24" fill="none" className="w-full h-full">
-              <circle cx="12" cy="12" r="10" stroke="#262626" strokeWidth="2" />
+              <circle cx="12" cy="12" r="10" stroke="#283040" strokeWidth="2" />
               <path d="M 12 2 A 10 10 0 0 1 22 12" stroke="#A3C9A8" strokeWidth="2.5" strokeLinecap="round" />
               <path d="M 2 12 A 10 10 0 0 1 12 2" stroke="#E29578" strokeWidth="2.5" strokeLinecap="round" />
               <path d="M 9 13 L 12 9 L 15 13" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -54,11 +54,11 @@ export const Header: React.FC<HeaderProps> = ({ onOpenAuth, onNavigateTab, activ
         </div>
 
         {/* Month Selector */}
-        <div className="flex items-center gap-1 bg-[#171717] rounded-xl p-1 border border-[#262626]">
+        <div className="flex items-center gap-1 bg-[#181D27] rounded-xl p-1 border border-[#283040]">
           <button
             onClick={prevMonth}
             title="Mês anterior"
-            className="p-1 rounded-lg text-[#A3A3A3] hover:text-white hover:bg-[#262626] transition cursor-pointer"
+            className="p-1 rounded-lg text-[#AEB6C4] hover:text-white hover:bg-[#283040] transition cursor-pointer"
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
@@ -68,7 +68,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenAuth, onNavigateTab, activ
           <button
             onClick={nextMonth}
             title="Próximo mês"
-            className="p-1 rounded-lg text-[#A3A3A3] hover:text-white hover:bg-[#262626] transition cursor-pointer"
+            className="p-1 rounded-lg text-[#AEB6C4] hover:text-white hover:bg-[#283040] transition cursor-pointer"
           >
             <ChevronRight className="w-4 h-4" />
           </button>
@@ -86,8 +86,8 @@ export const Header: React.FC<HeaderProps> = ({ onOpenAuth, onNavigateTab, activ
               title="Configurações"
               className={`p-1.5 rounded-xl border transition cursor-pointer ${
                 activeTab === 'settings'
-                  ? 'bg-[#1F1F1F] text-white border-[#383838]'
-                  : 'bg-[#171717] hover:bg-[#262626] text-[#A3A3A3] hover:text-white border-[#262626]'
+                  ? 'bg-[#202733] text-white border-[#3B4558]'
+                  : 'bg-[#181D27] hover:bg-[#283040] text-[#AEB6C4] hover:text-white border-[#283040]'
               }`}
             >
               <Settings className="w-4 h-4" />
@@ -98,7 +98,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenAuth, onNavigateTab, activ
           <button
             onClick={onOpenAuth}
             title="Ver Perfil"
-            className="flex items-center p-0.5 rounded-xl bg-[#171717] hover:bg-[#262626] border border-[#262626] transition cursor-pointer"
+            className="flex items-center p-0.5 rounded-xl bg-[#181D27] hover:bg-[#283040] border border-[#283040] transition cursor-pointer"
           >
             {user?.photoURL ? (
               <img src={user.photoURL} alt={user.displayName || 'User'} className="w-7 h-7 rounded-xl object-cover" />
@@ -113,7 +113,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenAuth, onNavigateTab, activ
           <button
             onClick={logout}
             title="Sair da Conta (Logout)"
-            className="p-1.5 rounded-xl bg-[#171717] hover:bg-[#E29578]/15 hover:text-[#E29578] text-[#737373] border border-[#262626] transition cursor-pointer"
+            className="p-1.5 rounded-xl bg-[#181D27] hover:bg-[#E29578]/15 hover:text-[#E29578] text-[#9AA4B5] border border-[#283040] transition cursor-pointer"
           >
             <LogOut className="w-4 h-4" />
           </button>

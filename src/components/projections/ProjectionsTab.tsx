@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { useFinance } from '../../context/FinanceContext';
 import { calculateFreedomSimulation } from '../../services/projections';
+import { formatBRLRounded as formatBRL } from '../../lib/format';
 
 export const ProjectionsTab: React.FC = () => {
   const { 
@@ -37,9 +38,6 @@ export const ProjectionsTab: React.FC = () => {
   const [activeSubTab, setActiveSubTab] = useState<'score' | 'debt_curve' | 'freedom_curve'>('score');
   const [customMonthlySaving, setCustomMonthlySaving] = useState<number | null>(null);
 
-  const formatBRL = (val: number) => {
-    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(val);
-  };
 
   const hasAnyDeficit = cashFlowProjections.some(p => p.isDeficit);
 
@@ -80,7 +78,7 @@ export const ProjectionsTab: React.FC = () => {
           className={`flex-1 py-2.5 px-3.5 text-xs font-bold rounded-xl whitespace-nowrap transition-all cursor-pointer flex items-center justify-center gap-2 ${
             activeSubTab === 'score'
               ? 'btn-liquid-glass-primary text-black shadow-md'
-              : 'btn-liquid-glass text-[#8C8C8C] hover:text-white'
+              : 'btn-liquid-glass text-[#8E98A9] hover:text-white'
           }`}
         >
           <ShieldCheck className="w-3.5 h-3.5" />
@@ -92,7 +90,7 @@ export const ProjectionsTab: React.FC = () => {
           className={`flex-1 py-2.5 px-3.5 text-xs font-bold rounded-xl whitespace-nowrap transition-all cursor-pointer flex items-center justify-center gap-2 ${
             activeSubTab === 'debt_curve'
               ? 'btn-liquid-glass-primary text-black shadow-md'
-              : 'btn-liquid-glass text-[#8C8C8C] hover:text-white'
+              : 'btn-liquid-glass text-[#8E98A9] hover:text-white'
           }`}
         >
           <Layers className="w-3.5 h-3.5" />
@@ -107,7 +105,7 @@ export const ProjectionsTab: React.FC = () => {
           className={`flex-1 py-2.5 px-3.5 text-xs font-bold rounded-xl whitespace-nowrap transition-all cursor-pointer flex items-center justify-center gap-2 ${
             activeSubTab === 'freedom_curve'
               ? 'btn-liquid-glass-primary text-black shadow-md'
-              : 'btn-liquid-glass text-[#8C8C8C] hover:text-white'
+              : 'btn-liquid-glass text-[#8E98A9] hover:text-white'
           }`}
         >
           <Target className="w-3.5 h-3.5" />
@@ -129,7 +127,7 @@ export const ProjectionsTab: React.FC = () => {
                   cx="80"
                   cy="80"
                   r="66"
-                  stroke="#1E1E1E"
+                  stroke="#1F2531"
                   strokeWidth="10"
                   fill="none"
                 />
@@ -150,7 +148,7 @@ export const ProjectionsTab: React.FC = () => {
                 <span className="text-3xl font-bold text-white font-mono">
                   {healthScore.isEmpty ? '—' : healthScore.score}
                 </span>
-                <span className="text-xs text-[#737373]">{healthScore.isEmpty ? 'sem dados' : 'de 1000'}</span>
+                <span className="text-xs text-[#9AA4B5]">{healthScore.isEmpty ? 'sem dados' : 'de 1000'}</span>
                 <span
                   className="mt-1 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider"
                   style={{ backgroundColor: `${healthScore.statusColor}22`, color: healthScore.statusColor }}
@@ -166,20 +164,20 @@ export const ProjectionsTab: React.FC = () => {
                 <ShieldCheck className="w-5 h-5 text-[#A3C9A8]" />
                 <h3 className="text-base font-bold text-white">Score de Governança Pessoal</h3>
               </div>
-              <p className="text-xs text-[#A3A3A3] leading-relaxed">
+              <p className="text-xs text-[#AEB6C4] leading-relaxed">
                 Calculado com base em 4 pilares: taxa de poupança (35%), comprometimento de renda (25%), disciplina de tetos (25%) e consistência de registros (15%).
               </p>
               <div className="pt-2 flex flex-wrap gap-2 justify-center md:justify-start">
-                <span className="text-[11px] px-2.5 py-1 rounded-lg bg-[#141414] border border-[#262626] text-[#A3A3A3]">
+                <span className="text-[11px] px-2.5 py-1 rounded-lg bg-[#151A23] border border-[#283040] text-[#AEB6C4]">
                   Poupança: <strong className="text-white font-mono">{healthScore.pillars.savingsRate.score}/350</strong>
                 </span>
-                <span className="text-[11px] px-2.5 py-1 rounded-lg bg-[#141414] border border-[#262626] text-[#A3A3A3]">
+                <span className="text-[11px] px-2.5 py-1 rounded-lg bg-[#151A23] border border-[#283040] text-[#AEB6C4]">
                   Comprometimento: <strong className="text-white font-mono">{healthScore.pillars.incomeCommitment.score}/250</strong>
                 </span>
-                <span className="text-[11px] px-2.5 py-1 rounded-lg bg-[#141414] border border-[#262626] text-[#A3A3A3]">
+                <span className="text-[11px] px-2.5 py-1 rounded-lg bg-[#151A23] border border-[#283040] text-[#AEB6C4]">
                   Tetos: <strong className="text-white font-mono">{healthScore.pillars.budgetDiscipline.score}/250</strong>
                 </span>
-                <span className="text-[11px] px-2.5 py-1 rounded-lg bg-[#141414] border border-[#262626] text-[#A3A3A3]">
+                <span className="text-[11px] px-2.5 py-1 rounded-lg bg-[#151A23] border border-[#283040] text-[#AEB6C4]">
                   Registros: <strong className="text-white font-mono">{healthScore.pillars.entryConsistency.score}/150</strong>
                 </span>
               </div>
@@ -196,13 +194,13 @@ export const ProjectionsTab: React.FC = () => {
                   {healthScore.pillars.savingsRate.score}/350
                 </span>
               </div>
-              <div className="h-1.5 w-full bg-[#1E1E1E] rounded-full overflow-hidden">
+              <div className="h-1.5 w-full bg-[#1F2531] rounded-full overflow-hidden">
                 <div 
                   className="h-full bg-[#A3C9A8] transition-all duration-500"
                   style={{ width: `${(healthScore.pillars.savingsRate.score / 350) * 100}%` }}
                 />
               </div>
-              <p className="text-[11px] text-[#737373]">
+              <p className="text-[11px] text-[#9AA4B5]">
                 {healthScore.pillars.savingsRate.label} • {healthScore.pillars.savingsRate.status}
               </p>
             </div>
@@ -215,13 +213,13 @@ export const ProjectionsTab: React.FC = () => {
                   {healthScore.pillars.incomeCommitment.score}/250
                 </span>
               </div>
-              <div className="h-1.5 w-full bg-[#1E1E1E] rounded-full overflow-hidden">
+              <div className="h-1.5 w-full bg-[#1F2531] rounded-full overflow-hidden">
                 <div 
                   className="h-full bg-[#A8B5D1] transition-all duration-500"
                   style={{ width: `${(healthScore.pillars.incomeCommitment.score / 250) * 100}%` }}
                 />
               </div>
-              <p className="text-[11px] text-[#737373]">
+              <p className="text-[11px] text-[#9AA4B5]">
                 {healthScore.pillars.incomeCommitment.label} • {healthScore.pillars.incomeCommitment.status}
               </p>
             </div>
@@ -234,13 +232,13 @@ export const ProjectionsTab: React.FC = () => {
                   {healthScore.pillars.budgetDiscipline.score}/250
                 </span>
               </div>
-              <div className="h-1.5 w-full bg-[#1E1E1E] rounded-full overflow-hidden">
+              <div className="h-1.5 w-full bg-[#1F2531] rounded-full overflow-hidden">
                 <div 
                   className="h-full bg-[#E5A97D] transition-all duration-500"
                   style={{ width: `${(healthScore.pillars.budgetDiscipline.score / 250) * 100}%` }}
                 />
               </div>
-              <p className="text-[11px] text-[#737373]">
+              <p className="text-[11px] text-[#9AA4B5]">
                 {healthScore.pillars.budgetDiscipline.label} • {healthScore.pillars.budgetDiscipline.status}
               </p>
             </div>
@@ -253,13 +251,13 @@ export const ProjectionsTab: React.FC = () => {
                   {healthScore.pillars.entryConsistency.score}/150
                 </span>
               </div>
-              <div className="h-1.5 w-full bg-[#1E1E1E] rounded-full overflow-hidden">
+              <div className="h-1.5 w-full bg-[#1F2531] rounded-full overflow-hidden">
                 <div 
                   className="h-full bg-[#E29578] transition-all duration-500"
                   style={{ width: `${(healthScore.pillars.entryConsistency.score / 150) * 100}%` }}
                 />
               </div>
-              <p className="text-[11px] text-[#737373]">
+              <p className="text-[11px] text-[#9AA4B5]">
                 {healthScore.pillars.entryConsistency.label} • {healthScore.pillars.entryConsistency.status}
               </p>
             </div>
@@ -274,7 +272,7 @@ export const ProjectionsTab: React.FC = () => {
               </div>
               <div className="space-y-2">
                 {healthScore.actionableTips.map((tip, idx) => (
-                  <div key={idx} className="flex items-start gap-2.5 text-xs text-[#A3A3A3] p-3 rounded-2xl bg-[#121212] border border-white/5">
+                  <div key={idx} className="flex items-start gap-2.5 text-xs text-[#AEB6C4] p-3 rounded-2xl bg-[#131720] border border-white/5">
                     <div className="w-1.5 h-1.5 rounded-full bg-[#A3C9A8] mt-1.5 shrink-0" />
                     <span>{tip}</span>
                   </div>
@@ -301,7 +299,7 @@ export const ProjectionsTab: React.FC = () => {
                   <h3 className="text-base font-bold text-white tracking-tight">
                     Projeção de Fluxo de Caixa (Próximos 6 Meses)
                   </h3>
-                  <p className="text-xs text-[#8C8C8C] mt-0.5">
+                  <p className="text-xs text-[#8E98A9] mt-0.5">
                     Amortização progressiva de parcelamentos, custos fixos e conciliação do saldo futuro.
                   </p>
                 </div>
@@ -330,24 +328,24 @@ export const ProjectionsTab: React.FC = () => {
 
             {/* Quick Metrics Bar */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
-              <div className="p-3 rounded-2xl bg-[#121212] border border-white/8">
-                <span className="text-[10px] text-[#737373] uppercase tracking-wider block font-semibold">Horizonte</span>
+              <div className="p-3 rounded-2xl bg-[#131720] border border-white/8">
+                <span className="text-[10px] text-[#9AA4B5] uppercase tracking-wider block font-semibold">Horizonte</span>
                 <span className="text-sm font-bold font-mono text-white mt-0.5 block">6 Meses</span>
               </div>
-              <div className="p-3 rounded-2xl bg-[#121212] border border-white/8">
-                <span className="text-[10px] text-[#737373] uppercase tracking-wider block font-semibold">Parcelas no Início</span>
+              <div className="p-3 rounded-2xl bg-[#131720] border border-white/8">
+                <span className="text-[10px] text-[#9AA4B5] uppercase tracking-wider block font-semibold">Parcelas no Início</span>
                 <span className="text-sm font-bold font-mono text-[#E29578] mt-0.5 block">
                   {formatBRL(cashFlowProjections[0]?.installmentsTotal || 0)}
                 </span>
               </div>
-              <div className="p-3 rounded-2xl bg-[#121212] border border-white/8">
-                <span className="text-[10px] text-[#737373] uppercase tracking-wider block font-semibold">Parcelas no Final</span>
+              <div className="p-3 rounded-2xl bg-[#131720] border border-white/8">
+                <span className="text-[10px] text-[#9AA4B5] uppercase tracking-wider block font-semibold">Parcelas no Final</span>
                 <span className="text-sm font-bold font-mono text-[#A3C9A8] mt-0.5 block">
                   {formatBRL(cashFlowProjections[cashFlowProjections.length - 1]?.installmentsTotal || 0)}
                 </span>
               </div>
-              <div className="p-3 rounded-2xl bg-[#121212] border border-white/8">
-                <span className="text-[10px] text-[#737373] uppercase tracking-wider block font-semibold">Alívio Projetado</span>
+              <div className="p-3 rounded-2xl bg-[#131720] border border-white/8">
+                <span className="text-[10px] text-[#9AA4B5] uppercase tracking-wider block font-semibold">Alívio Projetado</span>
                 <span className="text-sm font-bold font-mono text-white mt-0.5 block">
                   {formatBRL(Math.max(0, (cashFlowProjections[0]?.installmentsTotal || 0) - (cashFlowProjections[cashFlowProjections.length - 1]?.installmentsTotal || 0)))}
                 </span>
@@ -366,7 +364,7 @@ export const ProjectionsTab: React.FC = () => {
               return (
                 <div 
                   key={p.monthYear} 
-                  className="card-depth-3d-interactive p-4 sm:p-5 rounded-2xl transition-all border border-white/10 hover:border-white/20 bg-[#141414]"
+                  className="card-depth-3d-interactive p-4 sm:p-5 rounded-2xl transition-all border border-white/10 hover:border-white/20 bg-[#151A23]"
                 >
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div className="space-y-2 flex-1">
@@ -395,32 +393,32 @@ export const ProjectionsTab: React.FC = () => {
                       </div>
 
                       {/* Subtitle breakdown with clean badges */}
-                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[#8C8C8C]">
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[#8E98A9]">
                         <span className="flex items-center gap-1">
                           <ArrowUpRight className="w-3.5 h-3.5 text-[#A3C9A8]" />
                           Receita: <strong className="text-white font-mono">{formatBRL(p.projectedIncome)}</strong>
                         </span>
                         <span>•</span>
                         <span className="flex items-center gap-1">
-                          <Repeat className="w-3.5 h-3.5 text-[#737373]" />
+                          <Repeat className="w-3.5 h-3.5 text-[#9AA4B5]" />
                           Fixos: <strong className="text-white font-mono">{formatBRL(p.fixedExpenses)}</strong>
                         </span>
                         <span>•</span>
                         <span className="flex items-center gap-1">
                           <Layers className="w-3.5 h-3.5 text-[#E29578]" />
                           Parcelas: <strong className="text-[#E29578] font-mono">{formatBRL(p.installmentsTotal)}</strong>
-                          <span className="text-[10px] text-[#737373]">({p.activeInstallmentCount} {p.activeInstallmentCount === 1 ? 'ativa' : 'ativas'})</span>
+                          <span className="text-[10px] text-[#9AA4B5]">({p.activeInstallmentCount} {p.activeInstallmentCount === 1 ? 'ativa' : 'ativas'})</span>
                         </span>
                       </div>
 
                       {/* Commitment Progress Bar */}
                       {p.projectedIncome > 0 && (
                         <div className="pt-1 max-w-md">
-                          <div className="flex justify-between text-[10px] text-[#737373] mb-1">
+                          <div className="flex justify-between text-[10px] text-[#9AA4B5] mb-1">
                             <span>Renda Comprometida: {commitmentPercent}%</span>
                             <span>Sobra Livre: {100 - commitmentPercent}%</span>
                           </div>
-                          <div className="h-1.5 w-full bg-[#262626] rounded-full overflow-hidden">
+                          <div className="h-1.5 w-full bg-[#283040] rounded-full overflow-hidden">
                             <div 
                               className={`h-full transition-all duration-500 ${
                                 commitmentPercent > 100
@@ -438,7 +436,7 @@ export const ProjectionsTab: React.FC = () => {
 
                     {/* Right Column: Net Surplus */}
                     <div className="text-left sm:text-right pt-2 sm:pt-0 border-t sm:border-t-0 border-white/5">
-                      <span className="text-[10px] uppercase tracking-wider text-[#737373] block font-semibold">
+                      <span className="text-[10px] uppercase tracking-wider text-[#9AA4B5] block font-semibold">
                         Sobra Prevista
                       </span>
                       <div className={`text-xl sm:text-2xl font-bold font-mono tracking-tight ${
@@ -491,30 +489,30 @@ export const ProjectionsTab: React.FC = () => {
 
             {/* Comparação Direta */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-              <div className="p-4 rounded-2xl bg-[#121212] border border-white/8 space-y-1">
-                <div className="flex items-center justify-between text-xs text-[#737373]">
+              <div className="p-4 rounded-2xl bg-[#131720] border border-white/8 space-y-1">
+                <div className="flex items-center justify-between text-xs text-[#9AA4B5]">
                   <span>Aporte Atual Real (Sobra Líquida)</span>
                   <span className="text-[10px]">Receitas - Despesas</span>
                 </div>
                 <div className={`text-2xl font-bold font-mono mt-1 ${netSurplus >= 0 ? 'text-[#A3C9A8]' : 'text-[#E29578]'}`}>
                   {netSurplus >= 0 ? '+' : ''}{formatBRL(netSurplus)}
                 </div>
-                <p className="text-[11px] text-[#737373] mt-1.5 leading-snug">
+                <p className="text-[11px] text-[#9AA4B5] mt-1.5 leading-snug">
                   {netSurplus > 0
                     ? `Representa ${incomeTotal > 0 ? Math.round((netSurplus / incomeTotal) * 100) : 0}% da sua renda deste mês.`
                     : 'Suas despesas totais superaram as receitas neste mês.'}
                 </p>
               </div>
 
-              <div className="p-4 rounded-2xl bg-[#121212] border border-white/8 space-y-1">
-                <div className="flex items-center justify-between text-xs text-[#737373]">
+              <div className="p-4 rounded-2xl bg-[#131720] border border-white/8 space-y-1">
+                <div className="flex items-center justify-between text-xs text-[#9AA4B5]">
                   <span>Aporte Recomendado (Regra 20%)</span>
                   <span className="text-[10px] text-[#A8B5D1]">Alvo Saudável</span>
                 </div>
                 <div className="text-2xl font-bold font-mono text-white mt-1">
                   {formatBRL(recommendedSaving)}
                 </div>
-                <p className="text-[11px] text-[#737373] mt-1.5 leading-snug">
+                <p className="text-[11px] text-[#9AA4B5] mt-1.5 leading-snug">
                   {incomeTotal > 0
                     ? `Guardando ${formatBRL(recommendedSaving)}/mês você atinge sua reserva em ${freedomWithRecommended.emergencyMonthReached || 6} meses.`
                     : 'Cadastre sua renda para calibrar o aporte recomendado.'}
@@ -531,13 +529,13 @@ export const ProjectionsTab: React.FC = () => {
                   <Sliders className="w-4 h-4 text-[#A8B5D1]" />
                   Simulador Interativo de Aportes
                 </h3>
-                <p className="text-xs text-[#737373] mt-0.5">
+                <p className="text-xs text-[#9AA4B5] mt-0.5">
                   Arraste o slider para simular quanto poupar por mês e veja os prazos se ajustarem em tempo real.
                 </p>
               </div>
 
-              <div className="flex items-center gap-2 bg-[#121212] px-3.5 py-1.5 rounded-xl border border-white/10 self-start sm:self-auto shadow-xs">
-                <span className="text-xs text-[#737373]">Aporte Simulado:</span>
+              <div className="flex items-center gap-2 bg-[#131720] px-3.5 py-1.5 rounded-xl border border-white/10 self-start sm:self-auto shadow-xs">
+                <span className="text-xs text-[#9AA4B5]">Aporte Simulado:</span>
                 <span className="text-sm font-bold font-mono text-[#A3C9A8]">{formatBRL(simulatedSaving)}/mês</span>
               </div>
             </div>
@@ -551,7 +549,7 @@ export const ProjectionsTab: React.FC = () => {
                 step="50"
                 value={simulatedSaving}
                 onChange={(e) => setCustomMonthlySaving(Number(e.target.value))}
-                className="w-full accent-white cursor-pointer h-2 bg-[#262626] rounded-lg"
+                className="w-full accent-white cursor-pointer h-2 bg-[#283040] rounded-lg"
               />
 
               {/* Botões de atalho rápido com estilo Liquid Glass */}
@@ -570,7 +568,7 @@ export const ProjectionsTab: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setCustomMonthlySaving(Math.round(incomeTotal * 0.10))}
-                      className="btn-liquid-glass px-3 py-1 rounded-xl text-[11px] text-[#A3A3A3] hover:text-white cursor-pointer"
+                      className="btn-liquid-glass px-3 py-1 rounded-xl text-[11px] text-[#AEB6C4] hover:text-white cursor-pointer"
                     >
                       10% da Renda ({formatBRL(incomeTotal * 0.10)})
                     </button>
@@ -584,7 +582,7 @@ export const ProjectionsTab: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setCustomMonthlySaving(Math.round(incomeTotal * 0.30))}
-                      className="btn-liquid-glass px-3 py-1 rounded-xl text-[11px] text-[#A3A3A3] hover:text-white cursor-pointer"
+                      className="btn-liquid-glass px-3 py-1 rounded-xl text-[11px] text-[#AEB6C4] hover:text-white cursor-pointer"
                     >
                       30% da Renda ({formatBRL(incomeTotal * 0.30)})
                     </button>
@@ -594,7 +592,7 @@ export const ProjectionsTab: React.FC = () => {
             </div>
 
             {/* Slider de Taxa de Juros Real com Toggle Segmented Glass */}
-            <div className="pt-2 border-t border-white/8 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-[#737373]">
+            <div className="pt-2 border-t border-white/8 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-[#9AA4B5]">
               <div className="flex items-center gap-2">
                 <span>Rendimento Real Anual (acima da inflação):</span>
                 <strong className="text-white font-mono">{Math.round(annualInterestRate * 100)}% a.a.</strong>
@@ -608,7 +606,7 @@ export const ProjectionsTab: React.FC = () => {
                     className={`px-2.5 py-1 rounded-lg text-[10px] font-mono cursor-pointer transition-all ${
                       annualInterestRate === rate
                         ? 'toggle-segment-active text-white'
-                        : 'text-[#737373] hover:text-white'
+                        : 'text-[#9AA4B5] hover:text-white'
                     }`}
                   >
                     {rate * 100}%
@@ -635,19 +633,19 @@ export const ProjectionsTab: React.FC = () => {
               </div>
 
               <div>
-                <span className="text-[11px] text-[#737373] block">Valor Alvo da Reserva</span>
+                <span className="text-[11px] text-[#9AA4B5] block">Valor Alvo da Reserva</span>
                 <div className="text-2xl font-bold font-mono text-white mt-0.5">
                   {formatBRL(simulatedFreedom.emergencyTarget)}
                 </div>
               </div>
 
-              <div className="p-3.5 bg-[#121212] border border-white/8 rounded-2xl space-y-1.5">
+              <div className="p-3.5 bg-[#131720] border border-white/8 rounded-2xl space-y-1.5">
                 <div className="flex justify-between text-xs">
-                  <span className="text-[#737373]">Aporte mensal planejado:</span>
+                  <span className="text-[#9AA4B5]">Aporte mensal planejado:</span>
                   <span className="font-mono text-white font-semibold">{formatBRL(simulatedSaving)}/mês</span>
                 </div>
                 <div className="flex justify-between text-xs">
-                  <span className="text-[#737373]">Tempo estimado:</span>
+                  <span className="text-[#9AA4B5]">Tempo estimado:</span>
                   <span className="font-bold text-[#A8B5D1]">
                     {simulatedSaving > 0 && simulatedFreedom.emergencyMonthReached > 0
                       ? `${simulatedFreedom.emergencyMonthReached} meses (${Math.round((simulatedFreedom.emergencyMonthReached / 12) * 10) / 10} anos)`
@@ -656,7 +654,7 @@ export const ProjectionsTab: React.FC = () => {
                 </div>
               </div>
 
-              <p className="text-[11px] text-[#737373] leading-relaxed">
+              <p className="text-[11px] text-[#9AA4B5] leading-relaxed">
                 Protege você contra imprevistos sem precisar resgatar investimentos de longo prazo.
               </p>
             </div>
@@ -676,13 +674,13 @@ export const ProjectionsTab: React.FC = () => {
               </div>
 
               <div>
-                <span className="text-[11px] text-[#737373] block">Patrimônio Alvo para Viver de Renda</span>
+                <span className="text-[11px] text-[#9AA4B5] block">Patrimônio Alvo para Viver de Renda</span>
                 <div className="text-2xl font-bold font-mono text-[#A3C9A8] mt-0.5">
                   {formatBRL(simulatedFreedom.independenceTarget)}
                 </div>
               </div>
 
-              <div className="p-3.5 bg-[#121212] border border-white/8 rounded-2xl">
+              <div className="p-3.5 bg-[#131720] border border-white/8 rounded-2xl">
                 <p className="text-xs text-white leading-relaxed">
                   Guardando <strong className="text-[#A3C9A8] font-mono">{formatBRL(simulatedSaving)}/mês</strong>, você atinge esta meta em{' '}
                   <strong className="text-white font-mono underline decoration-[#A3C9A8]">
@@ -691,7 +689,7 @@ export const ProjectionsTab: React.FC = () => {
                       : '—'}
                   </strong>.
                 </p>
-                <div className="flex justify-between items-center text-[11px] text-[#737373] mt-2 pt-2 border-t border-white/8">
+                <div className="flex justify-between items-center text-[11px] text-[#9AA4B5] mt-2 pt-2 border-t border-white/8">
                   <span>Renda Passiva Mensal Gerada:</span>
                   <span className="font-mono text-[#A3C9A8] font-semibold">
                     +{formatBRL(essentialCost)}/mês
@@ -699,7 +697,7 @@ export const ProjectionsTab: React.FC = () => {
                 </div>
               </div>
 
-              <p className="text-[11px] text-[#737373] leading-relaxed">
+              <p className="text-[11px] text-[#9AA4B5] leading-relaxed">
                 Permite cobrir 100% dos seus custos essenciais exclusivamente através da rentabilidade da sua carteira.
               </p>
             </div>
@@ -707,7 +705,7 @@ export const ProjectionsTab: React.FC = () => {
 
           {/* 4. Trajetória de Acumulação em Cards Modulares (5, 10 e 20 anos) */}
           <div className="card-depth-3d p-5 rounded-3xl space-y-3 border border-white/10">
-            <h4 className="text-xs font-semibold text-[#737373] uppercase tracking-wider">
+            <h4 className="text-xs font-semibold text-[#9AA4B5] uppercase tracking-wider">
               Evolução Patrimonial com Juros Compostos
             </h4>
 
@@ -715,10 +713,10 @@ export const ProjectionsTab: React.FC = () => {
               {[5, 10, 20].map((years) => {
                 const pt = simulatedFreedom.points.find(p => p.year === years);
                 return (
-                  <div key={years} className="card-depth-3d-interactive p-4 bg-[#121212] border border-white/8 rounded-2xl space-y-1">
+                  <div key={years} className="card-depth-3d-interactive p-4 bg-[#131720] border border-white/8 rounded-2xl space-y-1">
                     <div className="flex items-center justify-between text-xs">
                       <span className="font-semibold text-white">Em {years} anos</span>
-                      <span className="text-[10px] text-[#737373] font-mono">
+                      <span className="text-[10px] text-[#9AA4B5] font-mono">
                         Aportado: {formatBRL(pt?.investedCapital || 0)}
                       </span>
                     </div>
@@ -733,7 +731,7 @@ export const ProjectionsTab: React.FC = () => {
               })}
             </div>
 
-            <p className="text-[10px] text-[#525252] pt-1">
+            <p className="text-[10px] text-[#5E6A7E] pt-1">
               * Simulação calculada com retorno real líquido de inflação ({Math.round(annualInterestRate * 100)}% a.a.) e capitalização composta contínua.
             </p>
           </div>

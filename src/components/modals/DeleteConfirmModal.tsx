@@ -67,15 +67,17 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
   return (
     <div
       onClick={onClose}
+      role="dialog"
+      aria-modal="true"
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-xs p-4 animate-in fade-in duration-200"
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-sm bg-[#141414] border border-[#262626] rounded-3xl p-6 shadow-2xl relative space-y-4"
+        className="w-full max-w-sm bg-[#151A23] border border-[#283040] rounded-3xl p-6 shadow-2xl relative space-y-4"
       >
         <button
           onClick={onClose}
-          className="absolute right-4 top-4 p-1.5 rounded-xl text-[#737373] hover:text-white hover:bg-[#262626] transition cursor-pointer"
+          className="absolute right-4 top-4 p-1.5 rounded-xl text-[#9AA4B5] hover:text-white hover:bg-[#283040] transition cursor-pointer"
         >
           <X className="w-5 h-5" />
         </button>
@@ -88,11 +90,11 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
           <h3 className="text-base font-semibold text-white">
             {title}
           </h3>
-          <p className="text-xs text-[#A3A3A3] mt-1.5 leading-relaxed">
+          <p className="text-xs text-[#AEB6C4] mt-1.5 leading-relaxed">
             {message}
           </p>
           {itemDetail && (
-            <div className="mt-3 p-2.5 rounded-xl bg-[#0D0D0D] border border-[#262626] text-xs font-mono text-white truncate">
+            <div className="mt-3 p-2.5 rounded-xl bg-[#0F1218] border border-[#283040] text-xs font-mono text-white truncate">
               {itemDetail}
             </div>
           )}
@@ -104,7 +106,7 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
               type="button"
               onClick={handleDiscontinue}
               disabled={submitting}
-              className="w-full min-h-[44px] py-2.5 px-3 rounded-xl bg-[#262626] hover:bg-[#333333] border border-[#383838] text-xs font-semibold text-[#A8B5D1] hover:text-white flex items-center justify-center gap-2 transition cursor-pointer"
+              className="w-full min-h-[44px] py-2.5 px-3 rounded-xl bg-[#283040] hover:bg-[#363F50] border border-[#3B4558] text-xs font-semibold text-[#A8B5D1] hover:text-white flex items-center justify-center gap-2 transition cursor-pointer"
             >
               <CalendarOff className="w-4 h-4 text-[#A8B5D1]" />
               <span>{discontinueLabel}</span>
@@ -124,7 +126,7 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
               type="button"
               onClick={onClose}
               disabled={submitting}
-              className="w-full py-2 text-xs text-[#737373] hover:text-white transition cursor-pointer"
+              className="w-full py-2 text-xs text-[#9AA4B5] hover:text-white transition cursor-pointer"
             >
               Cancelar
             </button>
@@ -135,7 +137,7 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
               type="button"
               onClick={onClose}
               disabled={submitting}
-              className="flex-1 min-h-[44px] py-2.5 px-3 rounded-xl bg-[#262626] hover:bg-[#333333] text-xs font-semibold text-[#A3A3A3] hover:text-white transition cursor-pointer"
+              className="flex-1 min-h-[44px] py-2.5 px-3 rounded-xl bg-[#283040] hover:bg-[#363F50] text-xs font-semibold text-[#AEB6C4] hover:text-white transition cursor-pointer"
             >
               Cancelar
             </button>

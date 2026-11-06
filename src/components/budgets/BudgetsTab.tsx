@@ -3,6 +3,10 @@ import { Target, Plus, AlertTriangle, CheckCircle, Edit2, Trash2, Sparkles, Shie
 import { useFinance } from '../../context/FinanceContext';
 import { SmartBudgetModal } from '../modals/SmartBudgetModal';
 import { DeleteConfirmModal } from '../modals/DeleteConfirmModal';
+import { BudgetEditModal } from '../modals/BudgetEditModal';
+import { useToast } from '../../context/ToastContext';
+import type { BudgetStatus } from '../../context/FinanceContext';
+import { formatBRL } from '../../lib/format';
 
 export const BudgetsTab: React.FC = () => {
   const { 
@@ -11,25 +15,34 @@ export const BudgetsTab: React.FC = () => {
     deleteBudget, 
     expenseCategories,
     budgetSuggestion,
-    applySuggestedBudgets
+    applySuggestedBudgets,
+    saveBudget,
+    currentMonth
   } = useFinance();
+  const { showToast } = useToast();
+  const [editing, setEditing] = useState<BudgetStatus | null>(null);
+
+  const monthLabel = (() => {
+    const [y, m] = currentMonth.split('-').map(Number);
+    const t = new Date(y, m - 1, 1).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+    return t.charAt(0).toUpperCase() + t.slice(1);
+  })();
 
   const [isSmartModalOpen, setIsSmartModalOpen] = useState(false);
   const [budgetToDelete, setBudgetToDelete] = useState<{ id: string; category: string } | null>(null);
 
-  const formatBRL = (val: number) => {
-    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
-  };
 
   const totalBudgeted = budgetsStatus.reduce((acc, b) => acc + b.limit, 0);
   const totalSpentInBudgets = budgetsStatus.reduce((acc, b) => acc + b.spent, 0);
   const overallPercentage = totalBudgeted > 0 ? (totalSpentInBudgets / totalBudgeted) * 100 : 0;
 
   // Mapa atual de limites para o modal
-  const currentBudgetsMap = budgetsStatus.reduce((acc, b) => {
-    acc[b.category] = b.limit;
-    return acc;
-  }, {} as Record<string, number>);
+  const currentBudgetsMap = budgets
+    .filter(b => !b.monthYear)
+    .reduce((acc, b) => {
+      acc[b.category] = b.limitAmount;
+      return acc;
+    }, {} as Record<string, number>);
 
   const availableSurplus = budgetSuggestion.availableSurplus;
   const isOverSurplus = availableSurplus > 0 && totalBudgeted > availableSurplus;
@@ -38,11 +51,11 @@ export const BudgetsTab: React.FC = () => {
   return (
     <div className="space-y-5 pb-24 w-full">
       {/* 1. Card de Capacidade Financeira e Sobra Líquida Real (3D Depth) */}
-      <div className="card-depth-hero p-5 rounded-3xl bg-linear-to-r from-[#171717] to-[#141414] space-y-4">
+      <div className="card-depth-hero p-5 rounded-3xl bg-linear-to-r from-[#181D27] to-[#151A23] space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-xs text-[#737373] uppercase tracking-wider font-semibold">
+              <span className="text-xs text-[#9AA4B5] uppercase tracking-wider font-semibold">
                 Capacidade Disponível do Mês
               </span>
               <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
@@ -60,12 +73,12 @@ export const BudgetsTab: React.FC = () => {
               }`}>
                 {formatBRL(availableSurplus)}
               </span>
-              <span className="text-xs text-[#737373]">
+              <span className="text-xs text-[#9AA4B5]">
                 {budgetSuggestion.isDeficit ? 'déficit operacional' : 'disponível para limites'}
               </span>
             </div>
 
-            <p className="text-xs text-[#737373] mt-1">
+            <p className="text-xs text-[#9AA4B5] mt-1">
               Renda ({formatBRL(budgetSuggestion.totalIncome)}) − Custos Fixos ({formatBRL(budgetSuggestion.fixedExpenses)}) − Parcelamentos ({formatBRL(budgetSuggestion.installmentsTotal)})
             </p>
           </div>
@@ -88,15 +101,15 @@ export const BudgetsTab: React.FC = () => {
             </p>
           </div>
         ) : (
-          <div className="p-3 bg-[#0D0D0D] border border-[#262626] rounded-2xl space-y-2">
+          <div className="p-3 bg-[#0F1218] border border-[#283040] rounded-2xl space-y-2">
             <div className="flex items-center justify-between text-xs">
-              <span className="text-[#A3A3A3] font-medium">Comprometimento da Sobra Líquida com Tetos Cadastrados</span>
+              <span className="text-[#AEB6C4] font-medium">Comprometimento da Sobra Líquida com Tetos Cadastrados</span>
               <span className={`font-mono font-bold ${isOverSurplus ? 'text-[#E29578]' : 'text-white'}`}>
-                {formatBRL(totalBudgeted)} <span className="text-[#737373] text-[11px]">/ {formatBRL(availableSurplus)}</span>
+                {formatBRL(totalBudgeted)} <span className="text-[#9AA4B5] text-[11px]">/ {formatBRL(availableSurplus)}</span>
               </span>
             </div>
 
-            <div className="w-full bg-[#1A1A1A] h-2 rounded-full overflow-hidden">
+            <div className="w-full bg-[#1C212C] h-2 rounded-full overflow-hidden">
               <div
                 className={`h-full rounded-full transition-all duration-500 ${
                   isOverSurplus 
@@ -121,7 +134,7 @@ export const BudgetsTab: React.FC = () => {
                   Dentro da capacidade • Margem de {formatBRL(Math.max(0, availableSurplus - totalBudgeted))} preservada
                 </span>
               )}
-              <span className="text-[#737373] font-mono">
+              <span className="text-[#9AA4B5] font-mono">
                 {surplusUsedPercentage}% da sobra alocada
               </span>
             </div>
@@ -134,15 +147,15 @@ export const BudgetsTab: React.FC = () => {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-xs text-[#737373] uppercase tracking-wider font-semibold">
+              <span className="text-xs text-[#9AA4B5] uppercase tracking-wider font-semibold">
                 Consumo Mensal dos Tetos
               </span>
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#1E1E1E] text-[#A8B5D1]">
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#1F2531] text-[#A8B5D1]">
                 {budgetsStatus.length} Categorias Monitoradas
               </span>
             </div>
             <div className="text-2xl font-bold text-white mt-1">
-              {formatBRL(totalSpentInBudgets)} <span className="text-xs font-normal text-[#737373]">de {formatBRL(totalBudgeted)}</span>
+              {formatBRL(totalSpentInBudgets)} <span className="text-xs font-normal text-[#9AA4B5]">de {formatBRL(totalBudgeted)}</span>
             </div>
           </div>
 
@@ -157,7 +170,7 @@ export const BudgetsTab: React.FC = () => {
 
         {/* Global Progress Bar */}
         <div className="mt-4">
-          <div className="w-full bg-[#0D0D0D] h-3 rounded-full overflow-hidden p-0.5 border border-[#1F1F1F]">
+          <div className="w-full bg-[#0F1218] h-3 rounded-full overflow-hidden p-0.5 border border-[#202733]">
             <div
               className={`h-full rounded-full transition-all duration-700 ${
                 overallPercentage >= 100
@@ -169,7 +182,7 @@ export const BudgetsTab: React.FC = () => {
               style={{ width: `${Math.min(100, overallPercentage)}%` }}
             />
           </div>
-          <div className="flex justify-between items-center text-[11px] text-[#737373] mt-1.5">
+          <div className="flex justify-between items-center text-[11px] text-[#9AA4B5] mt-1.5">
             <span>{Math.round(overallPercentage)}% do orçamento total consumido</span>
             <span>
               {totalSpentInBudgets > totalBudgeted
@@ -183,22 +196,22 @@ export const BudgetsTab: React.FC = () => {
       {/* 3. Categorias Grid */}
       <div className="space-y-3">
         <div className="flex items-center justify-between px-1">
-          <h3 className="text-xs font-semibold text-[#737373] uppercase tracking-wider">
+          <h3 className="text-xs font-semibold text-[#9AA4B5] uppercase tracking-wider">
             Detalhamento por Categoria
           </h3>
-          <span className="text-[11px] text-[#737373]">
+          <span className="text-[11px] text-[#9AA4B5]">
             Avisos em 80% e 100%
           </span>
         </div>
 
         {budgetsStatus.length === 0 ? (
-          <div className="p-8 text-center bg-[#141414] border border-[#262626] rounded-3xl space-y-3">
-            <p className="text-xs text-[#737373]">
+          <div className="p-8 text-center bg-[#151A23] border border-[#283040] rounded-3xl space-y-3">
+            <p className="text-xs text-[#9AA4B5]">
               Nenhum limite configurado ainda. Defina metas mensais por categoria para monitorar seus limites em tempo real.
             </p>
             <button
               onClick={() => setIsSmartModalOpen(true)}
-              className="px-3.5 py-2 rounded-xl bg-[#262626] hover:bg-[#333333] text-xs font-semibold text-white inline-flex items-center gap-1.5 transition cursor-pointer"
+              className="px-3.5 py-2 rounded-xl bg-[#283040] hover:bg-[#363F50] text-xs font-semibold text-white inline-flex items-center gap-1.5 transition cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" /> Configurar Primeiro Limite
             </button>
@@ -247,17 +260,19 @@ export const BudgetsTab: React.FC = () => {
 
                     <div className="flex items-center gap-1">
                       <button
-                        onClick={() => setIsSmartModalOpen(true)}
+                        onClick={() => setEditing(b)}
                         title="Editar teto"
-                        className="p-1 rounded-lg text-[#737373] hover:text-white hover:bg-[#262626] transition cursor-pointer"
+                        aria-label={`Editar teto de ${b.category}`}
+                        className="p-1 rounded-lg text-[#9AA4B5] hover:text-white hover:bg-[#283040] transition cursor-pointer"
                       >
                         <Edit2 className="w-3.5 h-3.5" />
                       </button>
-                      {matchingBudgetDoc?.id && (
+                      {(b.id || matchingBudgetDoc?.id) && (
                         <button
-                          onClick={() => setBudgetToDelete({ id: matchingBudgetDoc.id!, category: b.category })}
-                          title="Remover teto desta categoria"
-                          className="p-1 rounded-lg text-[#525252] hover:text-[#E29578] hover:bg-[#262626] transition cursor-pointer"
+                          onClick={() => setBudgetToDelete({ id: (b.id || matchingBudgetDoc!.id)!, category: b.category })}
+                          aria-label={`Remover teto de ${b.category}`}
+                          title={b.isMonthOverride ? 'Remover o ajuste deste mês' : 'Remover teto desta categoria'}
+                          className="p-1 rounded-lg text-[#5E6A7E] hover:text-[#E29578] hover:bg-[#283040] transition cursor-pointer"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -265,18 +280,31 @@ export const BudgetsTab: React.FC = () => {
                     </div>
                   </div>
 
+                  {(b.isMonthOverride || (b.carry ?? 0) > 0 || b.rollover) && (
+                    <div className="flex flex-wrap gap-1.5 mb-2">
+                      {b.isMonthOverride && (
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#A8B5D1]/15 text-[#A8B5D1] border border-[#A8B5D1]/30">Ajuste deste mês</span>
+                      )}
+                      {b.rollover && (
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#A3C9A8]/10 text-[#A3C9A8] border border-[#A3C9A8]/25">
+                          {(b.carry ?? 0) > 0 ? `+${formatBRL(b.carry ?? 0)} acumulado` : 'Acumula sobra'}
+                        </span>
+                      )}
+                    </div>
+                  )}
+
                   {/* Spent vs Limit Numbers */}
                   <div className="flex justify-between items-baseline text-xs mb-2">
                     <span className="text-white font-mono font-semibold">
                       {formatBRL(b.spent)}
                     </span>
-                    <span className="text-[#737373] text-[11px]">
-                      Teto: <strong className="text-[#A3A3A3] font-mono">{formatBRL(b.limit)}</strong>
+                    <span className="text-[#9AA4B5] text-[11px]">
+                      Teto: <strong className="text-[#AEB6C4] font-mono">{formatBRL(b.limit)}</strong>
                     </span>
                   </div>
 
                   {/* Progress bar */}
-                  <div className="w-full bg-[#0D0D0D] h-2 rounded-full overflow-hidden">
+                  <div className="w-full bg-[#0F1218] h-2 rounded-full overflow-hidden">
                     <div
                       className={`h-full rounded-full transition-all duration-500 ${
                         isDanger
@@ -290,7 +318,7 @@ export const BudgetsTab: React.FC = () => {
                   </div>
 
                   {/* Footer notes */}
-                  <div className="flex justify-between items-center text-[10px] text-[#737373] mt-2">
+                  <div className="flex justify-between items-center text-[10px] text-[#9AA4B5] mt-2">
                     <span className="font-mono">{Math.round(b.percentage)}% utilizado</span>
                     <span className={isDanger ? 'text-[#E29578] font-semibold' : ''}>
                       {isDanger
@@ -313,6 +341,27 @@ export const BudgetsTab: React.FC = () => {
         currentBudgets={currentBudgetsMap}
         onSaveBudgets={applySuggestedBudgets}
         budgetSuggestion={budgetSuggestion}
+      />
+
+      <BudgetEditModal
+        isOpen={!!editing}
+        onClose={() => setEditing(null)}
+        category={editing?.category || ''}
+        month={currentMonth}
+        monthLabel={monthLabel}
+        defaultLimit={budgets.find(b => b.category === editing?.category && !b.monthYear)?.limitAmount ?? null}
+        monthLimit={budgets.find(b => b.category === editing?.category && b.monthYear === currentMonth)?.limitAmount ?? null}
+        rollover={!!budgets.find(b => b.category === editing?.category && !b.monthYear)?.rollover}
+        carry={editing?.carry ?? 0}
+        onSave={async ({ limit, scope, rollover }) => {
+          if (!editing) return;
+          await saveBudget(editing.category, limit, scope === 'month' ? { monthYear: currentMonth } : { rollover });
+          showToast(scope === 'month' ? `Teto de ${editing.category} ajustado para ${monthLabel}.` : `Teto de ${editing.category} atualizado.`);
+        }}
+        onRemoveMonthOverride={async () => {
+          const o = budgets.find(b => b.category === editing?.category && b.monthYear === currentMonth);
+          if (o?.id) await deleteBudget(o.id);
+        }}
       />
 
       {/* Modal de Confirmação para exclusão de teto */}
